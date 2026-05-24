@@ -50,7 +50,7 @@ useEffect(() => {
       return;
     }
 
-    // TODO: Conectar con Spring Boot + PostgreSQL
+    // Por hacer: Conectar con Spring Boot + PostgreSQL
     // const response = await fetch('http://IP:8080/api/auth/login', {
     //   method: 'POST',
     //   headers: { 'Content-Type': 'application/json' },

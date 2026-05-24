@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 
@@ -14,7 +14,7 @@ export default function HomeScreen() {
   const confirmarAlerta = async () => {
     setEnviando(true);
 
-    // TODO: Conectar con Spring Boot + PostgreSQL
+    // Por hacer: Conectar con Spring Boot + PostgreSQL
     // 1. Obtener GPS
     // const location = await Location.getCurrentPositionAsync({});
     // 2. Enviar alerta con ubicación
@@ -81,22 +81,22 @@ export default function HomeScreen() {
       {/* Barra de navegación inferior */}
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIconActivo}>▲</Text>
+          <Text style={styles.navIconActivo}>■</Text>
           <Text style={[styles.navTexto, styles.navTextoActivo]}>Inicio</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/denuncia')}>
-          <Text style={styles.navIcon}>📋</Text>
+          <Text style={styles.navIcon}>■</Text>
           <Text style={styles.navTexto}>Denuncia</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/llamada')}>
-          <Text style={styles.navIcon}>📹</Text>
+          <Text style={styles.navIcon}>■</Text>
           <Text style={styles.navTexto}>Llamada LSCh</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/perfil')}>
-          <Text style={styles.navIcon}>👤</Text>
+          <Text style={styles.navIcon}>■</Text>
           <Text style={styles.navTexto}>Perfil</Text>
         </TouchableOpacity>
       </View>
@@ -135,7 +135,7 @@ export default function HomeScreen() {
             ) : (
               <>
                 <View style={styles.exitoIcono}>
-                  <Text style={styles.exitoIconoTexto}>✓</Text>
+                  <Text style={styles.exitoIconoTexto}>OK</Text>
                 </View>
                 <Text style={styles.exitoTitulo}>Alerta Enviada</Text>
                 <Text style={styles.exitoDescripcion}>
@@ -250,11 +250,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   navIcon: {
-    fontSize: 20,
+    fontSize: 18,
     marginBottom: 3,
+    color: '#9ca3af',
   },
   navIconActivo: {
-    fontSize: 20,
+    fontSize: 18,
     marginBottom: 3,
     color: '#1B4332',
   },
@@ -378,7 +379,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   exitoIconoTexto: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '900',
     color: '#1B4332',
   },
