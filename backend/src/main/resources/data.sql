@@ -1,0 +1,1 @@
+INSERT INTO roles (nombre_rol, estado_rol) VALUES ('Administrador', 'Activo'), ('Usuario Sordo', 'Activo'), ('Carabinero', 'Activo'); 
