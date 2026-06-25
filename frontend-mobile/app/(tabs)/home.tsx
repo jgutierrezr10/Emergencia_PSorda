@@ -85,15 +85,7 @@ export default function HomeScreen() {
           <Text style={[styles.navTexto, styles.navTextoActivo]}>Inicio</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/denuncia')}>
-          <Text style={styles.navIcon}>■</Text>
-          <Text style={styles.navTexto}>Denuncia</Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/llamada')}>
-          <Text style={styles.navIcon}>■</Text>
-          <Text style={styles.navTexto}>Llamada LSCh</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/perfil')}>
           <Text style={styles.navIcon}>■</Text>

@@ -264,14 +264,7 @@ export default function PerfilScreen() {
           <Text style={styles.navIcon}>■</Text>
           <Text style={styles.navTexto}>Inicio</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/(tabs)/llamada')}>
-          <Text style={styles.navIcon}>■</Text>
-          <Text style={styles.navTexto}>Videollamada</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/(tabs)/denuncia')}>
-          <Text style={styles.navIcon}>■</Text>
-          <Text style={styles.navTexto}>Denuncia</Text>
-        </TouchableOpacity>
+
         <TouchableOpacity style={styles.navItem}>
           <Text style={styles.navIconActivo}>■</Text>
           <Text style={styles.navTextoActivo}>Perfil</Text>
