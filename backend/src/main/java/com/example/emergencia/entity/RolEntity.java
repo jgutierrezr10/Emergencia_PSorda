@@ -25,10 +25,10 @@ public class RolEntity {
 
     @NotNull
     @Column(length = 50, nullable = false)
-    private String NombreRol;
+    private String nombreRol;
 
     @NotNull
     @Column(length = 20, nullable = false)
-    private String EstadoRol;
+    private String estadoRol;
 
 }

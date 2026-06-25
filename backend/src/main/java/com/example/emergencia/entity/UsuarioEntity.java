@@ -12,6 +12,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+
 @Entity
 @Table(name = "usuarios")
 @NoArgsConstructor
@@ -24,26 +27,30 @@ public class UsuarioEntity {
 
     @NotNull
     @Column(length = 50, nullable = false)
-    private String Nombre;
+    private String nombre;
 
     @NotNull
     @Column(length = 50, nullable = false)
-    private String Apellido;
+    private String apellido;
 
     @NotNull
     @Column(length = 9, nullable = false, unique = true)
-    private String Telefono;
+    private String telefono;
 
     @NotNull
     @Column(length = 12, nullable = false, unique = true)
-    private String Rut;
+    private String rut;
 
     @NotNull
-    @Column(length = 20, nullable = false)
-    private String Clave;
+    @Column(length = 255, nullable = false)
+    private String clave;
 
     @NotNull
     @Column(nullable = false)
-    private String Estado;
+    private String estado;
+
+    @ManyToOne
+    @JoinColumn(name = "rol_id")
+    private RolEntity rol;
 
 }

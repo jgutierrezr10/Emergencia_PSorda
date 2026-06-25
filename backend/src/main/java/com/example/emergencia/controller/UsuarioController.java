@@ -12,13 +12,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 import com.example.emergencia.entity.UsuarioEntity;
 import com.example.emergencia.interfaces.IUsuarioService;
 
 @RestController
 @RequestMapping("usuarios")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:4200")
 public class UsuarioController {
 
     @Autowired
@@ -35,12 +36,13 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public UsuarioEntity save(@RequestBody UsuarioEntity usuario) {
+    public UsuarioEntity save(@Valid @RequestBody UsuarioEntity usuario) {
         return usuarioService.save(usuario);
     }
 
     @PutMapping("{id}")
-    public UsuarioEntity update(@PathVariable Long id, @RequestBody UsuarioEntity usuario) {
+    public UsuarioEntity update(@PathVariable Long id, @Valid @RequestBody UsuarioEntity usuario) {
+        usuario.setId(id);
         return usuarioService.update(usuario);
     }
 

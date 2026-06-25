@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.example.emergencia.entity.RolEntity;
 import com.example.emergencia.interfaces.IRolService;
 import com.example.emergencia.repository.RolRepository;
+import com.example.emergencia.exceptions.ResourceNotFoundException;
 
 @Service
 public class RolServiceImpl implements IRolService {
@@ -22,7 +23,8 @@ public class RolServiceImpl implements IRolService {
 
     @Override
     public RolEntity findById(Long id) {
-        return rolRepository.findById(id).orElse(null);
+        return rolRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado con ID: " + id));
     }
 
     @Override
@@ -32,12 +34,16 @@ public class RolServiceImpl implements IRolService {
 
     @Override
     public RolEntity update(RolEntity rol) {
-        return rolRepository.save(rol);
+        RolEntity existente = findById(rol.getId());
+        existente.setNombreRol(rol.getNombreRol());
+        existente.setEstadoRol(rol.getEstadoRol());
+        return rolRepository.save(existente);
     }
 
     @Override
     public void delete(Long id) {
-        rolRepository.deleteById(id);
+        RolEntity existente = findById(id);
+        rolRepository.delete(existente);
     }
 
 }

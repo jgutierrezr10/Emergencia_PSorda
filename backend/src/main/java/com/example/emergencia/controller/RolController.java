@@ -12,13 +12,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 import com.example.emergencia.entity.RolEntity;
 import com.example.emergencia.interfaces.IRolService;
 
 @RestController
 @RequestMapping("roles")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:4200")
 public class RolController {
 
     @Autowired
@@ -35,12 +36,13 @@ public class RolController {
     }
 
     @PostMapping
-    public RolEntity save(@RequestBody RolEntity rol) {
+    public RolEntity save(@Valid @RequestBody RolEntity rol) {
         return rolService.save(rol);
     }
 
     @PutMapping("{id}")
-    public RolEntity update(@PathVariable Long id, @RequestBody RolEntity rol) {
+    public RolEntity update(@PathVariable Long id, @Valid @RequestBody RolEntity rol) {
+        rol.setId(id);
         return rolService.update(rol);
     }
 
