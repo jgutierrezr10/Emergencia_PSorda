@@ -1,4 +1,5 @@
 import { StyleSheet, View, Text, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { router } from 'expo-router';
 
@@ -45,7 +46,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
 
       {/* Header */}
       <View style={styles.header}>
@@ -87,7 +88,7 @@ export default function HomeScreen() {
 
 
 
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/perfil')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/perfil')}>
           <Text style={styles.navIcon}>■</Text>
           <Text style={styles.navTexto}>Perfil</Text>
         </TouchableOpacity>
@@ -143,7 +144,7 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-    </View>
+    </SafeAreaView>
   );
 }
 

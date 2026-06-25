@@ -1,6 +1,8 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
 interface Contacto {
   id: number;
@@ -65,12 +67,22 @@ export default function PerfilScreen() {
   };
 
   const cerrarSesion = async () => {
-    // TODO: Limpiar token
+    try {
+      if (Platform.OS === 'web') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('rol');
+      } else {
+        await SecureStore.deleteItemAsync('token');
+        await SecureStore.deleteItemAsync('rol');
+      }
+    } catch (e) {
+      // Ignorar errores de borrado
+    }
     router.replace('/');
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
 
       <View style={styles.header}>
         <Text style={styles.headerTitulo}>Hola, Carlos</Text>
@@ -260,7 +272,7 @@ export default function PerfilScreen() {
 
       {/* Barra de navegación inferior */}
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/(tabs)/home')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/home')}>
           <Text style={styles.navIcon}>■</Text>
           <Text style={styles.navTexto}>Inicio</Text>
         </TouchableOpacity>
@@ -327,7 +339,7 @@ export default function PerfilScreen() {
         </View>
       </Modal>
 
-    </View>
+    </SafeAreaView>
   );
 }
 
