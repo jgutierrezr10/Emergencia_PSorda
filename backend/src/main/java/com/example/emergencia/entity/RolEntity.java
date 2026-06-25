@@ -24,7 +24,7 @@ public class RolEntity {
     private Long id;
 
     @NotNull
-    @Column(length = 50, nullable = false)
+    @Column(length = 50, nullable = false, unique = true)
     private String nombreRol;
 
     @NotNull

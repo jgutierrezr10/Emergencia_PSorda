@@ -51,7 +51,14 @@ export class LoginComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.loginForm.value).subscribe({
+    // Limpiar los puntos del RUT antes de enviarlo al servidor
+    const rawFormValue = this.loginForm.value;
+    const cleanPayload = {
+      ...rawFormValue,
+      rut: rawFormValue.rut.replace(/\./g, '')
+    };
+
+    this.authService.login(cleanPayload).subscribe({
       next: (response) => {
         this.isLoading = false;
         

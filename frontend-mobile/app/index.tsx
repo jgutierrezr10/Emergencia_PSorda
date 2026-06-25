@@ -69,10 +69,12 @@ export default function LoginScreen() {
       // Se detectó automáticamente la IP de tu PC en tu red Wi-Fi
       const baseUrl = 'http://192.168.1.123:8080';
       
+      const cleanRut = rut.replace(/\./g, '');
+
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rut, clave: password }),
+        body: JSON.stringify({ rut: cleanRut, clave: password }),
       });
 
       if (!response.ok) {

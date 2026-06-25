@@ -25,8 +25,11 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        // Busca al usuario por su RUT
-        UsuarioEntity usuario = usuarioRepository.findByRut(request.getRut())
+        // Limpia el RUT quitando puntos y pasándolo a mayúsculas
+        String rutLimpio = request.getRut().replace(".", "").toUpperCase();
+
+        // Busca al usuario por su RUT limpio
+        UsuarioEntity usuario = usuarioRepository.findByRut(rutLimpio)
                 .orElseThrow(() -> new BadCredentialsException("RUT o clave única incorrectos"));
 
         // Verifica contraseña
