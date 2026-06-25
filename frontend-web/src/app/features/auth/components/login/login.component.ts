@@ -27,6 +27,21 @@ export class LoginComponent {
     });
   }
 
+  ngOnInit(): void {
+    // Auto-formato de RUT (ej: 12.345.678-9)
+    this.loginForm.get('rut')?.valueChanges.subscribe(value => {
+      if (!value) return;
+      let clean = value.replace(/[^0-9kK]/g, '').toUpperCase();
+      let formatted = clean;
+      if (clean.length > 1) {
+        formatted = clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "-" + clean.slice(-1);
+      }
+      if (value !== formatted) {
+        this.loginForm.get('rut')?.setValue(formatted, { emitEvent: false });
+      }
+    });
+  }
+
   onSubmit(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
