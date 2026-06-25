@@ -69,7 +69,7 @@ export class LoginComponent {
       error: (err) => {
         this.isLoading = false;
         if (err.status === 401) {
-          this.errorMessage = 'RUT o contraseña incorrectos.';
+          this.errorMessage = 'RUT o clave única incorrectos.';
         } else {
           this.errorMessage = 'Error de conexión con el servidor.';
         }

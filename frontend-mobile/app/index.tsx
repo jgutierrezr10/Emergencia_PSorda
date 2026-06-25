@@ -149,7 +149,7 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contraseña</Text>
+            <Text style={styles.label}>Clave Única</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
               <TextInput

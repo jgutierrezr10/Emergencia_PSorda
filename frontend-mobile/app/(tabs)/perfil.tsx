@@ -229,7 +229,7 @@ export default function PerfilScreen() {
               <Text style={styles.seccionIcono}>🔒</Text>
               <View>
                 <Text style={styles.opcionTitulo}>Privacidad y seguridad</Text>
-                <Text style={styles.opcionSubtexto}>Datos personales y contraseña</Text>
+                <Text style={styles.opcionSubtexto}>Datos personales y clave única</Text>
               </View>
             </View>
             <Text style={styles.chevronGris}>›</Text>

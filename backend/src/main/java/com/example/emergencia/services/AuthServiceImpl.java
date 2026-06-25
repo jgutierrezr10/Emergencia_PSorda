@@ -27,11 +27,11 @@ public class AuthServiceImpl implements IAuthService {
     public LoginResponse login(LoginRequest request) {
         // Busca al usuario por su RUT
         UsuarioEntity usuario = usuarioRepository.findByRut(request.getRut())
-                .orElseThrow(() -> new BadCredentialsException("RUT o contraseña incorrectos"));
+                .orElseThrow(() -> new BadCredentialsException("RUT o clave única incorrectos"));
 
         // Verifica contraseña
         if (!passwordEncoder.matches(request.getClave(), usuario.getClave())) {
-            throw new BadCredentialsException("RUT o contraseña incorrectos");
+            throw new BadCredentialsException("RUT o clave única incorrectos");
         }
 
         // Obtiene el rol (en caso de que sea null, enviamos "Desconocido")
