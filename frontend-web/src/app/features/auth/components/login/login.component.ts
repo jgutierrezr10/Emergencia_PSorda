@@ -47,9 +47,9 @@ export class LoginComponent {
         }
 
         this.authService.saveToken(response.token);
-        // Redirigir al dashboard u otra vista de la app en el futuro
-        // this.router.navigate(['/dashboard']);
-        alert('Bienvenido ' + response.nombreCompleto);
+        
+        // Redirigir al Landing Page
+        this.router.navigate(['/landing']);
       },
       error: (err) => {
         this.isLoading = false;

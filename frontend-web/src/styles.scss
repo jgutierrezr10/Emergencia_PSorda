@@ -1,1 +1,30 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --color-bg-primary: #1b3b2c; /* Verde Oscuro Institucional */
+  --color-bg-secondary: #163023; /* Verde más oscuro */
+  --color-accent: #1b3b2c; /* Verde Escudo / Botones */
+  --color-accent-hover: #12281e; /* Verde hover */
+  --color-gold: #c3a34a; /* Dorado para el texto del botón */
+  --color-text-main: #333333; /* Texto principal oscuro */
+  --color-text-muted: #64748b; /* Gris para labels */
+  --color-danger: #ef4444; /* Rojo para errores */
+  
+  --card-bg: #ffffff; /* Fondo blanco de la tarjeta */
+  --input-bg: #f8fafc; /* Gris muy claro para los inputs */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}

@@ -32,13 +32,14 @@ public class DataInitializer implements CommandLineRunner {
             rolSordo = rolRepository.save(rolSordo);
 
             // Crea un Carabinero de prueba
+            // Crea un Carabinero de prueba
             UsuarioEntity carabinero = new UsuarioEntity(
                     null,
                     "Juan",
                     "Perez",
                     "987654321",
                     "12345678-9",
-                    passwordEncoder.encode("admin123"),
+                    passwordEncoder.encode("1234"),
                     "Activo",
                     rolCarabinero);
             usuarioRepository.save(carabinero);
@@ -49,15 +50,15 @@ public class DataInitializer implements CommandLineRunner {
                     "Maria",
                     "Gomez",
                     "912345678",
-                    "98765432-1",
-                    passwordEncoder.encode("user123"),
+                    "67676767-6",
+                    passwordEncoder.encode("1234"),
                     "Activo",
                     rolSordo);
             usuarioRepository.save(sordo);
 
             System.out.println("=== DATOS DE PRUEBA CREADOS ===");
-            System.out.println("Carabinero: RUT: 12345678-9 | Clave: admin123");
-            System.out.println("Sordo: RUT: 98765432-1 | Clave: user123");
+            System.out.println("Carabinero: RUT: 12345678-9 | Clave: 123456");
+            System.out.println("Sordo: RUT: 67676767-6 | Clave: 123456");
             System.out.println("===============================");
         }
     }
