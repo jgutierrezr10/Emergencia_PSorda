@@ -1,47 +1,24 @@
-import { StyleSheet, View, Text, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
   const [modalConfirmar, setModalConfirmar] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [alertaEnviada, setAlertaEnviada] = useState(false);
 
   const handleBotonPanico = () => {
     setModalConfirmar(true);
   };
 
-  const confirmarAlerta = async () => {
-    setEnviando(true);
-
-    // Por hacer: Conectar con Spring Boot + PostgreSQL
-    // 1. Obtener GPS
-    // const location = await Location.getCurrentPositionAsync({});
-    // 2. Enviar alerta con ubicación
-    // await fetch('http://IP:8080/api/emergencia/alerta', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     latitud: location.coords.latitude,
-    //     longitud: location.coords.longitude,
-    //     token: await obtenerDato('token'),
-    //   }),
-    // });
-
-    // Simulación de envío
-    setTimeout(() => {
-      setEnviando(false);
-      setAlertaEnviada(true);
-    }, 2000);
+  const confirmarAlerta = () => {
+    // La alerta se "envía" (pantalla de carga) en Triage, para que el botón
+    // de camuflaje (snake) siga disponible mientras carga.
+    setModalConfirmar(false);
+    router.push('/triage');
   };
 
   const cancelarAlerta = () => {
-    setModalConfirmar(false);
-  };
-
-  const cerrarConfirmacion = () => {
-    setAlertaEnviada(false);
     setModalConfirmar(false);
   };
 
@@ -82,14 +59,12 @@ export default function HomeScreen() {
       {/* Barra de navegación inferior */}
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIconActivo}>■</Text>
+          <Ionicons name="home" size={22} color="#059669" style={styles.navIconActivo} />
           <Text style={[styles.navTexto, styles.navTextoActivo]}>Inicio</Text>
         </TouchableOpacity>
 
-
-
         <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/perfil')}>
-          <Text style={styles.navIcon}>■</Text>
+          <Ionicons name="person-outline" size={22} color="#9ca3af" style={styles.navIcon} />
           <Text style={styles.navTexto}>Perfil</Text>
         </TouchableOpacity>
       </View>
@@ -99,46 +74,19 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
 
-            {!alertaEnviada ? (
-              <>
-                {enviando ? (
-                  <View style={styles.enviandoContainer}>
-                    <ActivityIndicator size="large" color="#1B4332" />
-                    <Text style={styles.enviandoTexto}>Enviando alerta...</Text>
-                    <Text style={styles.enviandoSubtexto}>Obteniendo ubicación GPS</Text>
-                  </View>
-                ) : (
-                  <>
-                    <View style={styles.modalIcono}>
-                      <Text style={styles.modalIconoTexto}>!</Text>
-                    </View>
-                    <Text style={styles.modalTitulo}>¿Confirmar Emergencia?</Text>
-                    <Text style={styles.modalDescripcion}>
-                      Se enviará una alerta inmediata con su ubicación GPS a la central de Carabineros.
-                    </Text>
-                    <TouchableOpacity style={styles.btnConfirmar} onPress={confirmarAlerta}>
-                      <Text style={styles.btnConfirmarTexto}>CONFIRMAR ALERTA</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.btnCancelar} onPress={cancelarAlerta}>
-                      <Text style={styles.btnCancelarTexto}>Cancelar</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <View style={styles.exitoIcono}>
-                  <Text style={styles.exitoIconoTexto}>OK</Text>
-                </View>
-                <Text style={styles.exitoTitulo}>Alerta Enviada</Text>
-                <Text style={styles.exitoDescripcion}>
-                  Carabineros ha recibido su alerta y está en camino a su ubicación.
-                </Text>
-                <TouchableOpacity style={styles.btnVolver} onPress={cerrarConfirmacion}>
-                  <Text style={styles.btnVolverTexto}>Volver al Inicio</Text>
-                </TouchableOpacity>
-              </>
-            )}
+            <View style={styles.modalIcono}>
+              <Ionicons name="alert" size={32} color="#cc0000" />
+            </View>
+            <Text style={styles.modalTitulo}>¿Confirmar Emergencia?</Text>
+            <Text style={styles.modalDescripcion}>
+              Se enviará una alerta inmediata con su ubicación GPS a la central de Carabineros.
+            </Text>
+            <TouchableOpacity style={styles.btnConfirmar} onPress={confirmarAlerta}>
+              <Text style={styles.btnConfirmarTexto}>CONFIRMAR ALERTA</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.btnCancelar} onPress={cancelarAlerta}>
+              <Text style={styles.btnCancelarTexto}>Cancelar</Text>
+            </TouchableOpacity>
 
           </View>
         </View>
@@ -151,10 +99,10 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f0',
+    backgroundColor: '#f3f4f6',
   },
   header: {
-    backgroundColor: '#1B4332',
+    backgroundColor: '#059669',
     paddingVertical: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
@@ -166,7 +114,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   headerSubtitulo: {
-    color: '#C9A84C',
+    color: '#d1fae5',
     fontSize: 11,
     fontWeight: '600',
     marginTop: 2,
@@ -243,14 +191,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   navIcon: {
-    fontSize: 18,
     marginBottom: 3,
-    color: '#9ca3af',
   },
   navIconActivo: {
-    fontSize: 18,
     marginBottom: 3,
-    color: '#1B4332',
   },
   navTexto: {
     fontSize: 10,
@@ -258,7 +202,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   navTextoActivo: {
-    color: '#1B4332',
+    color: '#059669',
     fontWeight: '800',
   },
   modalOverlay: {
@@ -270,7 +214,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 32,
     width: '100%',
     maxWidth: 400,
@@ -291,11 +235,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  modalIconoTexto: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#cc0000',
   },
   modalTitulo: {
     fontSize: 20,
@@ -352,54 +291,12 @@ const styles = StyleSheet.create({
   enviandoTexto: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1B4332',
+    color: '#059669',
     marginTop: 16,
   },
   enviandoSubtexto: {
     fontSize: 13,
     color: '#6b7280',
     marginTop: 6,
-  },
-  exitoIcono: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#f0fdf4',
-    borderWidth: 3,
-    borderColor: '#1B4332',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  exitoIconoTexto: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#1B4332',
-  },
-  exitoTitulo: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  exitoDescripcion: {
-    fontSize: 13,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  btnVolver: {
-    width: '100%',
-    height: 48,
-    backgroundColor: '#1B4332',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  btnVolverTexto: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

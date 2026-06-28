@@ -39,7 +39,13 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Esta app usa tu ubicación para enviar tu posición exacta a Carabineros (CENCO) durante una emergencia."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

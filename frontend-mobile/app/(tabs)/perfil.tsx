@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Contacto {
   id: number;
@@ -105,8 +106,8 @@ export default function PerfilScreen() {
               <Text style={styles.verificadoTexto}>Cuenta Verificada</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.btnEditar}>
-            <Text style={styles.btnEditarTexto}>✎</Text>
+          <TouchableOpacity style={styles.btnEditar} onPress={() => router.push('/editar-perfil')}>
+            <Ionicons name="pencil" size={16} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -117,10 +118,10 @@ export default function PerfilScreen() {
             onPress={() => setNotificacionesExpandido(!notificacionesExpandido)}
           >
             <View style={styles.seccionHeaderLeft}>
-              <Text style={styles.seccionIcono}>🔔</Text>
+              <Ionicons name="notifications-outline" size={20} color="#059669" />
               <Text style={styles.seccionTitulo}>Notificaciones</Text>
             </View>
-            <Text style={styles.chevron}>{notificacionesExpandido ? '▲' : '▼'}</Text>
+            <Ionicons name={notificacionesExpandido ? 'chevron-up' : 'chevron-down'} size={18} color="#059669" />
           </TouchableOpacity>
 
           {notificacionesExpandido && (
@@ -133,7 +134,7 @@ export default function PerfilScreen() {
                 <Switch
                   value={alertasPush}
                   onValueChange={setAlertasPush}
-                  trackColor={{ false: '#d1d5db', true: '#1B4332' }}
+                  trackColor={{ false: '#d1d5db', true: '#059669' }}
                   thumbColor="#ffffff"
                 />
               </View>
@@ -146,7 +147,7 @@ export default function PerfilScreen() {
                 <Switch
                   value={alertasSMS}
                   onValueChange={setAlertasSMS}
-                  trackColor={{ false: '#d1d5db', true: '#1B4332' }}
+                  trackColor={{ false: '#d1d5db', true: '#059669' }}
                   thumbColor="#ffffff"
                 />
               </View>
@@ -159,7 +160,7 @@ export default function PerfilScreen() {
                 <Switch
                   value={compartirUbicacion}
                   onValueChange={setCompartirUbicacion}
-                  trackColor={{ false: '#d1d5db', true: '#1B4332' }}
+                  trackColor={{ false: '#d1d5db', true: '#059669' }}
                   thumbColor="#ffffff"
                 />
               </View>
@@ -172,7 +173,7 @@ export default function PerfilScreen() {
                 <Switch
                   value={vibracion}
                   onValueChange={setVibracion}
-                  trackColor={{ false: '#d1d5db', true: '#1B4332' }}
+                  trackColor={{ false: '#d1d5db', true: '#059669' }}
                   thumbColor="#ffffff"
                 />
               </View>
@@ -184,7 +185,7 @@ export default function PerfilScreen() {
         <View style={[styles.seccionCard, styles.contactosCard]}>
           <View style={styles.contactosHeader}>
             <View style={styles.seccionHeaderLeft}>
-              <Text style={styles.seccionIcono}>📞</Text>
+              <Ionicons name="call-outline" size={20} color="#dc2626" />
               <Text style={[styles.seccionTitulo, styles.contactosTitulo]}>Contactos de Emergencia</Text>
             </View>
             <TouchableOpacity style={styles.btnAgregar} onPress={() => setModalContacto(true)}>
@@ -215,7 +216,7 @@ export default function PerfilScreen() {
                   style={styles.btnEliminar}
                   onPress={() => eliminarContacto(contacto.id)}
                 >
-                  <Text style={styles.btnEliminarTexto}>✕</Text>
+                  <Ionicons name="close" size={16} color="#dc2626" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -224,37 +225,37 @@ export default function PerfilScreen() {
 
         {/* Opciones adicionales */}
         <View style={styles.seccionCard}>
-          <TouchableOpacity style={styles.opcionRow}>
+          <TouchableOpacity style={styles.opcionRow} onPress={() => router.push('/editar-perfil')}>
             <View style={styles.seccionHeaderLeft}>
-              <Text style={styles.seccionIcono}>🔒</Text>
+              <Ionicons name="lock-closed-outline" size={20} color="#059669" />
               <View>
                 <Text style={styles.opcionTitulo}>Privacidad y seguridad</Text>
                 <Text style={styles.opcionSubtexto}>Datos personales y clave única</Text>
               </View>
             </View>
-            <Text style={styles.chevronGris}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
           </TouchableOpacity>
           <View style={styles.divisor} />
           <TouchableOpacity style={styles.opcionRow}>
             <View style={styles.seccionHeaderLeft}>
-              <Text style={styles.seccionIcono}>❓</Text>
+              <Ionicons name="help-circle-outline" size={20} color="#059669" />
               <View>
                 <Text style={styles.opcionTitulo}>Ayuda y soporte</Text>
                 <Text style={styles.opcionSubtexto}>FAQ, videotutoriales en LSCh</Text>
               </View>
             </View>
-            <Text style={styles.chevronGris}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
           </TouchableOpacity>
           <View style={styles.divisor} />
           <TouchableOpacity style={styles.opcionRow}>
             <View style={styles.seccionHeaderLeft}>
-              <Text style={styles.seccionIcono}>ℹ️</Text>
+              <Ionicons name="information-circle-outline" size={20} color="#059669" />
               <View>
                 <Text style={styles.opcionTitulo}>Acerca de la app</Text>
                 <Text style={styles.opcionSubtexto}>Versión 1.0.0 · SENADIS Chile</Text>
               </View>
             </View>
-            <Text style={styles.chevronGris}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
           </TouchableOpacity>
         </View>
 
@@ -273,12 +274,12 @@ export default function PerfilScreen() {
       {/* Barra de navegación inferior */}
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/home')}>
-          <Text style={styles.navIcon}>■</Text>
+          <Ionicons name="home-outline" size={22} color="#9ca3af" style={styles.navIcon} />
           <Text style={styles.navTexto}>Inicio</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIconActivo}>■</Text>
+          <Ionicons name="person" size={22} color="#059669" style={styles.navIconActivo} />
           <Text style={styles.navTextoActivo}>Perfil</Text>
         </TouchableOpacity>
       </View>
@@ -346,10 +347,10 @@ export default function PerfilScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f0',
+    backgroundColor: '#f3f4f6',
   },
   header: {
-    backgroundColor: '#1B4332',
+    backgroundColor: '#059669',
     paddingVertical: 16,
     paddingHorizontal: 24,
   },
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   userCard: {
-    backgroundColor: '#1B4332',
+    backgroundColor: '#059669',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -377,14 +378,14 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2D6A4F',
+    backgroundColor: '#047857',
     borderWidth: 3,
-    borderColor: '#C9A84C',
+    borderColor: '#6ee7b7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarTexto: {
-    color: '#C9A84C',
+    color: '#ffffff',
     fontSize: 20,
     fontWeight: '900',
   },
@@ -398,26 +399,26 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   userRut: {
-    color: '#a7d4b8',
+    color: '#d1fae5',
     fontSize: 12,
     marginBottom: 2,
   },
   userEmail: {
-    color: '#a7d4b8',
+    color: '#d1fae5',
     fontSize: 12,
     marginBottom: 8,
   },
   verificadoBadge: {
-    backgroundColor: '#2D6A4F',
+    backgroundColor: '#047857',
     borderWidth: 1,
-    borderColor: '#C9A84C',
+    borderColor: '#6ee7b7',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 3,
     alignSelf: 'flex-start',
   },
   verificadoTexto: {
-    color: '#C9A84C',
+    color: '#ffffff',
     fontSize: 10,
     fontWeight: '700',
   },
@@ -425,15 +426,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#2D6A4F',
+    backgroundColor: '#047857',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#C9A84C',
-  },
-  btnEditarTexto: {
-    color: '#C9A84C',
-    fontSize: 16,
+    borderColor: '#6ee7b7',
   },
   seccionCard: {
     backgroundColor: '#ffffff',
@@ -454,18 +451,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  seccionIcono: {
-    fontSize: 18,
-  },
   seccionTitulo: {
     fontSize: 15,
     fontWeight: '700',
     color: '#111827',
-  },
-  chevron: {
-    color: '#1B4332',
-    fontSize: 12,
-    fontWeight: '700',
   },
   notificacionesBody: {
     borderTopWidth: 1,
@@ -572,16 +561,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#dc2626',
   },
-  btnEliminarTexto: {
-    color: '#dc2626',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  chevronGris: {
-    color: '#9ca3af',
-    fontSize: 20,
-    fontWeight: '300',
-  },
   opcionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -639,14 +618,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   navIcon: {
-    fontSize: 18,
     marginBottom: 3,
-    color: '#9ca3af',
   },
   navIconActivo: {
-    fontSize: 18,
     marginBottom: 3,
-    color: '#1B4332',
   },
   navTexto: {
     fontSize: 10,
@@ -655,7 +630,7 @@ const styles = StyleSheet.create({
   },
   navTextoActivo: {
     fontSize: 10,
-    color: '#1B4332',
+    color: '#059669',
     fontWeight: '800',
   },
   modalOverlay: {
@@ -679,7 +654,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1B4332',
+    color: '#059669',
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -704,14 +679,14 @@ const styles = StyleSheet.create({
   },
   btnGuardar: {
     height: 52,
-    backgroundColor: '#1B4332',
+    backgroundColor: '#059669',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   btnGuardarTexto: {
-    color: '#C9A84C',
+    color: '#ffffff',
     fontSize: 15,
     fontWeight: '900',
     letterSpacing: 1,

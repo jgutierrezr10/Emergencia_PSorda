@@ -1,11 +1,11 @@
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 
-// Funciones compatibles con web y móvil
+// Funciones compatibles con web y movil
 const guardarDato = async (key: string, value: string) => {
   if (Platform.OS === 'web') {
     localStorage.setItem(key, value);
@@ -51,13 +51,13 @@ export default function LoginScreen() {
       setRut(clean);
       return;
     }
-    let formatted = clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "-" + clean.slice(-1);
+    let formatted = clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + clean.slice(-1);
     setRut(formatted);
   };
 
   const handleLogin = async () => {
     setError('');
-    
+
     if (!rut || !password) {
       setError('Por favor complete todos los campos.');
       return;
@@ -65,10 +65,26 @@ export default function LoginScreen() {
 
     setLoading(true);
 
+    // =========================================================================
+    // MODO DEMO (sin backend): login simulado para poder probar el frontend.
+    // El backend (Spring Boot) lo conecta otro integrante más adelante.
+    // Cuando esté listo, borra este bloque y descomenta el bloque real de abajo.
+    // =========================================================================
+    setTimeout(async () => {
+      try {
+        await guardarDato('token', 'demo-token');
+        await guardarDato('rol', 'Sordo');
+      } catch (e) {
+        // SecureStore no disponible en web, se ignora
+      }
+      setLoading(false);
+      router.replace('/(tabs)/home');
+    }, 800);
+
+    /* =========================================================================
+    // BLOQUE REAL (descomentar cuando el backend esté disponible):
     try {
-      // Se detectó automáticamente la IP de tu PC en tu red Wi-Fi
-      const baseUrl = 'http://192.168.1.123:8080';
-      
+      const baseUrl = 'http://192.168.1.123:8080'; // IP del servidor en la red Wi-Fi
       const cleanRut = rut.replace(/\./g, '');
 
       const response = await fetch(`${baseUrl}/auth/login`, {
@@ -82,106 +98,114 @@ export default function LoginScreen() {
       }
 
       const data = await response.json();
-      
-      // Validación de Seguridad Invertida
+
       if (data.rol === 'Carabinero') {
         setError('Acceso denegado: Usa el portal web de Carabineros.');
         setLoading(false);
         return;
       }
 
-      // Flujo Feliz para la Comunidad Sorda
       if (data.rol === 'Sordo') {
         await guardarDato('token', data.token);
         await guardarDato('rol', data.rol);
-        router.replace('/(tabs)/home'); 
+        router.replace('/(tabs)/home');
       } else {
         setError('Rol de usuario no válido para esta aplicación.');
       }
-      
     } catch (err: any) {
       setError(err.message || 'Error de red. Verifica que el servidor esté activo.');
     } finally {
       setLoading(false);
     }
+    ========================================================================= */
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        style={styles.container} 
+      <KeyboardAvoidingView
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="ear-outline" size={48} color="#059669" />
-          </View>
-          <Text style={styles.title}>Emergencia Inclusiva</Text>
-          <Text style={styles.subtitle}>Conexión directa y accesible</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.formTitle}>Iniciar Sesión</Text>
-          <Text style={styles.formSubtitle}>Ingresa tus datos para continuar</Text>
-
-          {error ? (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={20} color="#dc2626" />
-              <Text style={styles.errorText}>{error}</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="ear-outline" size={48} color="#059669" />
             </View>
-          ) : null}
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>RUT</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="12.345.678-9"
-                placeholderTextColor="#9ca3af"
-                value={rut}
-                onChangeText={handleRutChange}
-                autoCapitalize="none"
-              />
-            </View>
+            <Text style={styles.title}>Emergencia Inclusiva</Text>
+            <Text style={styles.subtitle}>Conexión directa y accesible</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Clave Única</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor="#9ca3af"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
+          <View style={styles.card}>
+            <Text style={styles.formTitle}>Iniciar Sesión</Text>
+            <Text style={styles.formSubtitle}>Ingresa tus datos para continuar</Text>
+
+            {error ? (
+              <View style={styles.errorBox}>
+                <Ionicons name="alert-circle" size={20} color="#dc2626" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>RUT</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="12.345.678-9"
+                  placeholderTextColor="#9ca3af"
+                  value={rut}
+                  onChangeText={handleRutChange}
+                  autoCapitalize="none"
+                />
+              </View>
             </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Clave Única</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor="#9ca3af"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? 'CONECTANDO...' : 'INGRESAR'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.forgotLink} onPress={() => router.push('/recuperar-clave')}>
+              <Text style={styles.forgotLinkText}>¿Olvidaste tu Clave Única?</Text>
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity 
-            style={[styles.button, loading && styles.buttonDisabled]} 
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? 'CONECTANDO...' : 'INGRESAR'}
+          <TouchableOpacity style={styles.registroLink} onPress={() => router.push('/registro')}>
+            <Text style={styles.registroLinkText}>
+              ¿No tienes cuenta? <Text style={styles.registroLinkBold}>Regístrate aquí</Text>
             </Text>
           </TouchableOpacity>
-        </View>
 
-        <Text style={styles.footer}>
-          Desarrollado para la comunidad sorda.{'\n'}
-          Garantizando acceso igualitario a emergencias.
-        </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <Text style={styles.footer}>
+            Desarrollado para la comunidad sorda.{'\n'}
+            Garantizando acceso igualitario a emergencias.
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -189,7 +213,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6', // Gris muy suave
+    backgroundColor: '#f3f4f6',
   },
   scrollContent: {
     flexGrow: 1,
@@ -204,7 +228,7 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#d1fae5', // Fondo verde esmeralda clarito
+    backgroundColor: '#d1fae5',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -293,7 +317,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   button: {
-    backgroundColor: '#059669', // Emerald 600
+    backgroundColor: '#059669',
     borderRadius: 12,
     height: 54,
     justifyContent: 'center',
@@ -315,6 +339,27 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+  forgotLink: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  forgotLinkText: {
+    color: '#059669',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  registroLink: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  registroLinkText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  registroLinkBold: {
+    color: '#059669',
+    fontWeight: '700',
   },
   footer: {
     marginTop: 40,
