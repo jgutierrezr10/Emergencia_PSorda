@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth/services/auth.service';
 import { Router } from '@angular/router';
+import { WebsocketService } from '../../core/services/websocket.service';
 
 declare const L: any; // Leaflet library loaded via index.html CDN
 
@@ -50,125 +51,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   operadorID = 'OP-12345';
   activeTab: 'dashboard' | 'history' = 'dashboard';
   
-  emergencies: EmergencyCase[] = [
-    {
-      id: 1,
-      nombre: 'María González',
-      rut: '18.234.567-8',
-      telefono: '987654321',
-      incidente: 'Asalto en progreso',
-      horaIngreso: '14:32',
-      estado: 'Pendiente',
-      triage: {
-        victimaHerida: 'SI',
-        agresorLugar: 'SI',
-        armaFuego: 'NO'
-      },
-      ubicacionNombre: "Av. Libertador Bernardo O'Higgins 3250",
-      lat: -33.4503,
-      lng: -70.6781,
-      tags: ['CAMUFLAJE', 'NUEVA'],
-      modoCamuflaje: true,
-      notasOperador: '',
-      mensajes: [
-        { id: 1, autor: 'usuario', texto: 'Estoy en peligro', hora: '14:32', esGif: true },
-        { id: 2, autor: 'operador', texto: 'Entendido, ya tenemos su señal en la central CENCO. Mantenga su celular oculto. ¿Hay algún sospechoso armado?', hora: '14:32' },
-        { id: 3, autor: 'usuario', texto: 'No', hora: '14:33', esGif: true }
-      ]
-    },
-    {
-      id: 2,
-      nombre: 'Carlos Muñoz',
-      rut: '16.876.543-2',
-      telefono: '912345678',
-      incidente: 'Accidente de tránsito',
-      horaIngreso: '14:28',
-      estado: 'En Proceso',
-      triage: {
-        victimaHerida: 'SI',
-        agresorLugar: 'NO',
-        armaFuego: 'NO'
-      },
-      ubicacionNombre: 'Av. Providencia 1250, Providencia',
-      lat: -33.4262,
-      lng: -70.6184,
-      tags: ['EN ATENCIÓN'],
-      modoCamuflaje: false,
-      notasOperador: 'Se despachó patrulla policial del sector 12 para peritaje inicial.',
-      mensajes: [
-        { id: 1, autor: 'usuario', texto: 'Necesito ayuda', hora: '14:28', esGif: true },
-        { id: 2, autor: 'operador', texto: 'CENCO recibido. ¿Tiene lesiones o hay heridos en la calle?', hora: '14:28' },
-        { id: 3, autor: 'usuario', texto: 'Sí, estoy herido leve en la pierna', hora: '14:29' }
-      ]
-    },
-    {
-      id: 3,
-      nombre: 'Patricia Soto',
-      rut: '19.123.456-7',
-      telefono: '944455566',
-      incidente: 'Violencia intrafamiliar',
-      horaIngreso: '14:15',
-      estado: 'Pendiente',
-      triage: {
-        victimaHerida: 'SI',
-        agresorLugar: 'SI',
-        armaFuego: 'SI'
-      },
-      ubicacionNombre: 'Gran Avenida 4500, San Miguel',
-      lat: -33.5015,
-      lng: -70.6521,
-      tags: ['CAMUFLAJE', 'NUEVA'],
-      modoCamuflaje: true,
-      notasOperador: '',
-      mensajes: [
-        { id: 1, autor: 'usuario', texto: 'Estoy en peligro', hora: '14:15', esGif: true },
-        { id: 2, autor: 'operador', texto: 'Mensaje recibido de inmediato. No hable. ¿El agresor tiene armas?', hora: '14:16' },
-        { id: 3, autor: 'usuario', texto: 'Sí', hora: '14:16', esGif: true }
-      ]
-    },
-    {
-      id: 4,
-      nombre: 'Sofía Valdés',
-      rut: '20.651.042-3',
-      telefono: '912345999',
-      incidente: 'Accidente de tránsito',
-      horaIngreso: '11:15',
-      estado: 'Finalizada',
-      triage: {
-        victimaHerida: 'NO',
-        agresorLugar: 'NO',
-        armaFuego: 'NO'
-      },
-      ubicacionNombre: 'Av. Apoquindo 4000, Las Condes',
-      lat: -33.4124,
-      lng: -70.5785,
-      tags: ['RESUELTA'],
-      modoCamuflaje: false,
-      notasOperador: 'Se resolvió la colisión por alcance sin lesionados graves. Carabineros en el lugar.',
-      mensajes: []
-    },
-    {
-      id: 5,
-      nombre: 'Roberto Barraza',
-      rut: '17.432.901-K',
-      telefono: '988877766',
-      incidente: 'Sospecha de Robo',
-      horaIngreso: '09:30',
-      estado: 'Finalizada',
-      triage: {
-        victimaHerida: 'NO',
-        agresorLugar: 'SI',
-        armaFuego: 'NO'
-      },
-      ubicacionNombre: 'Patronato 320, Recoleta',
-      lat: -33.4285,
-      lng: -70.6482,
-      tags: ['RESUELTA'],
-      modoCamuflaje: false,
-      notasOperador: 'Sospechoso huyó ante la llegada de la patrulla. Se tomaron declaraciones.',
-      mensajes: []
-    }
-  ];
+  emergencies: EmergencyCase[] = [];
 
   selectedEmergency: EmergencyCase | null = null;
   searchQuery = '';
@@ -196,12 +79,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private map: any;
   private marker: any;
 
-  // Video call simulated state
-  showVideoCallModal = false;
-  videoCallConnected = false;
-  videoCallTimer: any;
-  videoCallSeconds = 0;
-  videoCallDurationText = '00:00';
+
 
   // Sound generator
   private audioCtx: AudioContext | null = null;
@@ -210,13 +88,22 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   newEmergencyToast = false;
   newEmergencyName = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService, 
+    private router: Router,
+    private websocketService: WebsocketService
+  ) {}
 
   ngOnInit() {
     // Seleccionar por defecto la primera emergencia
     if (this.emergencies.length > 0) {
       this.selectedEmergency = this.emergencies[0];
     }
+
+    // Suscribirse a las alertas reales provenientes del backend
+    this.websocketService.getAlertas().subscribe(alerta => {
+      this.handleRealEmergency(alerta);
+    });
   }
 
   ngAfterViewInit() {
@@ -225,9 +112,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.videoCallTimer) {
-      clearInterval(this.videoCallTimer);
-    }
   }
 
   initMap() {
@@ -475,68 +359,47 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     alert('Notas de despacho actualizadas y registradas correctamente.');
   }
 
-  // --- Videollamada simulada ---
-  startVideoCall() {
-    this.showVideoCallModal = true;
-    this.videoCallConnected = false;
-    this.videoCallSeconds = 0;
-    this.videoCallDurationText = 'Conectando...';
 
-    setTimeout(() => {
-      this.videoCallConnected = true;
-      this.videoCallTimer = setInterval(() => {
-        this.videoCallSeconds++;
-        const mins = String(Math.floor(this.videoCallSeconds / 60)).padStart(2, '0');
-        const secs = String(this.videoCallSeconds % 60).padStart(2, '0');
-        this.videoCallDurationText = `${mins}:${secs}`;
-      }, 1000);
-    }, 1500);
-  }
-
-  endVideoCall() {
-    this.showVideoCallModal = false;
-    if (this.videoCallTimer) {
-      clearInterval(this.videoCallTimer);
-    }
-  }
-
-  // --- Simulador de Nueva Emergencia ---
-  simulateIncomingEmergency() {
-    const randomNames = ['Roberto Barraza', 'Sofía Valdés', 'Jorge Sanhueza', 'Camila Leyton'];
-    const randomRuts = ['17.432.901-k', '20.651.042-3', '15.981.332-9', '18.502.119-2'];
-    const randomIncidents = ['Sospecha de Robo', 'Accidente de tránsito', 'Violencia intrafamiliar', 'Intento de asalto'];
-    const randomCoords = [
-      { lat: -33.4550, lng: -70.6800, addr: "Av. General Velásquez 120, Estación Central" },
-      { lat: -33.4350, lng: -70.6400, addr: "Av. Portugal 440, Santiago" },
-      { lat: -33.4680, lng: -70.6920, addr: "Departamental 1200, Cerrillos" }
-    ];
-
-    const idx = Math.floor(Math.random() * randomNames.length);
-    const coordIdx = Math.floor(Math.random() * randomCoords.length);
+  handleRealEmergency(backendAlerta: any) {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+    // Extraer lat/lng si existen
+    let lat = -33.4569;
+    let lng = -70.6483;
+    if (backendAlerta.latitudLongitud) {
+      const parts = backendAlerta.latitudLongitud.split(',');
+      if (parts.length === 2) {
+        lat = parseFloat(parts[0]);
+        lng = parseFloat(parts[1]);
+      }
+    }
+
+    const persona = backendAlerta.personaSorda || {};
+    let nombre = (persona.nombre || '') + ' ' + (persona.apellido || '');
+    if (!nombre.trim()) nombre = 'Usuario App';
+
     const newCase: EmergencyCase = {
-      id: Date.now(),
-      nombre: randomNames[idx],
-      rut: randomRuts[idx],
-      telefono: '9' + Math.floor(10000000 + Math.random() * 90000000),
-      incidente: randomIncidents[idx],
+      id: backendAlerta.id || Date.now(),
+      nombre: nombre,
+      rut: persona.rut || 'Desconocido',
+      telefono: persona.telefono || 'Sin teléfono',
+      incidente: 'Alerta desde App (' + (backendAlerta.estado || 'Pendiente') + ')',
       horaIngreso: timeStr,
       estado: 'Pendiente',
       triage: {
-        victimaHerida: Math.random() > 0.5 ? 'SI' : 'NO',
-        agresorLugar: Math.random() > 0.5 ? 'SI' : 'NO',
-        armaFuego: Math.random() > 0.7 ? 'SI' : 'NO'
+        victimaHerida: 'NO',
+        agresorLugar: 'NO',
+        armaFuego: 'NO'
       },
-      ubicacionNombre: randomCoords[coordIdx].addr,
-      lat: randomCoords[coordIdx].lat,
-      lng: randomCoords[coordIdx].lng,
+      ubicacionNombre: "Ubicación detectada (GPS)",
+      lat: lat,
+      lng: lng,
       tags: ['CAMUFLAJE', 'NUEVA'],
-      modoCamuflaje: true,
+      modoCamuflaje: backendAlerta.disponibleTriage === false, // ejemplo
       notasOperador: '',
       mensajes: [
-        { id: 1, autor: 'usuario', texto: 'Estoy en peligro', hora: timeStr, esGif: true }
+        { id: 1, autor: 'usuario', texto: 'Alerta disparada desde la aplicación', hora: timeStr, esGif: false }
       ]
     };
 

@@ -52,7 +52,8 @@ export default function ChatScreen() {
         
         const client = new Client({
           brokerURL: 'ws://10.83.92.211:8080/ws-chat',
-          forceBase64: true, // Útil en React Native
+          forceBinaryWSFrames: true,
+          appendMissingNULLonIncoming: true, // Útil en React Native
           onConnect: () => {
             console.log('STOMP CONNECTED');
             client.subscribe(`/topic/chat/${idStr}`, (message) => {

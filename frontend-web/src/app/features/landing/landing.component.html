@@ -87,11 +87,7 @@
               aria-label="Buscar emergencias"
             />
           </div>
-          <div class="sim-button-wrapper">
-            <button class="btn-simulate" (click)="simulateIncomingEmergency()" title="Simular el ingreso de una nueva alerta de emergencia de un ciudadano sordo.">
-              <i class="fa-solid fa-plus-circle"></i> Simular Alerta
-            </button>
-          </div>
+
         </div>
 
         <!-- LISTADO DE TARJETAS DE EMERGENCIA -->
@@ -433,9 +429,7 @@
       <div class="detail-section chat-section">
         <div class="chat-header-row">
           <span class="section-label">CHAT DE ACCESIBILIDAD</span>
-          <button class="btn-videocall" (click)="startVideoCall()" title="Iniciar videollamada para comunicación en Lengua de Señas Chilena.">
-            <i class="fa-solid fa-video"></i> VIDEO LSCh
-          </button>
+
         </div>
 
         <!-- ÁREA DE MENSAJES -->
@@ -509,72 +503,4 @@
 
 </div>
 
-<!-- MODAL DE VIDEOLLAMADA LENGUA DE SEÑAS (LSCh) -->
-<div class="videocall-overlay-modal" *ngIf="showVideoCallModal" role="dialog" aria-modal="true" aria-label="Videollamada de Emergencia en Lengua de Señas">
-  <div class="videocall-container">
-    
-    <div class="videocall-header">
-      <div class="title-row">
-        <i class="fa-solid fa-circle-dot text-danger fa-pulse"></i>
-        <h3>Llamada de Emergencia Accesible - LSCh</h3>
-      </div>
-      <div class="duration-badge">{{ videoCallDurationText }}</div>
-    </div>
 
-    <!-- PANELES DE VIDEO -->
-    <div class="video-streams-grid">
-      <!-- VIDEO DEL CIUDADANO (DEAF CITIZEN) -->
-      <div class="video-panel citizen-video">
-        <div class="video-placeholder">
-          <i class="fa-solid fa-user fa-5x"></i>
-          <span>Ciudadano (Sordo)</span>
-          <span class="stream-source-label">Cámara Usuario</span>
-        </div>
-        <!-- Simulación animada de gestos/manos -->
-        <div class="signing-overlay" *ngIf="videoCallConnected">
-          <div class="pulse-ring"></div>
-          <div class="hands-animation">
-            <i class="fa-solid fa-hands-sign fa-fade text-white fa-4x"></i>
-          </div>
-          <span class="signing-label">Ciudadano transmitiendo en LSCh</span>
-        </div>
-      </div>
-
-      <!-- VIDEO DEL INTÉRPRETE (SIGN LANGUAGE TRANSLATOR) -->
-      <div class="video-panel interpreter-video">
-        <div class="video-placeholder">
-          <i class="fa-solid fa-user-tie fa-5x"></i>
-          <span>Intérprete de Lengua de Señas</span>
-          <span class="stream-source-label">Centro de Relevo Carabineros</span>
-        </div>
-        <!-- Simulación del intérprete en pantalla -->
-        <div class="signing-overlay active" *ngIf="videoCallConnected">
-          <div class="interpreter-avatar">
-            <i class="fa-solid fa-ear-deaf fa-4x text-success"></i>
-          </div>
-          <div class="hands-animation">
-            <i class="fa-solid fa-hands-asl-interpreting fa-beat-fade text-white fa-4x"></i>
-          </div>
-          <span class="signing-label">Intérprete en línea (Traduciendo en tiempo real)</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- CONTROLES DE LA VIDEOLLAMADA -->
-    <div class="videocall-controls">
-      <button class="control-btn mute" title="Silenciar Micrófono">
-        <i class="fa-solid fa-microphone-slash"></i>
-      </button>
-      <button class="control-btn camera" title="Apagar Cámara">
-        <i class="fa-solid fa-video-slash"></i>
-      </button>
-      <button class="control-btn volume" title="Ajustar Volumen">
-        <i class="fa-solid fa-volume-high"></i>
-      </button>
-      <button class="control-btn end-call" (click)="endVideoCall()" title="Finalizar Videollamada">
-        <i class="fa-solid fa-phone-slash"></i> Finalizar Llamada
-      </button>
-    </div>
-
-  </div>
-</div>
