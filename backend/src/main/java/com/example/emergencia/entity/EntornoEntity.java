@@ -6,11 +6,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "carabineros")
+@Table(name = "entornos")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class CarabineroEntity {
+public class EntornoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -18,17 +18,13 @@ public class CarabineroEntity {
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(nullable = false)
-    private Integer numero;
-
     @Column(nullable = false, length = 50)
-    private String rango;
+    private String parentesco;
+
+    @Column(name = "vive_con_usuario", nullable = false)
+    private Boolean viveConUsuario;
 
     @ManyToOne
-    @JoinColumn(name = "comisaria_id", nullable = false)
-    private ComisariaEntity comisaria;
-
-    @ManyToOne
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private UsuarioEntity usuario;
+    @JoinColumn(name = "personaSorda_id", nullable = false)
+    private PersonaSordaEntity personaSorda;
 }
