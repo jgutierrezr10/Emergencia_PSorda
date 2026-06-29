@@ -20,6 +20,13 @@ interface Entorno {
   viveConUsuario: boolean;
 }
 
+interface Usuario {
+  nombre: string;
+  apellido: string;
+  rut: string;
+  telefono: string;
+}
+
 const OPCIONES_TEMA: { val: Preferencia; label: string; icon: 'phone-portrait-outline' | 'sunny-outline' | 'moon-outline' }[] = [
   { val: 'auto', label: 'AUTOMÁTICO', icon: 'phone-portrait-outline' },
   { val: 'light', label: 'CLARO', icon: 'sunny-outline' },
@@ -37,22 +44,35 @@ export default function PerfilScreen() {
   const [vibracion, setVibracion] = useState(true);
 
   const [contactos, setContactos] = useState<Contacto[]>([]);
+  const [entornos, setEntornos] = useState<Entorno[]>([]);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
   const baseUrl = 'http://10.83.92.211:8080';
 
   useEffect(() => {
-    const cargarContactos = async () => {
+    const cargarDatos = async () => {
       try {
         const rut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut'));
         const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
         if (rut) {
-          const res = await fetch(`${baseUrl}/api/contactos-emergencia/usuario/${rut}`, {
+          // 1. Cargar Usuario
+          const resUser = await fetch(`${baseUrl}/usuarios/rut/${rut}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (res.ok) {
-            const data = await res.json();
-            setContactos(data);
+          if (resUser.ok) {
+            const dataUser = await resUser.json();
+            setUsuario(dataUser);
+          }
+
+          // 2. Cargar Contactos
+          const resC = await fetch(`${baseUrl}/api/contactos-emergencia/usuario/${rut}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resC.ok) {
+            const dataC = await resC.json();
+            setContactos(dataC);
           }
           
+          // 3. Cargar Entorno
           const resE = await fetch(`${baseUrl}/api/entornos/usuario/${rut}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -62,10 +82,10 @@ export default function PerfilScreen() {
           }
         }
       } catch (err) {
-        console.error("Error al cargar contactos", err);
+        console.error("Error al cargar datos del perfil", err);
       }
     };
-    cargarContactos();
+    cargarDatos();
   }, []);
 
   const [modalContacto, setModalContacto] = useState(false);
@@ -123,8 +143,6 @@ export default function PerfilScreen() {
       console.error("Error al eliminar contacto", err);
     }
   };
-
-  const [entornos, setEntornos] = useState<Entorno[]>([]);
   const [modalEntorno, setModalEntorno] = useState(false);
   const [nuevoEntornoNombre, setNuevoEntornoNombre] = useState('');
   const [nuevoEntornoParentesco, setNuevoEntornoParentesco] = useState('');
@@ -199,19 +217,19 @@ export default function PerfilScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitulo}>HOLA, CARLOS</Text>
+        <Text style={styles.headerTitulo}>HOLA, {usuario ? usuario.nombre.toUpperCase() : 'USUARIO'}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.contenido} showsVerticalScrollIndicator={false}>
         {/* Card usuario */}
         <View style={styles.userCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarTexto}>CM</Text>
+            <Text style={styles.avatarTexto}>{usuario ? usuario.nombre.charAt(0).toUpperCase() : '?'}</Text>
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>Carlos Muñoz Rojas</Text>
-            <Text style={styles.userRut}>RUT: 12.345.678-9</Text>
-            <Text style={styles.userEmail}>carlos.munoz@email.com</Text>
+            <Text style={styles.userName}>{usuario ? `${usuario.nombre} ${usuario.apellido}` : 'Cargando...'}</Text>
+            <Text style={styles.userRut}>RUT: {usuario ? usuario.rut : 'Cargando...'}</Text>
+            <Text style={styles.userEmail}>TEL: {usuario ? usuario.telefono : 'Cargando...'}</Text>
             <View style={styles.verificadoBadge}>
               <Text style={styles.verificadoTexto}>CUENTA VERIFICADA</Text>
             </View>

@@ -14,4 +14,5 @@ public interface IUsuarioService {
     UsuarioEntity update(UsuarioEntity usuario);
 
     void delete(Long id);
+    UsuarioEntity findByRut(String rut);
 }
