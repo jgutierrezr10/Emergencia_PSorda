@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 :root {
   --color-bg-primary: #1b3b2c; /* Verde Oscuro Institucional */
   --color-bg-secondary: #163023; /* Verde más oscuro */
@@ -22,9 +20,12 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: var(--color-bg-primary);
+  background-color: #0f172a; /* Fondo muy oscuro para el sistema completo */
   color: var(--color-text-main);
+  height: 100vh;
   min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
