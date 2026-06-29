@@ -40,6 +40,7 @@ interface EmergencyCase {
   modoCamuflaje: boolean;
   mensajes: ChatMessage[];
   notasOperador: string;
+  infoMedica: string;
 }
 
 @Component({
@@ -71,8 +72,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   // Preset response GIFs (LSCh)
   presetGifs = [
     { label: 'Patrulla en camino', icon: 'fa-car-side' },
-    { label: 'Ambulancia en camino', icon: 'fa-ambulance' },
-    { label: 'Bomberos en camino', icon: 'fa-fire-extinguisher' },
     { label: 'Mantén la calma', icon: 'fa-heart' },
     { label: 'Escribe si es seguro', icon: 'fa-keyboard' }
   ];
@@ -170,7 +169,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       tags: tags,
       modoCamuflaje: !!alerta.modoCamuflaje,
       mensajes: [],
-      notasOperador: ''
+      notasOperador: '',
+      infoMedica: alerta.personaSorda ? alerta.personaSorda.infoMedica : 'Sin información médica registrada'
     };
   }
 
@@ -200,10 +200,12 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
                 const stillExists = this.emergencies.find(e => e.id === this.selectedEmergency!.id);
                 if (stillExists) {
                   const prevMsgs = this.selectedEmergency.mensajes;
+                  const prevTriage = this.selectedEmergency.triage;
                   Object.assign(this.selectedEmergency, stillExists);
                   if (this.selectedEmergency.mensajes.length === 0) {
                     this.selectedEmergency.mensajes = prevMsgs;
                   }
+                  this.selectedEmergency.triage = prevTriage;
                 } else {
                   this.selectedEmergency = this.emergencies.length > 0 ? this.emergencies[0] : null;
                 }
@@ -250,6 +252,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           });
 
           this.selectedEmergency.triage = { victimaHerida, agresorLugar, armaFuego };
+          this.cdr.detectChanges();
         },
         error: (err) => console.warn('Error fetching triage:', err)
       });
@@ -671,6 +674,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       tags: ['CAMUFLAJE', 'NUEVA'],
       modoCamuflaje: backendAlerta.modoCamuflaje || false,
       notasOperador: '',
+      infoMedica: persona.infoMedica || 'Sin información médica registrada',
       mensajes: [
         { id: 1, autor: 'usuario', texto: 'Alerta disparada desde la aplicación', hora: timeStr, esGif: false }
       ]

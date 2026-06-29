@@ -344,9 +344,20 @@
       <!-- UBICACIÓN -->
       <div class="detail-section">
         <span class="section-label">UBICACIÓN</span>
-        <div class="location-value">
-          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-          <span>{{ selectedEmergency.ubicacionNombre }}</span>
+        <div class="location-coords" style="margin-top: 5px; font-size: 0.85em; color: #666;">
+          <i class="fa-solid fa-map-pin" aria-hidden="true"></i>
+          <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #0056b3; text-decoration: none;">
+            {{ selectedEmergency.lat }}, {{ selectedEmergency.lng }} (Ver en Mapa)
+          </a>
+        </div>
+      </div>
+
+      <!-- INFO MÉDICA -->
+      <div class="detail-section">
+        <span class="section-label">INFORMACIÓN MÉDICA</span>
+        <div class="location-value" style="color: #d9534f; font-weight: bold;">
+          <i class="fa-solid fa-notes-medical" aria-hidden="true"></i>
+          <span>{{ selectedEmergency.infoMedica }}</span>
         </div>
       </div>
 
@@ -397,16 +408,6 @@
           <i class="fa-solid fa-car-side" aria-hidden="true"></i>
           <span>DESPACHAR PATRULLA</span>
         </button>
-        <div class="secondary-actions-row">
-          <button class="btn-action link-samu" (click)="dispatchUnit('ambulancia')" title="Enlazar con central SAMU para despacho de ambulancia">
-            <i class="fa-solid fa-truck-medical" aria-hidden="true"></i>
-            <span>ENLAZAR SAMU</span>
-          </button>
-          <button class="btn-action link-bomberos" (click)="dispatchUnit('bomberos')" title="Enlazar con Bomberos de Chile">
-            <i class="fa-solid fa-fire-extinguisher" aria-hidden="true"></i>
-            <span>ENLAZAR BOMBEROS</span>
-          </button>
-        </div>
       </div>
 
       <!-- NOTAS DEL DESPACHO -->

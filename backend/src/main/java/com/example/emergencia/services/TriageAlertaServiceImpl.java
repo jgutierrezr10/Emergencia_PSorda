@@ -28,6 +28,14 @@ public class TriageAlertaServiceImpl implements ITriageAlertaService {
 
     @Override
     public TriageAlertaEntity save(TriageAlertaEntity triageAlerta) {
+        if (triageAlerta.getId() == null) {
+            triageAlerta.setHoraRespuesta(java.time.LocalDateTime.now());
+        }
+        if (triageAlerta.getAlerta() != null && triageAlerta.getAlerta().getId() != null) {
+            com.example.emergencia.entity.AlertaEntity alertaRef = alertaRepository.findById(triageAlerta.getAlerta().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Alerta no encontrada"));
+            triageAlerta.setAlerta(alertaRef);
+        }
         return triageAlertaRepository.save(triageAlerta);
     }
 
