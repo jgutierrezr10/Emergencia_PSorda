@@ -22,8 +22,12 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
-            );
+                .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/ws-chat/**").permitAll()
+                .anyRequest().authenticated())
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil),
+                    UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

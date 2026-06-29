@@ -25,6 +25,10 @@ const GIFS = [
 const colorGif = (label: string) => GIFS.find((g) => g.label === label)?.color ?? '#ec4899';
 const iconGif = (label: string) => GIFS.find((g) => g.label === label)?.icon ?? 'image';
 
+import * as SecureStore from 'expo-secure-store';
+import { Client } from '@stomp/stompjs';
+import 'text-encoding';
+
 const ahora = () => {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -34,29 +38,61 @@ export default function ChatScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const [mensajes, setMensajes] = useState<Mensaje[]>([
-    {
-      id: 1,
-      autor: 'op',
-      tipo: 'texto',
-      texto: 'HOLA. YO OPERADOR CENCO. YO CONTIGO POR CHAT. TÚ ESCRIBIR O ENVIAR GIF EN LSCh. CUENTA QUÉ PASA.',
-      hora: ahora(),
-    },
-  ]);
+  const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [texto, setTexto] = useState('');
+  const [alertaId, setAlertaId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const stompClient = useRef<Client | null>(null);
 
-  const agregar = (m: Omit<Mensaje, 'id' | 'hora'>) => {
-    setMensajes((prev) => [...prev, { ...m, id: Date.now(), hora: ahora() }]);
-  };
+  useEffect(() => {
+    const initChat = async () => {
+      const idStr = await (Platform.OS === 'web' ? localStorage.getItem('alerta_id') : SecureStore.getItemAsync('alerta_id'));
+      if (idStr) {
+        setAlertaId(idStr);
+        
+        const client = new Client({
+          brokerURL: 'ws://10.83.92.211:8080/ws-chat',
+          forceBase64: true, // Útil en React Native
+          onConnect: () => {
+            console.log('STOMP CONNECTED');
+            client.subscribe(`/topic/chat/${idStr}`, (message) => {
+              const data = JSON.parse(message.body);
+              setMensajes((prev) => [...prev, { ...data, id: Date.now(), hora: ahora() }]);
+            });
+            
+            // Mensaje de bienvenida simulado del operador
+            setMensajes([{
+              id: 1,
+              autor: 'op',
+              tipo: 'texto',
+              texto: 'HOLA. SOY EL OPERADOR CENCO. YA ESTAMOS EN VIVO POR WEBSOCKETS. TÚ ESCRIBIR O ENVIAR GIF EN LSCh.',
+              hora: ahora(),
+            }]);
+          }
+        });
+        client.activate();
+        stompClient.current = client;
+      }
+    };
+    initChat();
+
+    return () => {
+      if (stompClient.current) stompClient.current.deactivate();
+    };
+  }, []);
 
   const enviarTexto = () => {
-    if (!texto.trim()) return;
-    agregar({ autor: 'yo', tipo: 'texto', texto: texto.trim() });
+    if (!texto.trim() || !stompClient.current || !alertaId) return;
+    const msg = { autor: 'yo', tipo: 'texto', texto: texto.trim() };
+    stompClient.current.publish({ destination: `/app/chat/${alertaId}`, body: JSON.stringify(msg) });
     setTexto('');
   };
 
-  const enviarGif = (label: string) => agregar({ autor: 'yo', tipo: 'gif', texto: label });
+  const enviarGif = (label: string) => {
+    if (!stompClient.current || !alertaId) return;
+    const msg = { autor: 'yo', tipo: 'gif', texto: label };
+    stompClient.current.publish({ destination: `/app/chat/${alertaId}`, body: JSON.stringify(msg) });
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
