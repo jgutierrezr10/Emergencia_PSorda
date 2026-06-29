@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
 
@@ -16,6 +17,9 @@ public class AlertaController {
 
     @Autowired
     private IAlertaService alertaService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @GetMapping
     public ResponseEntity<List<AlertaEntity>> getAll() {
@@ -29,7 +33,9 @@ public class AlertaController {
 
     @PostMapping
     public ResponseEntity<AlertaEntity> create(@RequestBody AlertaEntity alerta) {
-        return new ResponseEntity<>(alertaService.save(alerta), HttpStatus.CREATED);
+        AlertaEntity saved = alertaService.save(alerta);
+        messagingTemplate.convertAndSend("/topic/alertas", saved);
+        return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
@@ -46,6 +52,8 @@ public class AlertaController {
 
     @PostMapping("/nueva")
     public ResponseEntity<AlertaEntity> crearNuevaAlerta(@RequestBody com.example.emergencia.dto.NuevaAlertaRequest request) {
-        return new ResponseEntity<>(alertaService.crearAlertaPorRut(request.getRut(), request.getLatitudLongitud()), HttpStatus.CREATED);
+        AlertaEntity saved = alertaService.crearAlertaPorRut(request.getRut(), request.getLatitudLongitud());
+        messagingTemplate.convertAndSend("/topic/alertas", saved);
+        return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 }

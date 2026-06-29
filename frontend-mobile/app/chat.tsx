@@ -60,12 +60,44 @@ export default function ChatScreen() {
 
   useEffect(() => {
     const initData = async () => {
-      const aid = await obtenerDato('currentAlertaId');
+      let aid = await obtenerDato('currentAlertaId');
+      if (!aid) aid = await obtenerDato('alerta_id');
       const uid = await obtenerDato('usuarioId');
       setAlertaId(aid);
       setUsuarioId(uid);
+
+      if (aid && aid !== '999') {
+        const client = new Client({
+          brokerURL: 'ws://10.83.92.211:8080/ws-chat',
+          forceBinaryWSFrames: true,
+          appendMissingNULLonIncoming: true,
+          onConnect: () => {
+            console.log('STOMP CONNECTED');
+            client.subscribe(`/topic/chat/${aid}`, (message) => {
+              const data = JSON.parse(message.body);
+              setMensajes((prev) => {
+                const hourStr = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+                // Avoid duplicating messages already fetched via polling or added optimistically
+                if (prev.some(m => m.texto === data.texto && m.hora === hourStr)) return prev;
+                return [...prev, { 
+                  ...data, 
+                  id: Date.now(), 
+                  hora: hourStr,
+                  autor: String(data.emisorId) === String(uid) ? 'yo' : 'op'
+                }];
+              });
+            });
+          }
+        });
+        client.activate();
+        stompClient.current = client;
+      }
     };
     initData();
+
+    return () => {
+      if (stompClient.current) stompClient.current.deactivate();
+    };
   }, []);
 
   useEffect(() => {
@@ -134,6 +166,34 @@ export default function ChatScreen() {
           tipoArchivo: tipoArchivoVal
         }
       ]);
+      return;
+    }
+
+    if (stompClient.current && stompClient.current.connected) {
+      const emisor = usuarioId ? Number(usuarioId) : 2;
+      const msg = {
+        texto: textoVal,
+        fechaHoraEnvio: new Date().toISOString(),
+        emisorId: emisor,
+        tipo: tipo,
+        archivoUrl: archivoUrlVal,
+        tipoArchivo: tipoArchivoVal,
+        alerta: { id: Number(alertaId) }
+      };
+      // Optimistic UI update
+      setMensajes((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          autor: 'yo',
+          tipo: tipo,
+          texto: textoVal,
+          hora: ahora(),
+          archivoUrl: archivoUrlVal,
+          tipoArchivo: tipoArchivoVal
+        }
+      ]);
+      stompClient.current.publish({ destination: `/app/chat/${alertaId}`, body: JSON.stringify(msg) });
       return;
     }
 

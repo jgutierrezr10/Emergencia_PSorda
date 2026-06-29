@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth/services/auth.service';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { WebsocketService } from '../../core/services/websocket.service';
 
 declare const L: any; // Leaflet library loaded via index.html CDN
 
@@ -101,11 +102,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private http: HttpClient
+    private http: HttpClient,
+    private websocketService: WebsocketService
   ) {}
 
   ngOnInit() {
     this.startPollingAlertas();
+    
+    // Suscribirse a las alertas reales provenientes del backend
+    this.websocketService.getAlertas().subscribe(alerta => {
+      this.handleRealEmergency(alerta);
+    });
   }
 
   ngAfterViewInit() {
@@ -621,6 +628,65 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => console.error('Error al simular alerta:', err)
     });
+  }
+
+  handleRealEmergency(backendAlerta: any) {
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    let lat = -33.4569;
+    let lng = -70.6483;
+    if (backendAlerta.latitudLongitud) {
+      const parts = backendAlerta.latitudLongitud.split(',');
+      if (parts.length === 2) {
+        lat = parseFloat(parts[0]);
+        lng = parseFloat(parts[1]);
+      }
+    }
+
+    const persona = backendAlerta.personaSorda || {};
+    let nombre = (persona.nombre || '') + ' ' + (persona.apellido || '');
+    if (!nombre.trim()) nombre = 'Usuario App';
+
+    const newCase: EmergencyCase = {
+      id: backendAlerta.id || Date.now(),
+      nombre: nombre,
+      rut: persona.rut || 'Desconocido',
+      telefono: persona.telefono || 'Sin teléfono',
+      incidente: 'Alerta desde App (' + (backendAlerta.estado || 'Pendiente') + ')',
+      horaIngreso: timeStr,
+      estado: 'Pendiente',
+      triage: {
+        victimaHerida: 'NO',
+        agresorLugar: 'NO',
+        armaFuego: 'NO'
+      },
+      ubicacionNombre: "Ubicación detectada (GPS)",
+      lat: lat,
+      lng: lng,
+      tags: ['CAMUFLAJE', 'NUEVA'],
+      modoCamuflaje: backendAlerta.disponibleTriage === false,
+      notasOperador: '',
+      mensajes: [
+        { id: 1, autor: 'usuario', texto: 'Alerta disparada desde la aplicación', hora: timeStr, esGif: false }
+      ]
+    };
+
+    // Agregar al inicio
+    const existingIndex = this.emergencies.findIndex(e => e.id === newCase.id);
+    if (existingIndex === -1) {
+      this.emergencies.unshift(newCase);
+    }
+    this.selectEmergency(newCase);
+
+    // Activar alertas
+    this.newEmergencyName = newCase.nombre;
+    this.newEmergencyToast = true;
+    this.playAlarmSound();
+
+    setTimeout(() => {
+      this.newEmergencyToast = false;
+    }, 6000);
   }
 
   private playAlarmSound() {
