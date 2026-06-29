@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnInit, OnDestroy } from '@angular/core';
+import { Component, AfterViewInit, OnInit, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth/services/auth.service';
@@ -103,7 +103,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private http: HttpClient,
-    private websocketService: WebsocketService
+    private websocketService: WebsocketService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -125,7 +127,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     if (this.alertsInterval) clearInterval(this.alertsInterval);
     if (this.chatInterval) clearInterval(this.chatInterval);
-    if (this.videoCallTimer) clearInterval(this.videoCallTimer);
   }
 
   mapAlertaToEmergencyCase(alerta: any): EmergencyCase {
@@ -178,39 +179,41 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       this.http.get<any[]>('http://localhost:8080/api/alertas')
         .subscribe({
           next: (alertas) => {
-            const mapped = alertas.map(a => this.mapAlertaToEmergencyCase(a));
-            
-            // Buscar si hay alertas nuevas pendientes
-            const currentIds = this.emergencies.map(e => e.id);
-            mapped.forEach(newCase => {
-              if (!currentIds.includes(newCase.id) && newCase.estado === 'Pendiente') {
-                this.newEmergencyName = newCase.nombre;
-                this.newEmergencyToast = true;
-                this.playAlarmSound();
-                setTimeout(() => this.newEmergencyToast = false, 6000);
-              }
-            });
-
-            this.emergencies = mapped;
-
-            // Mantener selección del caso actual si aún existe
-            if (this.selectedEmergency) {
-              const stillExists = this.emergencies.find(e => e.id === this.selectedEmergency!.id);
-              if (stillExists) {
-                // Actualizar propiedades preservando mensajes de chat locales si son más nuevos
-                const prevMsgs = this.selectedEmergency.mensajes;
-                Object.assign(this.selectedEmergency, stillExists);
-                if (this.selectedEmergency.mensajes.length === 0) {
-                  this.selectedEmergency.mensajes = prevMsgs;
+            this.ngZone.run(() => {
+              const mapped = alertas.map(a => this.mapAlertaToEmergencyCase(a));
+              
+              // Buscar si hay alertas nuevas pendientes
+              const currentIds = this.emergencies.map(e => e.id);
+              mapped.forEach(newCase => {
+                if (!currentIds.includes(newCase.id) && newCase.estado === 'Pendiente') {
+                  this.newEmergencyName = newCase.nombre;
+                  this.newEmergencyToast = true;
+                  this.playAlarmSound();
+                  setTimeout(() => this.newEmergencyToast = false, 6000);
                 }
-              } else {
-                this.selectedEmergency = this.emergencies.length > 0 ? this.emergencies[0] : null;
-              }
-            } else if (this.emergencies.length > 0) {
-              this.selectEmergency(this.emergencies[0]);
-            }
+              });
 
-            this.updateMapMarker();
+              this.emergencies = mapped;
+
+              // Mantener selección del caso actual si aún existe
+              if (this.selectedEmergency) {
+                const stillExists = this.emergencies.find(e => e.id === this.selectedEmergency!.id);
+                if (stillExists) {
+                  const prevMsgs = this.selectedEmergency.mensajes;
+                  Object.assign(this.selectedEmergency, stillExists);
+                  if (this.selectedEmergency.mensajes.length === 0) {
+                    this.selectedEmergency.mensajes = prevMsgs;
+                  }
+                } else {
+                  this.selectedEmergency = this.emergencies.length > 0 ? this.emergencies[0] : null;
+                }
+              } else if (this.emergencies.length > 0) {
+                this.selectEmergency(this.emergencies[0]);
+              }
+
+              this.updateMapMarker();
+              this.cdr.detectChanges();
+            });
           },
           error: (err) => console.error('Error fetching alerts:', err)
         });
@@ -645,15 +648,16 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const persona = backendAlerta.personaSorda || {};
-    let nombre = (persona.nombre || '') + ' ' + (persona.apellido || '');
-    if (!nombre.trim()) nombre = 'Usuario App';
+    const usuario = persona.usuario || {};
+    let nombre = ((usuario.nombre || '') + ' ' + (usuario.apellido || '')).trim();
+    if (!nombre) nombre = 'Ciudadano Sordo';
 
     const newCase: EmergencyCase = {
       id: backendAlerta.id || Date.now(),
       nombre: nombre,
-      rut: persona.rut || 'Desconocido',
-      telefono: persona.telefono || 'Sin teléfono',
-      incidente: 'Alerta desde App (' + (backendAlerta.estado || 'Pendiente') + ')',
+      rut: usuario.rut || 'Desconocido',
+      telefono: usuario.telefono || 'Sin teléfono',
+      incidente: backendAlerta.incidente || 'Alerta de Pánico (Sordo)',
       horaIngreso: timeStr,
       estado: 'Pendiente',
       triage: {
@@ -661,18 +665,18 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         agresorLugar: 'NO',
         armaFuego: 'NO'
       },
-      ubicacionNombre: "Ubicación detectada (GPS)",
+      ubicacionNombre: persona.direccion || 'Ubicación GPS detectada',
       lat: lat,
       lng: lng,
       tags: ['CAMUFLAJE', 'NUEVA'],
-      modoCamuflaje: backendAlerta.disponibleTriage === false,
+      modoCamuflaje: backendAlerta.modoCamuflaje || false,
       notasOperador: '',
       mensajes: [
         { id: 1, autor: 'usuario', texto: 'Alerta disparada desde la aplicación', hora: timeStr, esGif: false }
       ]
     };
 
-    // Agregar al inicio
+    // Agregar al inicio si no existe ya
     const existingIndex = this.emergencies.findIndex(e => e.id === newCase.id);
     if (existingIndex === -1) {
       this.emergencies.unshift(newCase);
