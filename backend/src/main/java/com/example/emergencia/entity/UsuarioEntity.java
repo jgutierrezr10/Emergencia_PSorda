@@ -49,8 +49,8 @@ public class UsuarioEntity {
     @Column(nullable = false)
     private String estado;
 
-    @ManyToOne
-    @JoinColumn(name = "rol_id")
-    private RolEntity rol;
+    @NotNull
+    @Column(length = 50, nullable = false)
+    private String rol;
 
 }

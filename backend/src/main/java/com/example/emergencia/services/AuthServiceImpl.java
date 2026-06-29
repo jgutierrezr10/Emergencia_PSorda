@@ -38,7 +38,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // Obtiene el rol (en caso de que sea null, enviamos "Desconocido")
-        String rol = (usuario.getRol() != null) ? usuario.getRol().getNombreRol() : "Desconocido";
+        String rol = (usuario.getRol() != null && !usuario.getRol().isEmpty()) ? usuario.getRol() : "Desconocido";
         String nombreCompleto = usuario.getNombre() + " " + usuario.getApellido();
 
         // Genera Token JWT

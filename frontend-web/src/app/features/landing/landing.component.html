@@ -1,18 +1,580 @@
-<div class="landing-container">
-  <header class="top-nav">
-    <div class="brand">
-      <div class="logo-shield-mini">
-        <svg xmlns="http://www.w3.org/2001/svg" viewBox="0 0 24 24" fill="currentColor">
-          <path fill-rule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08z" clip-rule="evenodd" />
-        </svg>
+<div class="cenco-dashboard">
+  
+  <!-- BARRA LATERAL IZQUIERDA DE NAVEGACIÓN -->
+  <aside class="sidebar" role="navigation" aria-label="Navegación Principal">
+    <div class="sidebar-header">
+      <div class="logo-circle" aria-hidden="true">
+        <i class="fa-solid fa-shield-halved"></i>
       </div>
-      <span>CENCO - Carabineros de Chile</span>
+      <div class="brand-info">
+        <h2>CENCO</h2>
+        <p>Carabineros de Chile</p>
+      </div>
     </div>
-    <button class="btn-logout" (click)="logout()">Cerrar Sesión</button>
-  </header>
 
-  <main class="content">
-    <h1>Bienvenido al Panel de Operador</h1>
-    <p>Esta es la página de inicio temporal. Aquí se construirá el módulo de atención de emergencias.</p>
+    <nav class="nav-links">
+      <a href="javascript:void(0)" 
+         class="nav-item" 
+         [class.active]="activeTab === 'dashboard'" 
+         (click)="switchTab('dashboard')"
+         aria-current="page">
+        <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="javascript:void(0)" 
+         class="nav-item" 
+         [class.active]="activeTab === 'history'" 
+         (click)="switchTab('history')">
+        <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+        <span>Historial de Casos</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p class="sys-name">Sistema de Emergencias</p>
+      <p class="sys-version">Versión 1.0</p>
+    </div>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL (HEADER + VISTAS) -->
+  <main class="main-content">
+    
+    <!-- BANNER DE NOTIFICACIÓN DE NUEVA EMERGENCIA -->
+    <div class="emergency-alert-banner" *ngIf="newEmergencyToast" role="alert">
+      <div class="banner-content">
+        <i class="fa-solid fa-bell-exclamation fa-shake"></i>
+        <span><strong>¡ALERTA DE EMERGENCIA ENTRANTE!</strong> {{ newEmergencyName }} ha enviado una señal de auxilio.</span>
+      </div>
+      <button class="btn-close-banner" (click)="newEmergencyToast = false" aria-label="Cerrar Alerta">&times;</button>
+    </div>
+
+    <!-- CABECERA PRINCIPAL -->
+    <header class="main-header">
+      <div class="header-title">
+        <h1 *ngIf="activeTab === 'dashboard'">Panel de Operaciones</h1>
+        <h1 *ngIf="activeTab === 'history'">Historial de Emergencias</h1>
+      </div>
+      <div class="header-right">
+        <div class="operator-profile">
+          <span class="op-name">{{ operadorNombre }}</span>
+          <span class="op-id">{{ operadorID }}</span>
+        </div>
+        <button class="btn-logout" (click)="logout()" aria-label="Cerrar Sesión">
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ================= VISTA: DASHBOARD ================= -->
+    <div class="workspace-grid" *ngIf="activeTab === 'dashboard'">
+      
+      <!-- SECCIÓN: EMERGENCIAS ACTIVAS -->
+      <section class="emergencies-section" aria-labelledby="active-emergencies-title">
+        <div class="section-header">
+          <h2 id="active-emergencies-title">Emergencias Activas</h2>
+          <span class="badge-count">{{ getFilteredEmergencies().length }} casos activos</span>
+        </div>
+
+        <!-- CONTROLES Y BUSCADOR -->
+        <div class="search-filter-controls">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input 
+              type="text" 
+              placeholder="Buscar por RUT, Nombre o Incidente..." 
+              [(ngModel)]="searchQuery" 
+              aria-label="Buscar emergencias"
+            />
+          </div>
+          <div class="sim-button-wrapper">
+            <button class="btn-simulate" (click)="simulateIncomingEmergency()" title="Simular el ingreso de una nueva alerta de emergencia de un ciudadano sordo.">
+              <i class="fa-solid fa-plus-circle"></i> Simular Alerta
+            </button>
+          </div>
+        </div>
+
+        <!-- LISTADO DE TARJETAS DE EMERGENCIA -->
+        <div class="emergency-cards-list">
+          <div 
+            *ngFor="let item of getFilteredEmergencies()" 
+            [class]="'emergency-card ' + item.estado.toLowerCase().replace(' ', '-')"
+            [class.selected]="selectedEmergency?.id === item.id"
+            (click)="selectEmergency(item)"
+            tabindex="0"
+            (keydown.enter)="selectEmergency(item)"
+            role="button"
+            [aria-label]="'Caso de ' + item.nombre + ', RUT ' + item.rut + ', Incidente: ' + item.incidente + ', Estado: ' + item.estado"
+          >
+            <!-- Borde izquierdo de color manejado por la clase según estado -->
+            <div class="card-top-row">
+              <span class="citizen-name">{{ item.nombre }}</span>
+              <div class="card-badges">
+                <span class="badge-camuflaje" *ngIf="item.modoCamuflaje">
+                  <i class="fa-solid fa-eye-slash"></i> CAMUFLAJE
+                </span>
+                <span class="badge-tag nueva" *ngIf="item.tags.includes('NUEVA')">NUEVA</span>
+                <span class="badge-tag atencion" *ngIf="item.tags.includes('EN ATENCIÓN')">EN ATENCIÓN</span>
+              </div>
+            </div>
+            
+            <span class="citizen-rut">{{ item.rut }}</span>
+            
+            <div class="card-incident">
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+              <span>{{ item.incidente }}</span>
+            </div>
+            
+            <div class="card-bottom">
+              <span class="time-stamp">
+                <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                Ingreso: {{ item.horaIngreso }}
+              </span>
+              <span class="status-indicator" [class]="item.estado.toLowerCase()">
+                ● {{ item.estado }}
+              </span>
+            </div>
+          </div>
+
+          <div class="no-results" *ngIf="getFilteredEmergencies().length === 0">
+            <i class="fa-solid fa-folder-open"></i>
+            <p>No se encontraron emergencias activas.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN: MAPA INTERACTIVO -->
+      <section class="map-section" aria-label="Ubicación Geográfica en Tiempo Real">
+        <!-- CONTENEDOR LEAFLET -->
+        <div id="leaflet-map-element"></div>
+
+        <!-- PANEL DE LEYENDA SOBREPUESTO -->
+        <div class="map-legend">
+          <h4>LEYENDA</h4>
+          <ul>
+            <li>
+              <span class="legend-dot red"></span>
+              <span>Emergencia Nueva</span>
+            </li>
+            <li>
+              <span class="legend-dot yellow"></span>
+              <span>En Atención</span>
+            </li>
+            <li>
+              <span class="legend-dot green"></span>
+              <span>Resuelta</span>
+            </li>
+            <li>
+              <span class="legend-icon camuflaje">
+                <i class="fa-solid fa-eye-slash"></i>
+              </span>
+              <span>Modo Camuflaje</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+      
+    </div>
+
+    <!-- ================= VISTA: HISTORIAL ================= -->
+    <div class="history-view" *ngIf="activeTab === 'history'">
+      
+      <!-- CONTENEDOR DE KPIS -->
+      <section class="kpis-grid" aria-label="Estadísticas de Emergencias del Mes">
+        <div class="kpi-card total-mes">
+          <div class="kpi-icon">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-label">TOTAL EMERGENCIAS MES</span>
+            <span class="kpi-val">{{ getKPIs().total }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card response-time">
+          <div class="kpi-icon">
+            <i class="fa-solid fa-gauge-simple-high"></i>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-label">TIEMPO PROMEDIO RESPUESTA</span>
+            <span class="kpi-val">{{ getKPIs().avgResponseTime }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card calls-answered">
+          <div class="kpi-icon">
+            <i class="fa-solid fa-phone-volume"></i>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-label">CASOS ACTIVOS</span>
+            <span class="kpi-val">{{ getKPIs().active }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card reports-processed">
+          <div class="kpi-icon">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="kpi-data">
+            <span class="kpi-label">CASOS RESUELTOS</span>
+            <span class="kpi-val">{{ getKPIs().resolved }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- BARRA DE FILTROS DEL HISTORIAL -->
+      <section class="history-filters-bar" aria-label="Filtros del Historial">
+        <div class="filter-inputs">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input 
+              type="text" 
+              placeholder="Buscar por RUT, Nombre o Incidente..." 
+              [(ngModel)]="historySearchQuery"
+              aria-label="Buscar en historial"
+            />
+          </div>
+          
+          <div class="filter-select">
+            <label for="filter-status">Estado:</label>
+            <select id="filter-status" [(ngModel)]="historyFilterStatus">
+              <option value="todos">Todos los Estados</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="proceso">En Proceso</option>
+              <option value="finalizada">Finalizadas / Resueltas</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-export-pdf" (click)="exportHistoryPDF()">
+          <i class="fa-solid fa-file-pdf"></i> EXPORTAR PDF
+        </button>
+      </section>
+
+      <!-- TABLA DE HISTORIAL -->
+      <section class="history-table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>ID Caso</th>
+              <th>Ciudadano</th>
+              <th>RUT</th>
+              <th>Tipo de Incidente</th>
+              <th>Hora Ingreso</th>
+              <th>Estado</th>
+              <th>Notas de Despacho</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let case of getFilteredHistory()" [class.finalizada]="case.estado === 'Finalizada'">
+              <td class="col-id">#{{ case.id.toString().slice(-6) }}</td>
+              <td class="col-name"><strong>{{ case.nombre }}</strong></td>
+              <td class="col-rut">{{ case.rut }}</td>
+              <td class="col-incident">
+                <i class="fa-solid fa-triangle-exclamation text-danger" *ngIf="case.estado !== 'Finalizada'"></i>
+                <i class="fa-solid fa-circle-check text-success" *ngIf="case.estado === 'Finalizada'"></i>
+                {{ case.incidente }}
+              </td>
+              <td class="col-time">{{ case.horaIngreso }}</td>
+              <td class="col-status">
+                <span class="status-badge" [class]="case.estado.toLowerCase()">
+                  {{ case.estado }}
+                </span>
+              </td>
+              <td class="col-notes">{{ case.notasOperador || 'Sin anotaciones registradas.' }}</td>
+            </tr>
+            <tr *ngIf="getFilteredHistory().length === 0">
+              <td colspan="7" class="empty-table">
+                <i class="fa-solid fa-folder-open"></i>
+                <p>No se encontraron registros en el historial con los filtros aplicados.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Paginación Mock -->
+        <div class="table-pagination">
+          <span class="pagination-info">Mostrando {{ getFilteredHistory().length }} de {{ getFilteredHistory().length }} registros</span>
+          <div class="pagination-btns">
+            <button class="btn-pag" disabled><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+            <button class="btn-pag active">1</button>
+            <button class="btn-pag" disabled>Siguiente <i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+    </div>
   </main>
+
+  <!-- COLUMNA DERECHA: DETALLE DE LA EMERGENCIA Y ACCIONES (SOLO VISIBLE EN EL DASHBOARD) -->
+  <aside class="details-panel" *ngIf="activeTab === 'dashboard'" role="complementary" aria-label="Detalles de la Emergencia Seleccionada">
+    
+    <div class="panel-header">
+      <h3>Detalle de Emergencia</h3>
+    </div>
+
+    <div class="panel-content-scroll" *ngIf="selectedEmergency; else noSelection">
+      
+      <!-- IDENTIFICACIÓN DEL PACIENTE / CIUDADANO -->
+      <div class="citizen-profile-header">
+        <div class="avatar-circle" aria-hidden="true">
+          <i class="fa-solid fa-user-injured" *ngIf="selectedEmergency.triage.victimaHerida === 'SI'"></i>
+          <i class="fa-solid fa-user" *ngIf="selectedEmergency.triage.victimaHerida !== 'SI'"></i>
+        </div>
+        <div class="profile-info">
+          <h4>{{ selectedEmergency.nombre }}</h4>
+          <span class="badge-camuflaje-inline" *ngIf="selectedEmergency.modoCamuflaje">
+            <i class="fa-solid fa-eye-slash"></i> MODO CAMUFLAJE
+          </span>
+          <span class="profile-rut">{{ selectedEmergency.rut }}</span>
+        </div>
+      </div>
+
+      <!-- BANNER DE ADVERTENCIA DE MODO CAMUFLAJE -->
+      <div class="camuflaje-warning-banner" *ngIf="selectedEmergency.modoCamuflaje">
+        <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+        <p>Alerta silenciosa. La víctima puede tener el dispositivo camuflado. No iniciar contacto directo.</p>
+      </div>
+
+      <!-- TIPO DE INCIDENTE -->
+      <div class="detail-section">
+        <span class="section-label">TIPO DE INCIDENTE</span>
+        <div class="incident-value">
+          <i class="fa-solid fa-triangle-exclamation text-danger" aria-hidden="true"></i>
+          <span>{{ selectedEmergency.incidente }}</span>
+        </div>
+      </div>
+
+      <!-- UBICACIÓN -->
+      <div class="detail-section">
+        <span class="section-label">UBICACIÓN</span>
+        <div class="location-value">
+          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+          <span>{{ selectedEmergency.ubicacionNombre }}</span>
+        </div>
+      </div>
+
+      <!-- INFORMACIÓN TÁCTICA (RESPUESTAS DEL TRIAGE) -->
+      <div class="detail-section tactico-section">
+        <span class="section-label">INFORMACIÓN TÁCTICA (RESPUESTAS DEL USUARIO)</span>
+        <div class="tactico-container">
+          <div class="tactico-row">
+            <span>Víctima herida</span>
+            <span [class]="'tactico-val ' + (selectedEmergency.triage.victimaHerida === 'SI' ? 'si' : 'no')">
+              {{ selectedEmergency.triage.victimaHerida }}
+            </span>
+          </div>
+          <div class="tactico-row">
+            <span>Agresor en el lugar</span>
+            <span [class]="'tactico-val ' + (selectedEmergency.triage.agresorLugar === 'SI' ? 'si' : 'no')">
+              {{ selectedEmergency.triage.agresorLugar }}
+            </span>
+          </div>
+          <div class="tactico-row">
+            <span>Arma de fuego</span>
+            <span [class]="'tactico-val ' + (selectedEmergency.triage.armaFuego === 'SI' ? 'si' : 'no')">
+              {{ selectedEmergency.triage.armaFuego }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESTADO E INGRESO -->
+      <div class="status-time-row">
+        <div class="status-info">
+          <span class="section-label">ESTADO</span>
+          <span class="status-badge-inline" [class]="selectedEmergency.estado.toLowerCase()">
+            {{ selectedEmergency.estado }}
+          </span>
+        </div>
+        <div class="time-info">
+          <span class="section-label">INGRESO</span>
+          <span class="time-value">
+            <i class="fa-regular fa-clock"></i> {{ selectedEmergency.horaIngreso }}
+          </span>
+        </div>
+      </div>
+
+      <!-- ACCIONES DE DESPACHO DE EMERGENCIAS -->
+      <div class="detail-section action-buttons-section">
+        <button class="btn-action dispatch-patrol" (click)="dispatchUnit('patrulla')" title="Despachar Radio Patrulla (Carabineros) de forma inmediata">
+          <i class="fa-solid fa-car-side" aria-hidden="true"></i>
+          <span>DESPACHAR PATRULLA</span>
+        </button>
+        <div class="secondary-actions-row">
+          <button class="btn-action link-samu" (click)="dispatchUnit('ambulancia')" title="Enlazar con central SAMU para despacho de ambulancia">
+            <i class="fa-solid fa-truck-medical" aria-hidden="true"></i>
+            <span>ENLAZAR SAMU</span>
+          </button>
+          <button class="btn-action link-bomberos" (click)="dispatchUnit('bomberos')" title="Enlazar con Bomberos de Chile">
+            <i class="fa-solid fa-fire-extinguisher" aria-hidden="true"></i>
+            <span>ENLAZAR BOMBEROS</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- NOTAS DEL DESPACHO -->
+      <div class="detail-section dispatch-notes-section">
+        <label for="op-notes" class="section-label">NOTAS DEL DESPACHO</label>
+        <div class="dispatch-notes-form">
+          <textarea 
+            id="op-notes" 
+            rows="2" 
+            [(ngModel)]="selectedEmergency.notasOperador" 
+            placeholder="Ingrese señas del sospechoso, accesos, número de móvil despachado, etc..."
+          ></textarea>
+          <button class="btn-save-notes" (click)="saveDispatchNotes()">
+            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar Notas
+          </button>
+        </div>
+      </div>
+
+      <!-- COMUNICACIÓN DE ACCESIBILIDAD (CHAT INTEGRADO + LSCh) -->
+      <div class="detail-section chat-section">
+        <div class="chat-header-row">
+          <span class="section-label">CHAT DE ACCESIBILIDAD</span>
+          <button class="btn-videocall" (click)="startVideoCall()" title="Iniciar videollamada para comunicación en Lengua de Señas Chilena.">
+            <i class="fa-solid fa-video"></i> VIDEO LSCh
+          </button>
+        </div>
+
+        <!-- ÁREA DE MENSAJES -->
+        <div class="chat-scroll-container" id="chat-scroll-area">
+          <div 
+            *ngFor="let msg of selectedEmergency.mensajes" 
+            [class]="'chat-msg ' + msg.autor"
+          >
+            <div class="msg-bubble">
+              <span class="msg-author-tag" *ngIf="msg.autor !== 'sistema'">
+                {{ msg.autor === 'operador' ? 'CENCO' : 'Ciudadano' }}
+              </span>
+              <p class="msg-text">
+                <span class="gif-badge" *ngIf="msg.esGif"><i class="fa-solid fa-hands-sign"></i> GIF LSCh</span>
+                {{ msg.texto }}
+              </p>
+              <span class="msg-time">{{ msg.hora }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- GIF BAR PARA RESPUESTAS PREGRABADAS (LSCh) -->
+        <div class="preset-gifs-bar">
+          <span class="gif-bar-label">Enviar Respuestas Rápidas (LSCh):</span>
+          <div class="gifs-row">
+            <button 
+              *ngFor="let preset of presetGifs" 
+              class="btn-preset-gif" 
+              (click)="sendPresetGifMsg(preset.label)"
+              [title]="'Enviar respuesta en lenguaje de señas: ' + preset.label"
+            >
+              <i [class]="'fa-solid ' + preset.icon" aria-hidden="true"></i>
+              <span>{{ preset.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- INPUT DE CHAT -->
+        <div class="chat-input-row">
+          <input 
+            type="text" 
+            placeholder="Escribir mensaje al ciudadano..." 
+            [(ngModel)]="chatText" 
+            (keyup.enter)="sendTextMessage()"
+            aria-label="Escribir mensaje"
+          />
+          <button class="btn-send" (click)="sendTextMessage()" aria-label="Enviar Mensaje">
+            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- BOTÓN PARA COMPLETAR / CERRAR EMERGENCIA -->
+      <div class="emergency-footer-actions">
+        <button class="btn-resolve" (click)="resolveEmergency()">
+          <i class="fa-solid fa-circle-check" aria-hidden="true"></i> RESOLVER CASO
+        </button>
+      </div>
+
+    </div>
+
+    <!-- VISTA CUANDO NO HAY CASO SELECCIONADO -->
+    <ng-template #noSelection>
+      <div class="no-selection-wrapper">
+        <i class="fa-solid fa-hand-holding-hand" aria-hidden="true"></i>
+        <p>Seleccione una emergencia activa de la lista para ver sus detalles, chat, mapa e iniciar el despacho de unidades.</p>
+      </div>
+    </ng-template>
+
+  </aside>
+
+</div>
+
+<!-- MODAL DE VIDEOLLAMADA LENGUA DE SEÑAS (LSCh) -->
+<div class="videocall-overlay-modal" *ngIf="showVideoCallModal" role="dialog" aria-modal="true" aria-label="Videollamada de Emergencia en Lengua de Señas">
+  <div class="videocall-container">
+    
+    <div class="videocall-header">
+      <div class="title-row">
+        <i class="fa-solid fa-circle-dot text-danger fa-pulse"></i>
+        <h3>Llamada de Emergencia Accesible - LSCh</h3>
+      </div>
+      <div class="duration-badge">{{ videoCallDurationText }}</div>
+    </div>
+
+    <!-- PANELES DE VIDEO -->
+    <div class="video-streams-grid">
+      <!-- VIDEO DEL CIUDADANO (DEAF CITIZEN) -->
+      <div class="video-panel citizen-video">
+        <div class="video-placeholder">
+          <i class="fa-solid fa-user fa-5x"></i>
+          <span>Ciudadano (Sordo)</span>
+          <span class="stream-source-label">Cámara Usuario</span>
+        </div>
+        <!-- Simulación animada de gestos/manos -->
+        <div class="signing-overlay" *ngIf="videoCallConnected">
+          <div class="pulse-ring"></div>
+          <div class="hands-animation">
+            <i class="fa-solid fa-hands-sign fa-fade text-white fa-4x"></i>
+          </div>
+          <span class="signing-label">Ciudadano transmitiendo en LSCh</span>
+        </div>
+      </div>
+
+      <!-- VIDEO DEL INTÉRPRETE (SIGN LANGUAGE TRANSLATOR) -->
+      <div class="video-panel interpreter-video">
+        <div class="video-placeholder">
+          <i class="fa-solid fa-user-tie fa-5x"></i>
+          <span>Intérprete de Lengua de Señas</span>
+          <span class="stream-source-label">Centro de Relevo Carabineros</span>
+        </div>
+        <!-- Simulación del intérprete en pantalla -->
+        <div class="signing-overlay active" *ngIf="videoCallConnected">
+          <div class="interpreter-avatar">
+            <i class="fa-solid fa-ear-deaf fa-4x text-success"></i>
+          </div>
+          <div class="hands-animation">
+            <i class="fa-solid fa-hands-asl-interpreting fa-beat-fade text-white fa-4x"></i>
+          </div>
+          <span class="signing-label">Intérprete en línea (Traduciendo en tiempo real)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLES DE LA VIDEOLLAMADA -->
+    <div class="videocall-controls">
+      <button class="control-btn mute" title="Silenciar Micrófono">
+        <i class="fa-solid fa-microphone-slash"></i>
+      </button>
+      <button class="control-btn camera" title="Apagar Cámara">
+        <i class="fa-solid fa-video-slash"></i>
+      </button>
+      <button class="control-btn volume" title="Ajustar Volumen">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+      <button class="control-btn end-call" (click)="endVideoCall()" title="Finalizar Videollamada">
+        <i class="fa-solid fa-phone-slash"></i> Finalizar Llamada
+      </button>
+    </div>
+
+  </div>
 </div>

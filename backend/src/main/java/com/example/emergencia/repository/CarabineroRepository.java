@@ -1,11 +1,9 @@
 package com.example.emergencia.repository;
 
+import com.example.emergencia.entity.CarabineroEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.example.emergencia.entity.RolEntity;
-
 @Repository
-public interface RolRepository extends JpaRepository<RolEntity, Long> {
-
+public interface CarabineroRepository extends JpaRepository<CarabineroEntity, Long> {
 }
