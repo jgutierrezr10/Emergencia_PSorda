@@ -9,4 +9,6 @@ public interface IEntornoService {
     EntornoEntity save(EntornoEntity entorno);
     EntornoEntity update(EntornoEntity entorno);
     void delete(Long id);
+    List<EntornoEntity> buscarPorRut(String rut);
+    EntornoEntity crearParaRut(String rut, EntornoEntity entorno);
 }

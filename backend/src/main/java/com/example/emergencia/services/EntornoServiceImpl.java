@@ -46,4 +46,21 @@ public class EntornoServiceImpl implements IEntornoService {
         EntornoEntity existente = findById(id);
         entornoRepository.delete(existente);
     }
+
+    @Autowired
+    private com.example.emergencia.repository.PersonaSordaRepository personaSordaRepository;
+
+    @Override
+    public List<EntornoEntity> buscarPorRut(String rut) {
+        return entornoRepository.findByPersonaSordaUsuarioRut(rut);
+    }
+
+    @Override
+    public EntornoEntity crearParaRut(String rut, EntornoEntity entorno) {
+        com.example.emergencia.entity.PersonaSordaEntity persona = personaSordaRepository.findByUsuarioRut(rut)
+                .orElseThrow(() -> new ResourceNotFoundException("Persona sorda no encontrada para el RUT: " + rut));
+        
+        entorno.setPersonaSorda(persona);
+        return entornoRepository.save(entorno);
+    }
 }

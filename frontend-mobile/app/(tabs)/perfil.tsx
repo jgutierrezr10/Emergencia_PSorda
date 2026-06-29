@@ -13,6 +13,13 @@ interface Contacto {
   numero: string;
 }
 
+interface Entorno {
+  id: number;
+  nombre: string;
+  parentesco: string;
+  viveConUsuario: boolean;
+}
+
 const OPCIONES_TEMA: { val: Preferencia; label: string; icon: 'phone-portrait-outline' | 'sunny-outline' | 'moon-outline' }[] = [
   { val: 'auto', label: 'AUTOMÁTICO', icon: 'phone-portrait-outline' },
   { val: 'light', label: 'CLARO', icon: 'sunny-outline' },
@@ -44,6 +51,14 @@ export default function PerfilScreen() {
           if (res.ok) {
             const data = await res.json();
             setContactos(data);
+          }
+          
+          const resE = await fetch(`${baseUrl}/api/entornos/usuario/${rut}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resE.ok) {
+            const dataE = await resE.json();
+            setEntornos(dataE);
           }
         }
       } catch (err) {
@@ -106,6 +121,63 @@ export default function PerfilScreen() {
       }
     } catch (err) {
       console.error("Error al eliminar contacto", err);
+    }
+  };
+
+  const [entornos, setEntornos] = useState<Entorno[]>([]);
+  const [modalEntorno, setModalEntorno] = useState(false);
+  const [nuevoEntornoNombre, setNuevoEntornoNombre] = useState('');
+  const [nuevoEntornoParentesco, setNuevoEntornoParentesco] = useState('');
+  const [nuevoEntornoVive, setNuevoEntornoVive] = useState(false);
+  const [errorEntorno, setErrorEntorno] = useState('');
+
+  const agregarEntorno = async () => {
+    setErrorEntorno('');
+    if (!nuevoEntornoNombre || !nuevoEntornoParentesco) {
+      setErrorEntorno('FALTAN DATOS. COMPLETA TODO.');
+      return;
+    }
+    
+    try {
+      const rut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut'));
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      
+      const res = await fetch(`${baseUrl}/api/entornos/usuario/${rut}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ nombre: nuevoEntornoNombre, parentesco: nuevoEntornoParentesco, viveConUsuario: nuevoEntornoVive })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setEntornos([...entornos, data]);
+        setNuevoEntornoNombre('');
+        setNuevoEntornoParentesco('');
+        setNuevoEntornoVive(false);
+        setModalEntorno(false);
+      } else {
+        setErrorEntorno('Error al guardar familiar en el servidor.');
+      }
+    } catch (err) {
+      setErrorEntorno('Error de red. Intenta nuevamente.');
+    }
+  };
+
+  const eliminarEntorno = async (id: number) => {
+    try {
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      const res = await fetch(`${baseUrl}/api/entornos/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setEntornos(entornos.filter((e) => e.id !== id));
+      }
+    } catch (err) {
+      console.error("Error al eliminar entorno", err);
     }
   };
 
@@ -245,6 +317,41 @@ export default function PerfilScreen() {
           ))}
         </View>
 
+        {/* Entorno Familiar */}
+        <View style={[styles.seccionCard, styles.contactosCard, { borderColor: colors.primary }]}>
+          <View style={styles.contactosHeader}>
+            <View style={styles.seccionHeaderLeft}>
+              <Ionicons name="home-outline" size={20} color={colors.primary} />
+              <Text style={[styles.seccionTitulo, { color: colors.primary }]}>ENTORNO FAMILIAR</Text>
+            </View>
+            <TouchableOpacity style={[styles.btnAgregar, { backgroundColor: colors.primary }]} onPress={() => setModalEntorno(true)}>
+              <Text style={styles.btnAgregarTexto}>+ AGREGAR</Text>
+            </TouchableOpacity>
+          </View>
+
+          {entornos.length === 0 && <Text style={styles.sinContactos}>NO HAY FAMILIARES REGISTRADOS.</Text>}
+
+          {entornos.map((entornoItem, index) => (
+            <View key={entornoItem.id}>
+              {index > 0 && <View style={styles.divisor} />}
+              <View style={styles.contactoRow}>
+                <View style={[styles.contactoAvatar, { backgroundColor: colors.surfaceAlt, borderColor: colors.primary }]}>
+                  <Text style={[styles.contactoAvatarTexto, { color: colors.primary }]}>{entornoItem.nombre.charAt(0)}</Text>
+                </View>
+                <View style={styles.contactoInfo}>
+                  <Text style={styles.contactoNombre}>{entornoItem.nombre}</Text>
+                  <Text style={styles.contactoDetalle}>
+                    {entornoItem.parentesco} · {entornoItem.viveConUsuario ? 'Vive conmigo' : 'No vive conmigo'}
+                  </Text>
+                </View>
+                <TouchableOpacity style={[styles.btnEliminar, { backgroundColor: colors.surfaceAlt, borderColor: colors.primary }]} onPress={() => eliminarEntorno(entornoItem.id)}>
+                  <Ionicons name="close" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+
         {/* Opciones */}
         <View style={styles.seccionCard}>
           <TouchableOpacity style={styles.opcionRow} onPress={() => router.push('/editar-perfil')}>
@@ -330,6 +437,52 @@ export default function PerfilScreen() {
                 setNuevoNombre('');
                 setNuevoRelacion('');
                 setNuevoTelefono('');
+              }}
+            >
+              <Text style={styles.btnCancelarModalTexto}>CANCELAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal agregar entorno */}
+      <Modal visible={modalEntorno} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitulo}>AGREGAR FAMILIAR</Text>
+
+            <Text style={styles.fieldLabel}>NOMBRE COMPLETO</Text>
+            <TextInput style={styles.fieldInput} placeholder="Ej: Juan Pérez" placeholderTextColor={colors.textMuted} value={nuevoEntornoNombre} onChangeText={setNuevoEntornoNombre} />
+
+            <Text style={styles.fieldLabel}>PARENTESCO</Text>
+            <TextInput style={styles.fieldInput} placeholder="Ej: Hermano, Abuelo" placeholderTextColor={colors.textMuted} value={nuevoEntornoParentesco} onChangeText={setNuevoEntornoParentesco} />
+
+            <View style={[styles.switchRow, { paddingHorizontal: 0, marginBottom: 16 }]}>
+              <View style={styles.switchInfo}>
+                <Text style={styles.switchLabel}>¿VIVE CONTIGO?</Text>
+                <Text style={styles.switchSubtexto}>MARCAR SI VIVEN EN LA MISMA CASA</Text>
+              </View>
+              <Switch
+                value={nuevoEntornoVive}
+                onValueChange={setNuevoEntornoVive}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#ffffff"
+              />
+            </View>
+
+            {errorEntorno ? <Text style={styles.errorTexto}>{errorEntorno}</Text> : null}
+
+            <TouchableOpacity style={styles.btnGuardar} onPress={agregarEntorno}>
+              <Text style={styles.btnGuardarTexto}>GUARDAR FAMILIAR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnCancelarModal}
+              onPress={() => {
+                setModalEntorno(false);
+                setErrorEntorno('');
+                setNuevoEntornoNombre('');
+                setNuevoEntornoParentesco('');
+                setNuevoEntornoVive(false);
               }}
             >
               <Text style={styles.btnCancelarModalTexto}>CANCELAR</Text>
