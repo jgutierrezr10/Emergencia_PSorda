@@ -45,4 +45,21 @@ public class ContactoEmergenciaServiceImpl implements IContactoEmergenciaService
         ContactoEmergenciaEntity existente = findById(id);
         contactoRepository.delete(existente);
     }
+
+    @Autowired
+    private com.example.emergencia.repository.PersonaSordaRepository personaSordaRepository;
+
+    @Override
+    public List<ContactoEmergenciaEntity> buscarPorRut(String rut) {
+        return contactoRepository.findByPersonaSordaUsuarioRut(rut);
+    }
+
+    @Override
+    public ContactoEmergenciaEntity crearParaRut(String rut, ContactoEmergenciaEntity contacto) {
+        com.example.emergencia.entity.PersonaSordaEntity persona = personaSordaRepository.findByUsuarioRut(rut)
+                .orElseThrow(() -> new ResourceNotFoundException("Persona sorda no encontrada para el RUT: " + rut));
+        
+        contacto.setPersonaSorda(persona);
+        return contactoRepository.save(contacto);
+    }
 }

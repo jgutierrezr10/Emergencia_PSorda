@@ -43,4 +43,14 @@ public class ContactoEmergenciaController {
         contactoService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/usuario/{rut}")
+    public ResponseEntity<List<ContactoEmergenciaEntity>> getByRut(@PathVariable String rut) {
+        return ResponseEntity.ok(contactoService.buscarPorRut(rut));
+    }
+
+    @PostMapping("/usuario/{rut}")
+    public ResponseEntity<ContactoEmergenciaEntity> createForRut(@PathVariable String rut, @RequestBody ContactoEmergenciaEntity contacto) {
+        return new ResponseEntity<>(contactoService.crearParaRut(rut, contacto), HttpStatus.CREATED);
+    }
 }

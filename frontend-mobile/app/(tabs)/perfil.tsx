@@ -10,7 +10,7 @@ interface Contacto {
   id: number;
   nombre: string;
   relacion: string;
-  telefono: string;
+  numero: string;
 }
 
 const OPCIONES_TEMA: { val: Preferencia; label: string; icon: 'phone-portrait-outline' | 'sunny-outline' | 'moon-outline' }[] = [
@@ -29,10 +29,29 @@ export default function PerfilScreen() {
   const [compartirUbicacion, setCompartirUbicacion] = useState(true);
   const [vibracion, setVibracion] = useState(true);
 
-  const [contactos, setContactos] = useState<Contacto[]>([
-    { id: 1, nombre: 'Ana Muñoz', relacion: 'Madre', telefono: '+56 9 8765 4321' },
-    { id: 2, nombre: 'Pedro González', relacion: 'Hermano', telefono: '+56 9 5555 1234' },
-  ]);
+  const [contactos, setContactos] = useState<Contacto[]>([]);
+  const baseUrl = 'http://10.83.92.211:8080';
+
+  useEffect(() => {
+    const cargarContactos = async () => {
+      try {
+        const rut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut'));
+        const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+        if (rut) {
+          const res = await fetch(`${baseUrl}/api/contactos-emergencia/usuario/${rut}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setContactos(data);
+          }
+        }
+      } catch (err) {
+        console.error("Error al cargar contactos", err);
+      }
+    };
+    cargarContactos();
+  }, []);
 
   const [modalContacto, setModalContacto] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState('');
@@ -40,24 +59,54 @@ export default function PerfilScreen() {
   const [nuevoTelefono, setNuevoTelefono] = useState('');
   const [errorContacto, setErrorContacto] = useState('');
 
-  const agregarContacto = () => {
+  const agregarContacto = async () => {
     setErrorContacto('');
     if (!nuevoNombre || !nuevoRelacion || !nuevoTelefono) {
       setErrorContacto('FALTAN DATOS. COMPLETA TODO.');
       return;
     }
-    const nuevo: Contacto = { id: Date.now(), nombre: nuevoNombre, relacion: nuevoRelacion, telefono: nuevoTelefono };
-    setContactos([...contactos, nuevo]);
-    // TODO: Guardar en Spring Boot + PostgreSQL
-    setNuevoNombre('');
-    setNuevoRelacion('');
-    setNuevoTelefono('');
-    setModalContacto(false);
+    
+    try {
+      const rut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut'));
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      
+      const res = await fetch(`${baseUrl}/api/contactos-emergencia/usuario/${rut}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ nombre: nuevoNombre, relacion: nuevoRelacion, numero: nuevoTelefono })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setContactos([...contactos, data]);
+        setNuevoNombre('');
+        setNuevoRelacion('');
+        setNuevoTelefono('');
+        setModalContacto(false);
+      } else {
+        setErrorContacto('Error al guardar contacto en el servidor.');
+      }
+    } catch (err) {
+      setErrorContacto('Error de red. Intenta nuevamente.');
+    }
   };
 
-  const eliminarContacto = (id: number) => {
-    setContactos(contactos.filter((c) => c.id !== id));
-    // TODO: Eliminar en Spring Boot + PostgreSQL
+  const eliminarContacto = async (id: number) => {
+    try {
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      const res = await fetch(`${baseUrl}/api/contactos-emergencia/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setContactos(contactos.filter((c) => c.id !== id));
+      }
+    } catch (err) {
+      console.error("Error al eliminar contacto", err);
+    }
   };
 
   const cerrarSesion = async () => {
@@ -186,7 +235,7 @@ export default function PerfilScreen() {
                 </View>
                 <View style={styles.contactoInfo}>
                   <Text style={styles.contactoNombre}>{contacto.nombre}</Text>
-                  <Text style={styles.contactoDetalle}>{contacto.relacion} · {contacto.telefono}</Text>
+                  <Text style={styles.contactoDetalle}>{contacto.relacion} · {contacto.numero}</Text>
                 </View>
                 <TouchableOpacity style={styles.btnEliminar} onPress={() => eliminarContacto(contacto.id)}>
                   <Ionicons name="close" size={16} color={colors.danger} />

@@ -21,6 +21,9 @@ public class ContactoEmergenciaEntity {
     @Column(nullable = false, length = 15)
     private String numero;
 
+    @Column(length = 50)
+    private String relacion;
+
     @ManyToOne
     @JoinColumn(name = "personaSorda_id", nullable = false)
     private PersonaSordaEntity personaSorda;
