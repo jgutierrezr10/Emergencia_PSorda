@@ -28,6 +28,9 @@ public class ChatServiceImpl implements IChatService {
 
     @Override
     public ChatEntity save(ChatEntity chat) {
+        if (chat.getId() == null) {
+            chat.setFechaHoraEnvio(java.time.LocalDateTime.now());
+        }
         return chatRepository.save(chat);
     }
 

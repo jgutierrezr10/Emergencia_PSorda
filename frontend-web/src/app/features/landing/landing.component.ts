@@ -133,10 +133,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     const latLng = alerta.latitudLongitud ? alerta.latitudLongitud.split(',') : ['-33.4503', '-70.6781'];
     const lat = Number(latLng[0]) || -33.4503;
     const lng = Number(latLng[1]) || -70.6781;
-    const date = new Date(alerta.fechaHoraInicio);
-    const hourStr = !isNaN(date.getTime())
-      ? `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-      : '00:00';
+    let hourStr = '00:00';
+    if (alerta.fechaHoraInicio && alerta.fechaHoraInicio.includes('T')) {
+      hourStr = alerta.fechaHoraInicio.substring(11, 16);
+    }
     
     let estado: 'Pendiente' | 'En Proceso' | 'Despachada' | 'Finalizada' = 'Pendiente';
     if (alerta.estado === 'Despachada') estado = 'Despachada';
@@ -261,10 +261,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           if (!this.selectedEmergency || this.selectedEmergency.id !== alertId) return;
 
           const mappedMsgs: ChatMessage[] = chatList.map(m => {
-            const time = new Date(m.fechaHoraEnvio);
-            const hourStr = !isNaN(time.getTime())
-              ? `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`
-              : '00:00';
+            let hourStr = '00:00';
+            if (m.fechaHoraEnvio && m.fechaHoraEnvio.includes('T')) {
+              hourStr = m.fechaHoraEnvio.substring(11, 16);
+            }
             
             let autor: 'usuario' | 'operador' | 'sistema' = 'usuario';
             if (m.emisorId === 1) {

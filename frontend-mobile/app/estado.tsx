@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import MapaUbicacion from '@/components/MapaUbicacion';
 import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
+import { baseUrl } from './_config';
 
 const obtenerDato = async (key: string): Promise<string | null> => {
   if (Platform.OS === 'web') return localStorage.getItem(key);
@@ -46,11 +47,6 @@ export default function EstadoScreen() {
 
       // Actualizar ubicación en el backend
       try {
-        let ip = 'localhost';
-        if (Platform.OS === 'android') {
-          ip = '10.0.2.2';
-        }
-        const baseUrl = `http://${ip}:8080`;
         const currentId = await obtenerDato('currentAlertaId');
         if (currentId && currentId !== '999') {
           const getResp = await fetch(`${baseUrl}/api/alertas/${currentId}`);
@@ -94,12 +90,6 @@ export default function EstadoScreen() {
       try {
         const currentId = await obtenerDato('currentAlertaId');
         if (!currentId || currentId === '999') return;
-        
-        let ip = 'localhost';
-        if (Platform.OS === 'android') {
-          ip = '10.0.2.2';
-        }
-        const baseUrl = `http://${ip}:8080`;
         
         const res = await fetch(`${baseUrl}/api/alertas/${currentId}`);
         if (res.ok) {

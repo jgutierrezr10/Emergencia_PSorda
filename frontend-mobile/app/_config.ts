@@ -23,3 +23,5 @@ const getBaseUrl = () => {
 export const baseUrl = getBaseUrl();
 
 console.log("🔌 Servidor detectado en:", baseUrl);
+
+export default function ConfigDummy() { return null; }

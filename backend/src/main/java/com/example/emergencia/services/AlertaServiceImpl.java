@@ -28,6 +28,9 @@ public class AlertaServiceImpl implements IAlertaService {
 
     @Override
     public AlertaEntity save(AlertaEntity alerta) {
+        if (alerta.getId() == null) {
+            alerta.setFechaHoraInicio(java.time.LocalDateTime.now());
+        }
         return alertaRepository.save(alerta);
     }
 
