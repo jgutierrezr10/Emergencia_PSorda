@@ -7,6 +7,7 @@ import { Image } from 'expo-image';
 import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
 import * as Location from 'expo-location';
+import { baseUrl } from './_config';
 
 const guardarDato = async (key: string, value: string) => {
   if (Platform.OS === 'web') localStorage.setItem(key, value);
@@ -45,11 +46,7 @@ export default function TriageScreen() {
   useEffect(() => {
     const crearAlerta = async () => {
       try {
-        let ip = '10.83.92.211'; // IP de desarrollo del PC en red Wi-Fi
-        if (Platform.OS === 'web') {
-          ip = window.location.hostname || 'localhost';
-        }
-        const baseUrl = `http://${ip}:8080`;
+        // BORRAMOS let ip = '10.83.92.211'... etc.
 
         const personaSordaIdStr = await obtenerDato('personaSordaId');
         const personaSordaId = personaSordaIdStr ? Number(personaSordaIdStr) : 1;
@@ -106,11 +103,7 @@ export default function TriageScreen() {
     const nuevas = [...respuestas, valor];
     setRespuestas(nuevas);
     try {
-      let ip = '10.83.92.211';
-      if (Platform.OS === 'web') {
-        ip = window.location.hostname || 'localhost';
-      }
-      const baseUrl = `http://${ip}:8080`;
+      
       const currentId = alertaId || Number(await obtenerDato('currentAlertaId'));
 
       if (currentId && currentId !== 999) {

@@ -7,6 +7,7 @@ import { Image } from 'expo-image';
 import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
 import { Client } from '@stomp/stompjs';
+import { baseUrl } from './_config';
 
 const obtenerDato = async (key: string): Promise<string | null> => {
   if (Platform.OS === 'web') return localStorage.getItem(key);
@@ -68,8 +69,12 @@ export default function ChatScreen() {
       setUsuarioId(uid);
 
       if (aid && aid !== '999') {
+        // 1. Transformamos la baseUrl (http://...) a formato WebSocket (ws://...) y le sumamos tu ruta
+        const wsUrl = baseUrl.replace('http://', 'ws://') + '/ws-chat';
+
+        // 2. Creamos el cliente usando la URL dinámica
         const client = new Client({
-          brokerURL: 'ws://10.83.92.211:8080/ws-chat',
+          brokerURL: wsUrl,
           forceBinaryWSFrames: true,
           appendMissingNULLonIncoming: true,
           onConnect: () => {
@@ -106,8 +111,7 @@ export default function ChatScreen() {
 
     const cargarMensajes = async () => {
       try {
-        const baseUrl = 'http://10.83.92.211:8080';
-        const res = await fetch(`${baseUrl}/api/chats/alerta/${alertaId}`);
+        const res = await fetch(`${baseUrl}/api/chats/alerta/${alertaId}`); // Cambiado a la IP de la computadora
         if (res.ok) {
           const data = await res.json();
           const mapped: Mensaje[] = data.map((m: any) => {
@@ -124,6 +128,7 @@ export default function ChatScreen() {
               tipoArchivo: m.tipoArchivo
             };
           });
+        
 
           if (mapped.length === 0) {
             setMensajes([
@@ -195,7 +200,6 @@ export default function ChatScreen() {
     }
 
     try {
-      const baseUrl = 'http://10.83.92.211:8080';
       const emisor = usuarioId ? Number(usuarioId) : 2;
 
       await fetch(`${baseUrl}/api/chats`, {
@@ -248,7 +252,7 @@ export default function ChatScreen() {
 
   const subirArchivo = async (file: File) => {
     try {
-      const baseUrl = 'http://10.83.92.211:8080';
+      
       
       const formData = new FormData();
       formData.append('file', file);

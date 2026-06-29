@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, Colors } from '@/theme/theme';
+import { baseUrl } from './_config';
 
 export default function RegistroScreen() {
   const { colors } = useTheme();

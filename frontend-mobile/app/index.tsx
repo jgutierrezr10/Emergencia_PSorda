@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, Colors } from '@/theme/theme';
+import { baseUrl } from './_config';
 
 const guardarDato = async (key: string, value: string) => {
   if (Platform.OS === 'web') localStorage.setItem(key, value);
@@ -58,13 +59,9 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      let ip = '10.83.92.211'; // IP de desarrollo del PC en red Wi-Fi
-      if (Platform.OS === 'web') {
-        ip = window.location.hostname || 'localhost';
-      }
-      const baseUrl = `http://${ip}:8080`;
       const cleanRut = rut.replace(/\./g, '');
       
+      // 3. fetch ya reconocerá la "baseUrl" automáticamente gracias al import
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
