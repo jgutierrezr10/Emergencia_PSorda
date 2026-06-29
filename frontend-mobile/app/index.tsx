@@ -58,25 +58,10 @@ export default function LoginScreen() {
     setLoading(true);
 
     // =========================================================================
-    // MODO DEMO (sin backend): login simulado para poder probar el frontend.
-    // El backend (Spring Boot) lo conecta otro integrante más adelante.
-    // Cuando esté listo, borra este bloque y descomenta el bloque real de abajo.
-    // =========================================================================
-    setTimeout(async () => {
-      try {
-        await guardarDato('token', 'demo-token');
-        await guardarDato('rol', 'Sordo');
-      } catch (e) {
-        // SecureStore no disponible en web, se ignora
-      }
-      setLoading(false);
-      router.replace('/(tabs)/home');
-    }, 800);
-
-    /* =========================================================================
-    // BLOQUE REAL (descomentar cuando el backend esté disponible):
+    // BLOQUE REAL (Backend Spring Boot):
     try {
-      const baseUrl = 'http://192.168.1.123:8080'; // IP del servidor en la red Wi-Fi
+      // Usando la IP local del PC en la red Wi-Fi para que Expo Go conecte
+      const baseUrl = 'http://10.83.92.211:8080';
       const cleanRut = rut.replace(/\./g, '');
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
@@ -93,6 +78,7 @@ export default function LoginScreen() {
       if (data.rol === 'Sordo') {
         await guardarDato('token', data.token);
         await guardarDato('rol', data.rol);
+        await guardarDato('rut', data.rut || cleanRut);
         router.replace('/(tabs)/home');
       } else {
         setError('Rol de usuario no válido para esta aplicación.');
@@ -102,7 +88,7 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
-    ========================================================================= */
+    // =========================================================================
   };
 
   return (

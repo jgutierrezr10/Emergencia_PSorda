@@ -1,24 +1,22 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useTheme, Colors } from '@/theme/theme';
+import * as SecureStore from 'expo-secure-store';
+import * as Location from 'expo-location';
 
 interface Pregunta {
   titulo: string;
   subtitulo: string;
-  // GIF con la seña en LSCh. null = aún sin GIF (muestra placeholder de manos).
   gif: number | null;
 }
 
 const PREGUNTAS: Pregunta[] = [
   { titulo: 'TÚ ¿HERIDO?', subtitulo: 'TÚ ¿TIENES HERIDA? ¿NECESITAS MÉDICO?', gif: require('../assets/gifs/01-herido.gif') },
   { titulo: 'AGRESOR ¿TIENE ARMA?', subtitulo: 'PISTOLA, CUCHILLO U OBJETO PELIGROSO', gif: require('../assets/gifs/02-arma.gif') },
-  // Pregunta 3: aún sin GIF. Cuando tengas el archivo, guárdalo en
-  // assets/gifs/03-casa.gif y cambia esta línea por:
-  // gif: require('../assets/gifs/03-casa.gif')
   { titulo: 'AGRESOR ¿DENTRO CASA?', subtitulo: 'EN TU CASA O MISMO LUGAR QUE TÚ', gif: null },
 ];
 
@@ -33,16 +31,80 @@ export default function TriageScreen() {
   const [enviado, setEnviado] = useState(false);
 
   useEffect(() => {
-    // TODO: Enviar la alerta + ubicación GPS al backend (Spring Boot)
-    const t = setTimeout(() => setCargando(false), 2000);
-    return () => clearTimeout(t);
+    const enviarAlerta = async () => {
+      try {
+        const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+        const rut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut')) || '12345678-9';
+
+        let gps = '-33.4372,-70.6506';
+
+        if (Platform.OS !== 'web') {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            gps = `${location.coords.latitude},${location.coords.longitude}`;
+          }
+        }
+
+        const baseUrl = 'http://10.83.92.211:8080';
+        const response = await fetch(`${baseUrl}/api/alertas/nueva`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ rut, latitudLongitud: gps }),
+        });
+
+        if (!response.ok) {
+          console.error("Error al enviar alerta", await response.text());
+        } else {
+          const data = await response.json();
+          if (Platform.OS === 'web') localStorage.setItem('alerta_id', data.id.toString());
+          else await SecureStore.setItemAsync('alerta_id', data.id.toString());
+        }
+      } catch (error) {
+        console.error("Fallo de red al enviar alerta", error);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    enviarAlerta();
   }, []);
 
-  const responder = (valor: boolean) => {
+  const responder = async (valor: boolean) => {
     const nuevas = [...respuestas, valor];
     setRespuestas(nuevas);
-    if (paso < PREGUNTAS.length - 1) setPaso(paso + 1);
-    else setEnviado(true);
+    if (paso < PREGUNTAS.length - 1) {
+      setPaso(paso + 1);
+    } else {
+      try {
+        const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+        const alertaIdStr = await (Platform.OS === 'web' ? localStorage.getItem('alerta_id') : SecureStore.getItemAsync('alerta_id'));
+        
+        if (alertaIdStr) {
+          const respuestasPayload = nuevas.map((resp, index) => ({
+            preguntaClave: PREGUNTAS[index].titulo,
+            respuestaSordo: resp
+          }));
+
+          const baseUrl = 'http://10.83.92.211:8080';
+          await fetch(`${baseUrl}/api/triage-alertas/lote`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ alertaId: parseInt(alertaIdStr, 10), respuestas: respuestasPayload }),
+          });
+        }
+      } catch (err) {
+        console.error("Error al enviar triage", err);
+      } finally {
+        setEnviado(true);
+      }
+    }
   };
 
   if (cargando) {
@@ -67,11 +129,16 @@ export default function TriageScreen() {
           <Text style={styles.avisoTitulo}>¡AYUDA YA ENVIADA!</Text>
           <Text style={styles.avisoTexto}>
             CARABINEROS (CENCO) YA TIENE TU ALERTA + TU UBICACIÓN. AYUDA VIENE.
-            {'\n\n'}AHORA TÚ RESPONDER 3 PREGUNTAS. AYUDAR PATRULLA.
+            {'\n\n'}¿PUEDES RESPONDER PREGUNTAS PARA AYUDAR A PATRULLA?
           </Text>
-          <TouchableOpacity style={styles.botonPrimario} onPress={() => setContinuar(true)}>
-            <Text style={styles.botonPrimarioTexto}>SEGUIR</Text>
-          </TouchableOpacity>
+          <View style={[styles.botonesRow, { width: '100%', marginTop: 20 }]}>
+            <TouchableOpacity style={[styles.boton, styles.botonSi]} onPress={() => setContinuar(true)} activeOpacity={0.85}>
+              <Text style={styles.botonTexto}>SÍ</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.boton, styles.botonNo]} onPress={() => setEnviado(true)} activeOpacity={0.85}>
+              <Text style={styles.botonTexto}>NO</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );

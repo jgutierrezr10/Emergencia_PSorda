@@ -9,4 +9,5 @@ public interface ITriageAlertaService {
     TriageAlertaEntity save(TriageAlertaEntity triageAlerta);
     TriageAlertaEntity update(TriageAlertaEntity triageAlerta);
     void delete(Long id);
+    void guardarRespuestas(com.example.emergencia.dto.TriageRequest request);
 }
