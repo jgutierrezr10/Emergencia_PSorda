@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
+import { Client } from '@stomp/stompjs';
 
 const obtenerDato = async (key: string): Promise<string | null> => {
   if (Platform.OS === 'web') return localStorage.getItem(key);
@@ -57,7 +58,7 @@ export default function ChatScreen() {
 
   const [alertaId, setAlertaId] = useState<string | null>(null);
   const [usuarioId, setUsuarioId] = useState<string | null>(null);
-
+  const stompClient = useRef<Client | null>(null);
   useEffect(() => {
     const initData = async () => {
       let aid = await obtenerDato('currentAlertaId');
@@ -105,11 +106,7 @@ export default function ChatScreen() {
 
     const cargarMensajes = async () => {
       try {
-        let ip = 'localhost';
-        if (Platform.OS === 'android') {
-          ip = '10.0.2.2';
-        }
-        const baseUrl = `http://${ip}:8080`;
+        const baseUrl = 'http://10.83.92.211:8080';
         const res = await fetch(`${baseUrl}/api/chats/alerta/${alertaId}`);
         if (res.ok) {
           const data = await res.json();
@@ -198,11 +195,7 @@ export default function ChatScreen() {
     }
 
     try {
-      let ip = 'localhost';
-      if (Platform.OS === 'android') {
-        ip = '10.0.2.2';
-      }
-      const baseUrl = `http://${ip}:8080`;
+      const baseUrl = 'http://10.83.92.211:8080';
       const emisor = usuarioId ? Number(usuarioId) : 2;
 
       await fetch(`${baseUrl}/api/chats`, {
@@ -255,11 +248,7 @@ export default function ChatScreen() {
 
   const subirArchivo = async (file: File) => {
     try {
-      let ip = 'localhost';
-      if (Platform.OS === 'android') {
-        ip = '10.0.2.2';
-      }
-      const baseUrl = `http://${ip}:8080`;
+      const baseUrl = 'http://10.83.92.211:8080';
       
       const formData = new FormData();
       formData.append('file', file);

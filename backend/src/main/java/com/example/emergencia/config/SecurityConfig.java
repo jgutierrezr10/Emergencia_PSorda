@@ -30,9 +30,11 @@ public class SecurityConfig {
             .cors(org.springframework.security.config.Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
-                .requestMatchers("/auth/**", "/api/auth/**").permitAll()
+                .requestMatchers("/auth/**", "/api/auth/**", "/error").permitAll()
                 .requestMatchers("/ws-chat/**").permitAll()
+                .requestMatchers("/api/alertas/**", "/api/triage-alertas/**").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtUtil),
                     UsernamePasswordAuthenticationFilter.class);
