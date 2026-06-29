@@ -31,4 +31,10 @@ public class AlertaEntity {
     @ManyToOne
     @JoinColumn(name = "personaSorda_id", nullable = false)
     private PersonaSordaEntity personaSorda;
+
+    @Column(name = "incidente", length = 100)
+    private String incidente;
+
+    @Column(name = "modo_camuflaje")
+    private Boolean modoCamuflaje;
 }

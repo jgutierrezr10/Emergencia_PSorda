@@ -46,4 +46,9 @@ public class TriageAlertaServiceImpl implements ITriageAlertaService {
         TriageAlertaEntity existente = findById(id);
         triageAlertaRepository.delete(existente);
     }
+
+    @Override
+    public List<TriageAlertaEntity> findByAlertaId(Long alertaId) {
+        return triageAlertaRepository.findByAlertaIdOrderByHoraRespuestaAsc(alertaId);
+    }
 }

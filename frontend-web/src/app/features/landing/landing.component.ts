@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth/services/auth.service';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 
 declare const L: any; // Leaflet library loaded via index.html CDN
 
@@ -18,6 +19,8 @@ interface ChatMessage {
   texto: string;
   hora: string;
   esGif?: boolean;
+  archivoUrl?: string;
+  tipoArchivo?: string;
 }
 
 interface EmergencyCase {
@@ -50,126 +53,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   operadorID = 'OP-12345';
   activeTab: 'dashboard' | 'history' = 'dashboard';
   
-  emergencies: EmergencyCase[] = [
-    {
-      id: 1,
-      nombre: 'María González',
-      rut: '18.234.567-8',
-      telefono: '987654321',
-      incidente: 'Asalto en progreso',
-      horaIngreso: '14:32',
-      estado: 'Pendiente',
-      triage: {
-        victimaHerida: 'SI',
-        agresorLugar: 'SI',
-        armaFuego: 'NO'
-      },
-      ubicacionNombre: "Av. Libertador Bernardo O'Higgins 3250",
-      lat: -33.4503,
-      lng: -70.6781,
-      tags: ['CAMUFLAJE', 'NUEVA'],
-      modoCamuflaje: true,
-      notasOperador: '',
-      mensajes: [
-        { id: 1, autor: 'usuario', texto: 'Estoy en peligro', hora: '14:32', esGif: true },
-        { id: 2, autor: 'operador', texto: 'Entendido, ya tenemos su señal en la central CENCO. Mantenga su celular oculto. ¿Hay algún sospechoso armado?', hora: '14:32' },
-        { id: 3, autor: 'usuario', texto: 'No', hora: '14:33', esGif: true }
-      ]
-    },
-    {
-      id: 2,
-      nombre: 'Carlos Muñoz',
-      rut: '16.876.543-2',
-      telefono: '912345678',
-      incidente: 'Accidente de tránsito',
-      horaIngreso: '14:28',
-      estado: 'En Proceso',
-      triage: {
-        victimaHerida: 'SI',
-        agresorLugar: 'NO',
-        armaFuego: 'NO'
-      },
-      ubicacionNombre: 'Av. Providencia 1250, Providencia',
-      lat: -33.4262,
-      lng: -70.6184,
-      tags: ['EN ATENCIÓN'],
-      modoCamuflaje: false,
-      notasOperador: 'Se despachó patrulla policial del sector 12 para peritaje inicial.',
-      mensajes: [
-        { id: 1, autor: 'usuario', texto: 'Necesito ayuda', hora: '14:28', esGif: true },
-        { id: 2, autor: 'operador', texto: 'CENCO recibido. ¿Tiene lesiones o hay heridos en la calle?', hora: '14:28' },
-        { id: 3, autor: 'usuario', texto: 'Sí, estoy herido leve en la pierna', hora: '14:29' }
-      ]
-    },
-    {
-      id: 3,
-      nombre: 'Patricia Soto',
-      rut: '19.123.456-7',
-      telefono: '944455566',
-      incidente: 'Violencia intrafamiliar',
-      horaIngreso: '14:15',
-      estado: 'Pendiente',
-      triage: {
-        victimaHerida: 'SI',
-        agresorLugar: 'SI',
-        armaFuego: 'SI'
-      },
-      ubicacionNombre: 'Gran Avenida 4500, San Miguel',
-      lat: -33.5015,
-      lng: -70.6521,
-      tags: ['CAMUFLAJE', 'NUEVA'],
-      modoCamuflaje: true,
-      notasOperador: '',
-      mensajes: [
-        { id: 1, autor: 'usuario', texto: 'Estoy en peligro', hora: '14:15', esGif: true },
-        { id: 2, autor: 'operador', texto: 'Mensaje recibido de inmediato. No hable. ¿El agresor tiene armas?', hora: '14:16' },
-        { id: 3, autor: 'usuario', texto: 'Sí', hora: '14:16', esGif: true }
-      ]
-    },
-    {
-      id: 4,
-      nombre: 'Sofía Valdés',
-      rut: '20.651.042-3',
-      telefono: '912345999',
-      incidente: 'Accidente de tránsito',
-      horaIngreso: '11:15',
-      estado: 'Finalizada',
-      triage: {
-        victimaHerida: 'NO',
-        agresorLugar: 'NO',
-        armaFuego: 'NO'
-      },
-      ubicacionNombre: 'Av. Apoquindo 4000, Las Condes',
-      lat: -33.4124,
-      lng: -70.5785,
-      tags: ['RESUELTA'],
-      modoCamuflaje: false,
-      notasOperador: 'Se resolvió la colisión por alcance sin lesionados graves. Carabineros en el lugar.',
-      mensajes: []
-    },
-    {
-      id: 5,
-      nombre: 'Roberto Barraza',
-      rut: '17.432.901-K',
-      telefono: '988877766',
-      incidente: 'Sospecha de Robo',
-      horaIngreso: '09:30',
-      estado: 'Finalizada',
-      triage: {
-        victimaHerida: 'NO',
-        agresorLugar: 'SI',
-        armaFuego: 'NO'
-      },
-      ubicacionNombre: 'Patronato 320, Recoleta',
-      lat: -33.4285,
-      lng: -70.6482,
-      tags: ['RESUELTA'],
-      modoCamuflaje: false,
-      notasOperador: 'Sospechoso huyó ante la llegada de la patrulla. Se tomaron declaraciones.',
-      mensajes: []
-    }
-  ];
-
+  emergencies: EmergencyCase[] = [];
   selectedEmergency: EmergencyCase | null = null;
   searchQuery = '';
   selectedFilter: 'all' | 'pending' | 'active' | 'resolved' = 'all';
@@ -210,28 +94,197 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   newEmergencyToast = false;
   newEmergencyName = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  // Polling intervals
+  private alertsInterval: any;
+  private chatInterval: any;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private http: HttpClient
+  ) {}
 
   ngOnInit() {
-    // Seleccionar por defecto la primera emergencia
-    if (this.emergencies.length > 0) {
-      this.selectedEmergency = this.emergencies[0];
-    }
+    this.startPollingAlertas();
   }
 
   ngAfterViewInit() {
-    // Cargar mapa
-    this.initMap();
+    // Cargar mapa tras inicializar vista
+    setTimeout(() => {
+      this.initMap();
+    }, 300);
   }
 
   ngOnDestroy() {
-    if (this.videoCallTimer) {
-      clearInterval(this.videoCallTimer);
-    }
+    if (this.alertsInterval) clearInterval(this.alertsInterval);
+    if (this.chatInterval) clearInterval(this.chatInterval);
+    if (this.videoCallTimer) clearInterval(this.videoCallTimer);
+  }
+
+  mapAlertaToEmergencyCase(alerta: any): EmergencyCase {
+    const latLng = alerta.latitudLongitud ? alerta.latitudLongitud.split(',') : ['-33.4503', '-70.6781'];
+    const lat = Number(latLng[0]) || -33.4503;
+    const lng = Number(latLng[1]) || -70.6781;
+    const date = new Date(alerta.fechaHoraInicio);
+    const hourStr = !isNaN(date.getTime())
+      ? `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+      : '00:00';
+    
+    let estado: 'Pendiente' | 'En Proceso' | 'Despachada' | 'Finalizada' = 'Pendiente';
+    if (alerta.estado === 'Despachada') estado = 'Despachada';
+    else if (alerta.estado === 'En Proceso') estado = 'En Proceso';
+    else if (alerta.estado === 'Finalizada') estado = 'Finalizada';
+
+    const tags = [];
+    if (estado === 'Pendiente') tags.push('NUEVA');
+    else if (estado === 'En Proceso' || estado === 'Despachada') tags.push('EN ATENCIÓN');
+    else if (estado === 'Finalizada') tags.push('RESUELTA');
+    if (alerta.modoCamuflaje) tags.push('CAMUFLAJE');
+
+    return {
+      id: alerta.id,
+      nombre: alerta.personaSorda && alerta.personaSorda.usuario
+        ? `${alerta.personaSorda.usuario.nombre} ${alerta.personaSorda.usuario.apellido}`
+        : 'Ciudadano Sordo',
+      rut: alerta.personaSorda && alerta.personaSorda.usuario ? alerta.personaSorda.usuario.rut : '—',
+      telefono: alerta.personaSorda && alerta.personaSorda.usuario ? alerta.personaSorda.usuario.telefono : '—',
+      incidente: alerta.incidente || 'Alerta de Pánico',
+      horaIngreso: hourStr,
+      estado: estado,
+      triage: {
+        victimaHerida: 'NO',
+        agresorLugar: 'NO',
+        armaFuego: 'NO'
+      },
+      ubicacionNombre: alerta.personaSorda ? alerta.personaSorda.direccion : 'Ubicación Desconocida',
+      lat: lat,
+      lng: lng,
+      tags: tags,
+      modoCamuflaje: !!alerta.modoCamuflaje,
+      mensajes: [],
+      notasOperador: ''
+    };
+  }
+
+  startPollingAlertas() {
+    const fetchAlerts = () => {
+      this.http.get<any[]>('http://localhost:8080/api/alertas')
+        .subscribe({
+          next: (alertas) => {
+            const mapped = alertas.map(a => this.mapAlertaToEmergencyCase(a));
+            
+            // Buscar si hay alertas nuevas pendientes
+            const currentIds = this.emergencies.map(e => e.id);
+            mapped.forEach(newCase => {
+              if (!currentIds.includes(newCase.id) && newCase.estado === 'Pendiente') {
+                this.newEmergencyName = newCase.nombre;
+                this.newEmergencyToast = true;
+                this.playAlarmSound();
+                setTimeout(() => this.newEmergencyToast = false, 6000);
+              }
+            });
+
+            this.emergencies = mapped;
+
+            // Mantener selección del caso actual si aún existe
+            if (this.selectedEmergency) {
+              const stillExists = this.emergencies.find(e => e.id === this.selectedEmergency!.id);
+              if (stillExists) {
+                // Actualizar propiedades preservando mensajes de chat locales si son más nuevos
+                const prevMsgs = this.selectedEmergency.mensajes;
+                Object.assign(this.selectedEmergency, stillExists);
+                if (this.selectedEmergency.mensajes.length === 0) {
+                  this.selectedEmergency.mensajes = prevMsgs;
+                }
+              } else {
+                this.selectedEmergency = this.emergencies.length > 0 ? this.emergencies[0] : null;
+              }
+            } else if (this.emergencies.length > 0) {
+              this.selectEmergency(this.emergencies[0]);
+            }
+
+            this.updateMapMarker();
+          },
+          error: (err) => console.error('Error fetching alerts:', err)
+        });
+    };
+
+    this.alertsInterval = setInterval(fetchAlerts, 3000);
+    fetchAlerts();
+
+    // Polling de detalles (chat y triage)
+    this.chatInterval = setInterval(() => {
+      this.fetchSelectedEmergencyDetails();
+    }, 2000);
+  }
+
+  fetchSelectedEmergencyDetails() {
+    if (!this.selectedEmergency) return;
+    const alertId = this.selectedEmergency.id;
+
+    // Obtener triage
+    this.http.get<any[]>(`http://localhost:8080/api/triage-alertas/alerta/${alertId}`)
+      .subscribe({
+        next: (triageList) => {
+          if (!this.selectedEmergency || this.selectedEmergency.id !== alertId) return;
+          
+          let victimaHerida: 'SI' | 'NO' = 'NO';
+          let agresorLugar: 'SI' | 'NO' = 'NO';
+          let armaFuego: 'SI' | 'NO' = 'NO';
+
+          triageList.forEach(t => {
+            const pre = t.preguntaClave.toUpperCase();
+            if (pre.includes('HERIDO')) victimaHerida = t.respuestaSordo ? 'SI' : 'NO';
+            if (pre.includes('ARMA')) armaFuego = t.respuestaSordo ? 'SI' : 'NO';
+            if (pre.includes('CASA') || pre.includes('LUGAR')) agresorLugar = t.respuestaSordo ? 'SI' : 'NO';
+          });
+
+          this.selectedEmergency.triage = { victimaHerida, agresorLugar, armaFuego };
+        },
+        error: (err) => console.warn('Error fetching triage:', err)
+      });
+
+    // Obtener chats
+    this.http.get<any[]>(`http://localhost:8080/api/chats/alerta/${alertId}`)
+      .subscribe({
+        next: (chatList) => {
+          if (!this.selectedEmergency || this.selectedEmergency.id !== alertId) return;
+
+          const mappedMsgs: ChatMessage[] = chatList.map(m => {
+            const time = new Date(m.fechaHoraEnvio);
+            const hourStr = !isNaN(time.getTime())
+              ? `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`
+              : '00:00';
+            
+            let autor: 'usuario' | 'operador' | 'sistema' = 'usuario';
+            if (m.emisorId === 1) {
+              autor = 'operador';
+            } else if (m.emisorId === 0) {
+              autor = 'sistema';
+            }
+
+            return {
+              id: m.id,
+              autor: autor,
+              texto: m.texto,
+              hora: hourStr,
+              esGif: m.tipo === 'gif',
+              archivoUrl: m.archivoUrl,
+              tipoArchivo: m.tipoArchivo
+            };
+          });
+
+          if (JSON.stringify(this.selectedEmergency.mensajes) !== JSON.stringify(mappedMsgs)) {
+            this.selectedEmergency.mensajes = mappedMsgs;
+            this.scrollChatToBottom();
+          }
+        },
+        error: (err) => console.warn('Error fetching chats:', err)
+      });
   }
 
   initMap() {
-    if (typeof L !== 'undefined' && this.selectedEmergency) {
+    if (typeof L !== 'undefined' && this.selectedEmergency && !this.map) {
       const coords: [number, number] = [this.selectedEmergency.lat, this.selectedEmergency.lng];
       
       this.map = L.map('leaflet-map-element', {
@@ -240,7 +293,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       }).setView(coords, 15);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
-
       this.updateMapMarker();
     }
   }
@@ -283,18 +335,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   selectEmergency(item: EmergencyCase) {
     this.selectedEmergency = item;
     
-    // Mover el mapa a la ubicación seleccionada
+    // Mover el mapa
     if (this.map && L) {
       const coords: [number, number] = [item.lat, item.lng];
       this.map.setView(coords, 15);
       this.updateMapMarker();
     }
+    this.fetchSelectedEmergencyDetails();
   }
-
 
   getFilteredEmergencies(): EmergencyCase[] {
     return this.emergencies.filter(item => {
-      // Solo mostramos emergencias activas en el dashboard (no finalizadas)
       if (item.estado === 'Finalizada') return false;
 
       const matchesSearch = item.nombre.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -361,117 +412,146 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     alert('Exportando historial de emergencias en formato PDF... El archivo se ha descargado correctamente.');
   }
 
-
   sendTextMessage() {
     if (!this.chatText.trim() || !this.selectedEmergency) return;
-    
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    this.selectedEmergency.mensajes.push({
-      id: Date.now(),
-      autor: 'operador',
-      texto: this.chatText.trim(),
-      hora: timeStr
-    });
-    
+    const txt = this.chatText.trim();
     this.chatText = '';
-    this.scrollChatToBottom();
+    
+    this.http.post('http://localhost:8080/api/chats', {
+      texto: txt,
+      fechaHoraEnvio: new Date().toISOString(),
+      emisorId: 1, // operator
+      tipo: 'texto',
+      alerta: { id: this.selectedEmergency.id }
+    }).subscribe({
+      next: () => this.fetchSelectedEmergencyDetails(),
+      error: (err) => console.error('Error al enviar mensaje:', err)
+    });
   }
 
   sendPresetGifMsg(gifLabel: string) {
     if (!this.selectedEmergency) return;
     
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    this.selectedEmergency.mensajes.push({
-      id: Date.now(),
-      autor: 'operador',
+    this.http.post('http://localhost:8080/api/chats', {
       texto: `[Respuesta en LSCh] ${gifLabel}`,
-      hora: timeStr,
-      esGif: true
+      fechaHoraEnvio: new Date().toISOString(),
+      emisorId: 1, // operator
+      tipo: 'gif',
+      alerta: { id: this.selectedEmergency.id }
+    }).subscribe({
+      next: () => this.fetchSelectedEmergencyDetails(),
+      error: (err) => console.error('Error al enviar GIF rápido:', err)
     });
-    
-    this.scrollChatToBottom();
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file && this.selectedEmergency) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      this.http.post<any>('http://localhost:8080/api/uploads', formData)
+        .subscribe({
+          next: (res) => {
+            this.http.post('http://localhost:8080/api/chats', {
+              texto: res.fileName,
+              fechaHoraEnvio: new Date().toISOString(),
+              emisorId: 1, // operator
+              tipo: 'archivo',
+              archivoUrl: res.fileUrl,
+              tipoArchivo: res.fileType,
+              alerta: { id: this.selectedEmergency!.id }
+            }).subscribe({
+              next: () => this.fetchSelectedEmergencyDetails(),
+              error: (err) => console.error('Error al enviar adjunto al chat:', err)
+            });
+          },
+          error: (err) => {
+            console.error('Error subiendo archivo:', err);
+            alert('Error al subir el archivo al servidor');
+          }
+        });
+    }
   }
 
   dispatchUnit(unitType: 'patrulla' | 'ambulancia' | 'bomberos') {
     if (!this.selectedEmergency) return;
     
-    let unitName = '';
+    let nextEstado: 'En Proceso' | 'Despachada' = 'En Proceso';
     let actionText = '';
+    
     if (unitType === 'patrulla') {
-      unitName = 'Radio Patrulla (Carabineros)';
-      this.selectedEmergency.estado = 'Despachada';
+      nextEstado = 'Despachada';
       actionText = 'SE DESPACHÓ: Radio Patrulla (Carabineros) al lugar del incidente.';
     } else if (unitType === 'ambulancia') {
-      unitName = 'SAMU (Ambulancia)';
-      this.selectedEmergency.estado = 'En Proceso';
+      nextEstado = 'En Proceso';
       actionText = 'SE ENLAZÓ CON SAMU: Ambulancia de emergencia en camino.';
     } else {
-      unitName = 'Cuerpo de Bomberos';
-      this.selectedEmergency.estado = 'En Proceso';
+      nextEstado = 'En Proceso';
       actionText = 'SE ENLAZÓ CON BOMBEROS: Carro bomba despachado.';
     }
 
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    this.selectedEmergency.mensajes.push({
-      id: Date.now(),
-      autor: 'sistema',
-      texto: actionText,
-      hora: timeStr
-    });
-
-    // Actualizar tags de visualización
-    const idx = this.selectedEmergency.tags.indexOf('NUEVA');
-    if (idx !== -1) {
-      this.selectedEmergency.tags.splice(idx, 1);
-    }
-    if (!this.selectedEmergency.tags.includes('EN ATENCIÓN')) {
-      this.selectedEmergency.tags.push('EN ATENCIÓN');
-    }
-
-    this.updateMapMarker();
-    this.scrollChatToBottom();
+    this.http.get<any>(`http://localhost:8080/api/alertas/${this.selectedEmergency.id}`)
+      .subscribe({
+        next: (alerta) => {
+          alerta.estado = nextEstado;
+          this.http.put(`http://localhost:8080/api/alertas/${this.selectedEmergency!.id}`, alerta)
+            .subscribe({
+              next: () => {
+                this.http.post('http://localhost:8080/api/chats', {
+                  texto: actionText,
+                  fechaHoraEnvio: new Date().toISOString(),
+                  emisorId: 0, // system
+                  tipo: 'texto',
+                  alerta: { id: this.selectedEmergency!.id }
+                }).subscribe({
+                  next: () => {
+                    this.fetchSelectedEmergencyDetails();
+                    this.updateMapMarker();
+                  },
+                  error: (err) => console.error('Error al guardar mensaje del sistema:', err)
+                });
+              },
+              error: (err) => console.error('Error al actualizar estado:', err)
+            });
+        }
+      });
   }
 
   resolveEmergency() {
     if (!this.selectedEmergency) return;
-    
-    this.selectedEmergency.estado = 'Finalizada';
-    this.selectedEmergency.tags = ['RESUELTA'];
-    
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    this.selectedEmergency.mensajes.push({
-      id: Date.now(),
-      autor: 'sistema',
-      texto: `CASO CERRADO: Operación finalizada y guardada en historial.`,
-      hora: timeStr
-    });
-    
-    this.scrollChatToBottom();
 
-    // Seleccionar automáticamente la siguiente emergencia activa
-    const activeEmergencies = this.getFilteredEmergencies();
-    if (activeEmergencies.length > 0) {
-      this.selectEmergency(activeEmergencies[0]);
-    } else {
-      this.selectedEmergency = null;
-      if (this.marker && this.map) {
-        this.map.removeLayer(this.marker);
-        this.marker = null;
-      }
-    }
+    this.http.get<any>(`http://localhost:8080/api/alertas/${this.selectedEmergency.id}`)
+      .subscribe({
+        next: (alerta) => {
+          alerta.estado = 'Finalizada';
+          this.http.put(`http://localhost:8080/api/alertas/${this.selectedEmergency!.id}`, alerta)
+            .subscribe({
+              next: () => {
+                this.http.post('http://localhost:8080/api/chats', {
+                  texto: 'CASO CERRADO: Operación finalizada y guardada en historial.',
+                  fechaHoraEnvio: new Date().toISOString(),
+                  emisorId: 0, // system
+                  tipo: 'texto',
+                  alerta: { id: this.selectedEmergency!.id }
+                }).subscribe({
+                  next: () => {
+                    this.selectedEmergency = null;
+                    if (this.marker && this.map) {
+                      this.map.removeLayer(this.marker);
+                      this.marker = null;
+                    }
+                  },
+                  error: (err) => console.error('Error al cerrar chat:', err)
+                });
+              },
+              error: (err) => console.error('Error al finalizar alerta:', err)
+            });
+        }
+      });
   }
 
-
   saveDispatchNotes() {
-    // En una aplicación real enviaríamos esto a un backend. Aquí simulamos que se guarda localmente en el objeto
     alert('Notas de despacho actualizadas y registradas correctamente.');
   }
 
@@ -500,58 +580,47 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // --- Simulador de Nueva Emergencia ---
   simulateIncomingEmergency() {
+    // Simula una alerta en el backend agregándola por HTTP
     const randomNames = ['Roberto Barraza', 'Sofía Valdés', 'Jorge Sanhueza', 'Camila Leyton'];
-    const randomRuts = ['17.432.901-k', '20.651.042-3', '15.981.332-9', '18.502.119-2'];
+    const randomRuts = ['17.432.901-K', '20.651.042-3', '15.981.332-9', '18.502.119-2'];
     const randomIncidents = ['Sospecha de Robo', 'Accidente de tránsito', 'Violencia intrafamiliar', 'Intento de asalto'];
     const randomCoords = [
-      { lat: -33.4550, lng: -70.6800, addr: "Av. General Velásquez 120, Estación Central" },
-      { lat: -33.4350, lng: -70.6400, addr: "Av. Portugal 440, Santiago" },
-      { lat: -33.4680, lng: -70.6920, addr: "Departamental 1200, Cerrillos" }
+      "-33.4550,-70.6800",
+      "-33.4350,-70.6400",
+      "-33.4680,-70.6920"
     ];
 
     const idx = Math.floor(Math.random() * randomNames.length);
     const coordIdx = Math.floor(Math.random() * randomCoords.length);
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    const newCase: EmergencyCase = {
-      id: Date.now(),
-      nombre: randomNames[idx],
-      rut: randomRuts[idx],
-      telefono: '9' + Math.floor(10000000 + Math.random() * 90000000),
+    this.http.post('http://localhost:8080/api/alertas', {
+      fechaHoraInicio: new Date().toISOString(),
+      latitudLongitud: randomCoords[coordIdx],
+      disponibleTriage: true,
+      estado: 'ACTIVO',
       incidente: randomIncidents[idx],
-      horaIngreso: timeStr,
-      estado: 'Pendiente',
-      triage: {
-        victimaHerida: Math.random() > 0.5 ? 'SI' : 'NO',
-        agresorLugar: Math.random() > 0.5 ? 'SI' : 'NO',
-        armaFuego: Math.random() > 0.7 ? 'SI' : 'NO'
+      modoCamuflaje: Math.random() > 0.5,
+      personaSorda: {
+        id: 1 // Default persona sorda (María Gómez)
+      }
+    }).subscribe({
+      next: (res: any) => {
+        // Enviar primer mensaje automático del sistema
+        this.http.post('http://localhost:8080/api/chats', {
+          texto: 'Estoy en peligro',
+          fechaHoraEnvio: new Date().toISOString(),
+          emisorId: 2, // sordo
+          tipo: 'texto',
+          alerta: { id: res.id }
+        }).subscribe({
+          next: () => {
+            console.log('Alerta entrante simulada en base de datos.');
+          }
+        });
       },
-      ubicacionNombre: randomCoords[coordIdx].addr,
-      lat: randomCoords[coordIdx].lat,
-      lng: randomCoords[coordIdx].lng,
-      tags: ['CAMUFLAJE', 'NUEVA'],
-      modoCamuflaje: true,
-      notasOperador: '',
-      mensajes: [
-        { id: 1, autor: 'usuario', texto: 'Estoy en peligro', hora: timeStr, esGif: true }
-      ]
-    };
-
-    // Agregar al inicio
-    this.emergencies.unshift(newCase);
-    this.selectEmergency(newCase);
-
-    // Activar alertas
-    this.newEmergencyName = newCase.nombre;
-    this.newEmergencyToast = true;
-    this.playAlarmSound();
-
-    setTimeout(() => {
-      this.newEmergencyToast = false;
-    }, 6000);
+      error: (err) => console.error('Error al simular alerta:', err)
+    });
   }
 
   private playAlarmSound() {
@@ -559,21 +628,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!this.audioCtx) {
         this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
-      
       if (this.audioCtx.state === 'suspended') {
         this.audioCtx.resume();
       }
-
-      // Generar sirena bitonal
-      const duration = 1.2; // segundos
+      const duration = 1.2;
       const osc1 = this.audioCtx.createOscillator();
-      const osc2 = this.audioCtx.createOscillator();
       const gainNode = this.audioCtx.createGain();
 
       osc1.type = 'sawtooth';
-      osc2.type = 'sine';
-
-      // Frecuencia modulada para sonido de sirena
       osc1.frequency.setValueAtTime(440, this.audioCtx.currentTime);
       osc1.frequency.linearRampToValueAtTime(880, this.audioCtx.currentTime + 0.3);
       osc1.frequency.linearRampToValueAtTime(440, this.audioCtx.currentTime + 0.6);
@@ -589,7 +651,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       osc1.start();
       osc1.stop(this.audioCtx.currentTime + duration);
     } catch (e) {
-      console.warn('AudioContext no soportado o bloqueado por el navegador:', e);
+      console.warn('AudioContext bloqueado o no soportado:', e);
     }
   }
 

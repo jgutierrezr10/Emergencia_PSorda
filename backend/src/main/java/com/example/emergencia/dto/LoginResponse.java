@@ -13,5 +13,7 @@ public class LoginResponse {
     private String rut;
     private String nombreCompleto;
     private String rol;
+    private Long usuarioId;
+    private Long personaSordaId;
 
 }

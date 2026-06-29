@@ -32,4 +32,13 @@ public class ChatEntity {
     @ManyToOne
     @JoinColumn(name = "gif_id")
     private CatalogoGifEntity gif;
+
+    @Column(name = "tipo", length = 50)
+    private String tipo;
+
+    @Column(name = "archivo_url", length = 500)
+    private String archivoUrl;
+
+    @Column(name = "tipo_archivo", length = 100)
+    private String tipoArchivo;
 }

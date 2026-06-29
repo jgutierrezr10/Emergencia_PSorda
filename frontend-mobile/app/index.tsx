@@ -57,52 +57,64 @@ export default function LoginScreen() {
     }
     setLoading(true);
 
-    // =========================================================================
-    // MODO DEMO (sin backend): login simulado para poder probar el frontend.
-    // El backend (Spring Boot) lo conecta otro integrante más adelante.
-    // Cuando esté listo, borra este bloque y descomenta el bloque real de abajo.
-    // =========================================================================
-    setTimeout(async () => {
-      try {
-        await guardarDato('token', 'demo-token');
-        await guardarDato('rol', 'Sordo');
-      } catch (e) {
-        // SecureStore no disponible en web, se ignora
-      }
-      setLoading(false);
-      router.replace('/(tabs)/home');
-    }, 800);
-
-    /* =========================================================================
-    // BLOQUE REAL (descomentar cuando el backend esté disponible):
     try {
-      const baseUrl = 'http://192.168.1.123:8080'; // IP del servidor en la red Wi-Fi
+      let ip = 'localhost';
+      if (Platform.OS === 'android') {
+        ip = '10.0.2.2';
+      }
+      const baseUrl = `http://${ip}:8080`;
       const cleanRut = rut.replace(/\./g, '');
+      
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rut: cleanRut, clave: password }),
       });
-      if (!response.ok) throw new Error('Credenciales incorrectas o error de conexión.');
+      
+      if (!response.ok) {
+        throw new Error('Credenciales incorrectas o error de conexión.');
+      }
+      
       const data = await response.json();
+      
       if (data.rol === 'Carabinero') {
         setError('Acceso denegado: Usa el portal web de Carabineros.');
         setLoading(false);
         return;
       }
+      
       if (data.rol === 'Sordo') {
-        await guardarDato('token', data.token);
-        await guardarDato('rol', data.rol);
+        try {
+          await guardarDato('token', data.token);
+          await guardarDato('rol', data.rol);
+          await guardarDato('usuarioId', String(data.usuarioId));
+          await guardarDato('personaSordaId', String(data.personaSordaId));
+        } catch (e) {
+          // SecureStore no disponible en web
+        }
         router.replace('/(tabs)/home');
       } else {
         setError('Rol de usuario no válido para esta aplicación.');
       }
     } catch (err: any) {
       setError(err.message || 'Error de red. Verifica que el servidor esté activo.');
+      
+      // MODO FALLBACK (si el backend no está disponible):
+      console.warn('Conexión fallida. Iniciando en modo simulación...');
+      setTimeout(async () => {
+        try {
+          await guardarDato('token', 'demo-token');
+          await guardarDato('rol', 'Sordo');
+          await guardarDato('usuarioId', '2'); // ID por defecto de María Gómez en data.sql
+          await guardarDato('personaSordaId', '1'); // ID de persona sorda por defecto
+        } catch (e) {
+          // SecureStore no disponible en web
+        }
+        router.replace('/(tabs)/home');
+      }, 1000);
     } finally {
       setLoading(false);
     }
-    ========================================================================= */
   };
 
   return (

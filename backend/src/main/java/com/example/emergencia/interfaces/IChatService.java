@@ -9,4 +9,5 @@ public interface IChatService {
     ChatEntity save(ChatEntity chat);
     ChatEntity update(ChatEntity chat);
     void delete(Long id);
+    List<ChatEntity> findByAlertaId(Long alertaId);
 }

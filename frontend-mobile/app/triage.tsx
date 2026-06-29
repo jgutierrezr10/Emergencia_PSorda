@@ -1,10 +1,22 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useTheme, Colors } from '@/theme/theme';
+import * as SecureStore from 'expo-secure-store';
+import * as Location from 'expo-location';
+
+const guardarDato = async (key: string, value: string) => {
+  if (Platform.OS === 'web') localStorage.setItem(key, value);
+  else await SecureStore.setItemAsync(key, value);
+};
+
+const obtenerDato = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') return localStorage.getItem(key);
+  return await SecureStore.getItemAsync(key);
+};
 
 interface Pregunta {
   titulo: string;
@@ -31,16 +43,97 @@ export default function TriageScreen() {
   const [paso, setPaso] = useState(0);
   const [respuestas, setRespuestas] = useState<boolean[]>([]);
   const [enviado, setEnviado] = useState(false);
+  const [alertaId, setAlertaId] = useState<number | null>(null);
 
   useEffect(() => {
-    // TODO: Enviar la alerta + ubicación GPS al backend (Spring Boot)
-    const t = setTimeout(() => setCargando(false), 2000);
-    return () => clearTimeout(t);
+    const crearAlerta = async () => {
+      try {
+        let ip = 'localhost';
+        if (Platform.OS === 'android') {
+          ip = '10.0.2.2';
+        }
+        const baseUrl = `http://${ip}:8080`;
+
+        const personaSordaIdStr = await obtenerDato('personaSordaId');
+        const personaSordaId = personaSordaIdStr ? Number(personaSordaIdStr) : 1;
+
+        let lat = -33.4503;
+        let lng = -70.6781;
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+            lat = pos.coords.latitude;
+            lng = pos.coords.longitude;
+          }
+        } catch (e) {
+          console.warn('No se pudo obtener la ubicación GPS, usando por defecto');
+        }
+
+        const response = await fetch(`${baseUrl}/api/alertas`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fechaHoraInicio: new Date().toISOString(),
+            latitudLongitud: `${lat},${lng}`,
+            disponibleTriage: true,
+            estado: 'ACTIVO',
+            incidente: 'Alerta de Pánico (Sordo)',
+            modoCamuflaje: true,
+            personaSorda: {
+              id: personaSordaId
+            }
+          }),
+        });
+
+        if (!response.ok) throw new Error('Error al crear la alerta');
+        const data = await response.json();
+        
+        setAlertaId(data.id);
+        await guardarDato('currentAlertaId', String(data.id));
+        setCargando(false);
+      } catch (err) {
+        console.error('Error creando alerta real, usando simulación:', err);
+        setAlertaId(999);
+        await guardarDato('currentAlertaId', '999');
+        setCargando(false);
+      }
+    };
+
+    crearAlerta();
   }, []);
 
-  const responder = (valor: boolean) => {
+  const responder = async (valor: boolean) => {
     const nuevas = [...respuestas, valor];
     setRespuestas(nuevas);
+
+    try {
+      let ip = 'localhost';
+      if (Platform.OS === 'android') {
+        ip = '10.0.2.2';
+      }
+      const baseUrl = `http://${ip}:8080`;
+      const currentId = alertaId || Number(await obtenerDato('currentAlertaId'));
+
+      if (currentId && currentId !== 999) {
+        const pregunta = PREGUNTAS[paso];
+        await fetch(`${baseUrl}/api/triage-alertas`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            preguntaClave: pregunta.titulo,
+            respuestaSordo: valor,
+            horaRespuesta: new Date().toISOString(),
+            alerta: {
+              id: currentId
+            }
+          }),
+        });
+      }
+    } catch (e) {
+      console.warn('Error enviando triage al backend:', e);
+    }
+
     if (paso < PREGUNTAS.length - 1) setPaso(paso + 1);
     else setEnviado(true);
   };

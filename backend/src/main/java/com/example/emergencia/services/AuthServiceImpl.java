@@ -4,18 +4,24 @@ import com.example.emergencia.config.JwtUtil;
 import com.example.emergencia.dto.LoginRequest;
 import com.example.emergencia.dto.LoginResponse;
 import com.example.emergencia.entity.UsuarioEntity;
+import com.example.emergencia.entity.PersonaSordaEntity;
 import com.example.emergencia.interfaces.IAuthService;
 import com.example.emergencia.repository.UsuarioRepository;
+import com.example.emergencia.repository.PersonaSordaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.Optional;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private PersonaSordaRepository personaSordaRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -41,10 +47,19 @@ public class AuthServiceImpl implements IAuthService {
         String rol = (usuario.getRol() != null && !usuario.getRol().isEmpty()) ? usuario.getRol() : "Desconocido";
         String nombreCompleto = usuario.getNombre() + " " + usuario.getApellido();
 
+        // Obtener personaSordaId si es Sordo
+        Long personaSordaId = null;
+        if ("Sordo".equals(rol)) {
+            Optional<PersonaSordaEntity> ps = personaSordaRepository.findByUsuarioId(usuario.getId());
+            if (ps.isPresent()) {
+                personaSordaId = ps.get().getId();
+            }
+        }
+
         // Genera Token JWT
         String token = jwtUtil.generateToken(usuario.getRut(), rol);
 
-        // Retorna la respuesta con el Token, Rut y Rol
-        return new LoginResponse(token, usuario.getRut(), nombreCompleto, rol);
+        // Retorna la respuesta con el Token, Rut, Rol, UsuarioId y PersonaSordaId
+        return new LoginResponse(token, usuario.getRut(), nombreCompleto, rol, usuario.getId(), personaSordaId);
     }
 }

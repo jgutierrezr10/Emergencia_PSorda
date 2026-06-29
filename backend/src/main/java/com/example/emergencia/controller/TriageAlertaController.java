@@ -22,6 +22,11 @@ public class TriageAlertaController {
         return ResponseEntity.ok(triageAlertaService.findAll());
     }
 
+    @GetMapping("/alerta/{alertaId}")
+    public ResponseEntity<List<TriageAlertaEntity>> getByAlertaId(@PathVariable Long alertaId) {
+        return ResponseEntity.ok(triageAlertaService.findByAlertaId(alertaId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<TriageAlertaEntity> getById(@PathVariable Long id) {
         return ResponseEntity.ok(triageAlertaService.findById(id));

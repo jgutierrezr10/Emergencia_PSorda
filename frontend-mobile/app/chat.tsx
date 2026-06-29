@@ -1,18 +1,27 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useTheme, Colors } from '@/theme/theme';
+import * as SecureStore from 'expo-secure-store';
+
+const obtenerDato = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') return localStorage.getItem(key);
+  return await SecureStore.getItemAsync(key);
+};
 
 type Autor = 'op' | 'yo';
 
 interface Mensaje {
   id: number;
   autor: Autor;
-  tipo: 'texto' | 'gif';
+  tipo: 'texto' | 'gif' | 'archivo';
   texto: string;
   hora: string;
+  archivoUrl?: string;
+  tipoArchivo?: string;
 }
 
 const GIFS = [
@@ -46,17 +55,175 @@ export default function ChatScreen() {
   const [texto, setTexto] = useState('');
   const scrollRef = useRef<ScrollView>(null);
 
-  const agregar = (m: Omit<Mensaje, 'id' | 'hora'>) => {
-    setMensajes((prev) => [...prev, { ...m, id: Date.now(), hora: ahora() }]);
+  const [alertaId, setAlertaId] = useState<string | null>(null);
+  const [usuarioId, setUsuarioId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const initData = async () => {
+      const aid = await obtenerDato('currentAlertaId');
+      const uid = await obtenerDato('usuarioId');
+      setAlertaId(aid);
+      setUsuarioId(uid);
+    };
+    initData();
+  }, []);
+
+  useEffect(() => {
+    if (!alertaId || alertaId === '999') return;
+
+    const cargarMensajes = async () => {
+      try {
+        let ip = 'localhost';
+        if (Platform.OS === 'android') {
+          ip = '10.0.2.2';
+        }
+        const baseUrl = `http://${ip}:8080`;
+        const res = await fetch(`${baseUrl}/api/chats/alerta/${alertaId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const mapped: Mensaje[] = data.map((m: any) => {
+            const time = new Date(m.fechaHoraEnvio);
+            const hourStr = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+            const isMe = String(m.emisorId) === String(usuarioId);
+            return {
+              id: m.id,
+              autor: isMe ? 'yo' : 'op',
+              tipo: m.tipo === 'gif' ? 'gif' : m.tipo === 'archivo' ? 'archivo' : 'texto',
+              texto: m.texto,
+              hora: hourStr,
+              archivoUrl: m.archivoUrl,
+              tipoArchivo: m.tipoArchivo
+            };
+          });
+
+          if (mapped.length === 0) {
+            setMensajes([
+              {
+                id: 1,
+                autor: 'op',
+                tipo: 'texto',
+                texto: 'HOLA. YO OPERADOR CENCO. YO CONTIGO POR CHAT. TÚ ESCRIBIR O ENVIAR GIF EN LSCh. CUENTA QUÉ PASA.',
+                hora: ahora(),
+              }
+            ]);
+          } else {
+            setMensajes(mapped);
+          }
+        }
+      } catch (e) {
+        console.warn('Error fetching messages:', e);
+      }
+    };
+
+    const intervalId = setInterval(cargarMensajes, 2000);
+    cargarMensajes();
+    return () => clearInterval(intervalId);
+  }, [alertaId, usuarioId]);
+
+  const enviarMensajeBackend = async (tipo: 'texto' | 'gif' | 'archivo', textoVal: string, archivoUrlVal?: string, tipoArchivoVal?: string) => {
+    if (!alertaId || alertaId === '999') {
+      setMensajes((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          autor: 'yo',
+          tipo: tipo,
+          texto: textoVal,
+          hora: ahora(),
+          archivoUrl: archivoUrlVal,
+          tipoArchivo: tipoArchivoVal
+        }
+      ]);
+      return;
+    }
+
+    try {
+      let ip = 'localhost';
+      if (Platform.OS === 'android') {
+        ip = '10.0.2.2';
+      }
+      const baseUrl = `http://${ip}:8080`;
+      const emisor = usuarioId ? Number(usuarioId) : 2;
+
+      await fetch(`${baseUrl}/api/chats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          texto: textoVal,
+          fechaHoraEnvio: new Date().toISOString(),
+          emisorId: emisor,
+          tipo: tipo,
+          archivoUrl: archivoUrlVal,
+          tipoArchivo: tipoArchivoVal,
+          alerta: {
+            id: Number(alertaId)
+          }
+        }),
+      });
+    } catch (e) {
+      console.warn('Error sending message:', e);
+    }
   };
 
-  const enviarTexto = () => {
+  const enviarTexto = async () => {
     if (!texto.trim()) return;
-    agregar({ autor: 'yo', tipo: 'texto', texto: texto.trim() });
+    const txt = texto.trim();
     setTexto('');
+    await enviarMensajeBackend('texto', txt);
   };
 
-  const enviarGif = (label: string) => agregar({ autor: 'yo', tipo: 'gif', texto: label });
+  const enviarGif = async (label: string) => {
+    await enviarMensajeBackend('gif', label);
+  };
+
+  const seleccionarYSubirArchivo = async () => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '*/*';
+      input.onchange = async (e: any) => {
+        const file = e.target.files[0];
+        if (file) {
+          await subirArchivo(file);
+        }
+      };
+      input.click();
+    } else {
+      mockSubirArchivo();
+    }
+  };
+
+  const subirArchivo = async (file: File) => {
+    try {
+      let ip = 'localhost';
+      if (Platform.OS === 'android') {
+        ip = '10.0.2.2';
+      }
+      const baseUrl = `http://${ip}:8080`;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch(`${baseUrl}/api/uploads`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) throw new Error('Error al subir archivo');
+      const data = await res.json();
+      
+      await enviarMensajeBackend('archivo', data.fileName, data.fileUrl, data.fileType);
+    } catch (e) {
+      console.error('Error al subir archivo:', e);
+      alert('Error al subir archivo');
+    }
+  };
+
+  const mockSubirArchivo = async () => {
+    alert('Simulando carga de archivo adjunto (foto_emergencia.jpg)...');
+    const fileUrl = 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef?w=500';
+    await enviarMensajeBackend('archivo', 'foto_emergencia.jpg', fileUrl, 'image/jpeg');
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -105,6 +272,19 @@ export default function ChatScreen() {
                       </View>
                       <Text style={[styles.gifLabel, esYo ? styles.textoYo : styles.textoOp]}>{m.texto}</Text>
                     </View>
+                  ) : m.tipo === 'archivo' ? (
+                    <View style={{ gap: 6, minWidth: 150 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: esYo ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)', borderRadius: 8, padding: 8 }}>
+                        <Ionicons name={m.tipoArchivo?.startsWith('image') ? 'image' : 'document-attach'} size={24} color={esYo ? '#ffffff' : colors.primary} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[{ fontSize: 13, fontWeight: '700' }, esYo ? styles.textoYo : styles.textoOp]} numberOfLines={1}>{m.texto}</Text>
+                          <Text style={[{ fontSize: 10, opacity: 0.8 }, esYo ? styles.textoYo : styles.textoOp]}>Adjunto</Text>
+                        </View>
+                      </View>
+                      {m.tipoArchivo?.startsWith('image') && m.archivoUrl && (
+                        <Image source={{ uri: m.archivoUrl }} style={{ width: '100%', height: 120, borderRadius: 8, marginTop: 4 }} contentFit="cover" />
+                      )}
+                    </View>
                   ) : (
                     <Text style={[styles.textoMsg, esYo ? styles.textoYo : styles.textoOp]}>{m.texto}</Text>
                   )}
@@ -130,6 +310,9 @@ export default function ChatScreen() {
         </View>
 
         <View style={styles.inputRow}>
+          <TouchableOpacity style={[styles.sendBtn, { backgroundColor: colors.surfaceAlt, marginRight: 4 }]} onPress={seleccionarYSubirArchivo}>
+            <Ionicons name="attach" size={24} color={colors.primary} />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="ESCRIBIR MENSAJE..."

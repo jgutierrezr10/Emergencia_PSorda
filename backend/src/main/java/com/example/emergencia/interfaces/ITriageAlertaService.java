@@ -9,4 +9,5 @@ public interface ITriageAlertaService {
     TriageAlertaEntity save(TriageAlertaEntity triageAlerta);
     TriageAlertaEntity update(TriageAlertaEntity triageAlerta);
     void delete(Long id);
+    List<TriageAlertaEntity> findByAlertaId(Long alertaId);
 }

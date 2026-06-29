@@ -22,6 +22,11 @@ public class ChatController {
         return ResponseEntity.ok(chatService.findAll());
     }
 
+    @GetMapping("/alerta/{alertaId}")
+    public ResponseEntity<List<ChatEntity>> getByAlertaId(@PathVariable Long alertaId) {
+        return ResponseEntity.ok(chatService.findByAlertaId(alertaId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ChatEntity> getById(@PathVariable Long id) {
         return ResponseEntity.ok(chatService.findById(id));

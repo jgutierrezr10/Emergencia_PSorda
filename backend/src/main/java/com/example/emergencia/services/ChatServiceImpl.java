@@ -39,6 +39,9 @@ public class ChatServiceImpl implements IChatService {
         existente.setEmisorId(chat.getEmisorId());
         existente.setAlerta(chat.getAlerta());
         existente.setGif(chat.getGif());
+        existente.setTipo(chat.getTipo());
+        existente.setArchivoUrl(chat.getArchivoUrl());
+        existente.setTipoArchivo(chat.getTipoArchivo());
         return chatRepository.save(existente);
     }
 
@@ -46,5 +49,10 @@ public class ChatServiceImpl implements IChatService {
     public void delete(Long id) {
         ChatEntity existente = findById(id);
         chatRepository.delete(existente);
+    }
+
+    @Override
+    public List<ChatEntity> findByAlertaId(Long alertaId) {
+        return chatRepository.findByAlertaIdOrderByFechaHoraEnvioAsc(alertaId);
     }
 }

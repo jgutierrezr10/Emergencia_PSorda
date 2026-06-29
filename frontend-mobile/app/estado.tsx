@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { router } from 'expo-router';
@@ -6,6 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import MapaUbicacion from '@/components/MapaUbicacion';
 import { useTheme, Colors } from '@/theme/theme';
+import * as SecureStore from 'expo-secure-store';
+
+const obtenerDato = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') return localStorage.getItem(key);
+  return await SecureStore.getItemAsync(key);
+};
 
 type EstadoGps = 'cargando' | 'ok' | 'denegado' | 'error';
 
@@ -17,6 +23,7 @@ export default function EstadoScreen() {
   const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number | null } | null>(null);
   const [direccion, setDireccion] = useState('');
   const [gps, setGps] = useState<EstadoGps>('cargando');
+  const [alertaEstado, setAlertaEstado] = useState('ACTIVO');
 
   useEffect(() => {
     const id = setInterval(() => setSegundos((s) => s + 1), 1000);
@@ -36,6 +43,31 @@ export default function EstadoScreen() {
       const lng = pos.coords.longitude;
       setCoords({ lat, lng, acc: pos.coords.accuracy ?? null });
       setGps('ok');
+
+      // Actualizar ubicación en el backend
+      try {
+        let ip = 'localhost';
+        if (Platform.OS === 'android') {
+          ip = '10.0.2.2';
+        }
+        const baseUrl = `http://${ip}:8080`;
+        const currentId = await obtenerDato('currentAlertaId');
+        if (currentId && currentId !== '999') {
+          const getResp = await fetch(`${baseUrl}/api/alertas/${currentId}`);
+          if (getResp.ok) {
+            const alertData = await getResp.json();
+            alertData.latitudLongitud = `${lat},${lng}`;
+            await fetch(`${baseUrl}/api/alertas/${currentId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(alertData)
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Error actualizando ubicación en el servidor:', e);
+      }
+
       try {
         const geo = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
         if (geo && geo[0]) {
@@ -55,6 +87,38 @@ export default function EstadoScreen() {
   useEffect(() => {
     cargarUbicacion();
   }, [cargarUbicacion]);
+
+  // Polling del estado de la alerta
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const currentId = await obtenerDato('currentAlertaId');
+        if (!currentId || currentId === '999') return;
+        
+        let ip = 'localhost';
+        if (Platform.OS === 'android') {
+          ip = '10.0.2.2';
+        }
+        const baseUrl = `http://${ip}:8080`;
+        
+        const res = await fetch(`${baseUrl}/api/alertas/${currentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setAlertaEstado(data.estado);
+          if (data.estado === 'Finalizada') {
+            alert('La emergencia ha sido resuelta por el operador.');
+            router.replace('/home');
+          }
+        }
+      } catch (e) {
+        console.warn('Error consultando estado de la alerta:', e);
+      }
+    };
+
+    const intervalId = setInterval(checkStatus, 3000);
+    checkStatus();
+    return () => clearInterval(intervalId);
+  }, []);
 
   const mm = String(Math.floor(segundos / 60)).padStart(2, '0');
   const ss = String(segundos % 60).padStart(2, '0');
