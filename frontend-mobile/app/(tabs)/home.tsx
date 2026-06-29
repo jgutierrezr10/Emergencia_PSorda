@@ -1,302 +1,178 @@
-import { StyleSheet, View, Text, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, Pressable, Modal, Animated, Easing, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme, Colors } from '@/theme/theme';
 
 export default function HomeScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [modalConfirmar, setModalConfirmar] = useState(false);
 
-  const handleBotonPanico = () => {
-    setModalConfirmar(true);
-  };
+  const ring1 = useRef(new Animated.Value(0)).current;
+  const ring2 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const mk = (v: Animated.Value) =>
+      Animated.loop(
+        Animated.timing(v, { toValue: 1, duration: 2200, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+      );
+    const a1 = mk(ring1);
+    a1.start();
+    let a2: Animated.CompositeAnimation;
+    const t = setTimeout(() => {
+      a2 = mk(ring2);
+      a2.start();
+    }, 1100);
+    return () => {
+      a1.stop();
+      a2?.stop();
+      clearTimeout(t);
+    };
+  }, [ring1, ring2]);
+
+  const ringStyle = (v: Animated.Value) => ({
+    opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0] }),
+    transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.7] }) }],
+  });
 
   const confirmarAlerta = () => {
-    // La alerta se "envía" (pantalla de carga) en Triage, para que el botón
-    // de camuflaje (snake) siga disponible mientras carga.
     setModalConfirmar(false);
     router.push('/triage');
   };
 
-  const cancelarAlerta = () => {
-    setModalConfirmar(false);
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitulo}>SISTEMA DE EMERGENCIA</Text>
-        <Text style={styles.headerSubtitulo}>Carabineros de Chile</Text>
-      </View>
-
-      {/* Contenido principal */}
-      <View style={styles.contenido}>
-
-        <Text style={styles.instruccion}>
-          Presione el botón en caso de emergencia
-        </Text>
-
-        {/* Botón de pánico */}
-        <TouchableOpacity
-          style={styles.botonPanico}
-          onPress={handleBotonPanico}
-          activeOpacity={0.85}
-        >
-          <View style={styles.botonPanicoInner}>
-            <Text style={styles.botonPanicoTexto}>EMERGENCIA</Text>
-            <Text style={styles.botonPanicoSubtexto}>Presione para alertar</Text>
+      <View style={styles.top}>
+        <View style={styles.brand}>
+          <View style={styles.brandIcon}>
+            <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
           </View>
-        </TouchableOpacity>
-
-        <Text style={styles.aviso}>
-          Al presionar se enviará su ubicación GPS{'\n'}a la central de Carabineros (CENCO)
-        </Text>
-
+          <Text style={styles.brandTexto}>CARABINEROS CHILE · CENCO</Text>
+        </View>
+        <View style={styles.estadoPill}>
+          <View style={styles.estadoDot} />
+          <Text style={styles.estadoTexto}>ACTIVO</Text>
+        </View>
       </View>
 
-      {/* Barra de navegación inferior */}
+      <View style={styles.contenido}>
+        <Text style={styles.titulo}>¿NECESITAS AYUDA?</Text>
+        <Text style={styles.instruccion}>CALMA. TOCA BOTÓN.</Text>
+
+        <View style={styles.botonZona}>
+          <Animated.View style={[styles.ring, ringStyle(ring1)]} />
+          <Animated.View style={[styles.ring, ringStyle(ring2)]} />
+          <Pressable
+            style={({ pressed }) => [styles.botonPanico, pressed && styles.botonPanicoPressed]}
+            onPress={() => setModalConfirmar(true)}
+          >
+            <Ionicons name="alert" size={52} color="#ffffff" />
+            <Text style={styles.botonPanicoTexto}>EMERGENCIA</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.avisoCard}>
+          <Ionicons name="location" size={18} color={colors.primary} />
+          <Text style={styles.aviso}>
+            TÚ TOCAR BOTÓN. ENVIAR TU UBICACIÓN GPS A CARABINEROS (CENCO).
+          </Text>
+        </View>
+      </View>
+
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={22} color="#059669" style={styles.navIconActivo} />
-          <Text style={[styles.navTexto, styles.navTextoActivo]}>Inicio</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/perfil')}>
-          <Ionicons name="person-outline" size={22} color="#9ca3af" style={styles.navIcon} />
-          <Text style={styles.navTexto}>Perfil</Text>
-        </TouchableOpacity>
+        <Pressable style={styles.navItem}>
+          <Ionicons name="home" size={22} color={colors.primary} />
+          <Text style={[styles.navTexto, styles.navTextoActivo]}>INICIO</Text>
+        </Pressable>
+        <Pressable style={styles.navItem} onPress={() => router.replace('/perfil')}>
+          <Ionicons name="person-outline" size={22} color={colors.textMuted} />
+          <Text style={styles.navTexto}>PERFIL</Text>
+        </Pressable>
       </View>
 
-      {/* Modal de confirmación */}
       <Modal visible={modalConfirmar} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-
             <View style={styles.modalIcono}>
-              <Ionicons name="alert" size={32} color="#cc0000" />
+              <Ionicons name="alert" size={30} color={colors.danger} />
             </View>
-            <Text style={styles.modalTitulo}>¿Confirmar Emergencia?</Text>
+            <Text style={styles.modalTitulo}>¿CONFIRMAR EMERGENCIA?</Text>
             <Text style={styles.modalDescripcion}>
-              Se enviará una alerta inmediata con su ubicación GPS a la central de Carabineros.
+              ENVIAR ALERTA + TU UBICACIÓN GPS A CARABINEROS. AHORA.
             </Text>
-            <TouchableOpacity style={styles.btnConfirmar} onPress={confirmarAlerta}>
-              <Text style={styles.btnConfirmarTexto}>CONFIRMAR ALERTA</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.btnCancelar} onPress={cancelarAlerta}>
-              <Text style={styles.btnCancelarTexto}>Cancelar</Text>
-            </TouchableOpacity>
-
+            <Pressable style={({ pressed }) => [styles.btnConfirmar, pressed && { opacity: 0.9 }]} onPress={confirmarAlerta}>
+              <Text style={styles.btnConfirmarTexto}>SÍ, ENVIAR ALERTA</Text>
+            </Pressable>
+            <Pressable style={styles.btnCancelar} onPress={() => setModalConfirmar(false)}>
+              <Text style={styles.btnCancelarTexto}>CANCELAR</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-  },
-  header: {
-    backgroundColor: '#059669',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  headerTitulo: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
-  headerSubtitulo: {
-    color: '#d1fae5',
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
-    letterSpacing: 1,
-  },
-  contenido: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  instruccion: {
-    fontSize: 15,
-    color: '#374151',
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 40,
-    letterSpacing: 0.3,
-  },
-  botonPanico: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: '#cc0000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#cc0000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 16,
-    borderWidth: 6,
-    borderColor: '#ff4444',
-  },
-  botonPanicoInner: {
-    alignItems: 'center',
-  },
-  botonPanicoTexto: {
-    color: '#ffffff',
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
-  botonPanicoSubtexto: {
-    color: '#ffcccc',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  aviso: {
-    marginTop: 40,
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  navBar: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-  },
-  navIcon: {
-    marginBottom: 3,
-  },
-  navIconActivo: {
-    marginBottom: 3,
-  },
-  navTexto: {
-    fontSize: 10,
-    color: '#9ca3af',
-    fontWeight: '600',
-  },
-  navTextoActivo: {
-    color: '#059669',
-    fontWeight: '800',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  modalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 32,
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  modalIcono: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#fef2f2',
-    borderWidth: 3,
-    borderColor: '#cc0000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitulo: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#111827',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  modalDescripcion: {
-    fontSize: 13,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  btnConfirmar: {
-    width: '100%',
-    height: 52,
-    backgroundColor: '#cc0000',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#cc0000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  btnConfirmarTexto: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  btnCancelar: {
-    width: '100%',
-    height: 44,
-    borderWidth: 1.5,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  btnCancelarTexto: {
-    color: '#6b7280',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  enviandoContainer: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  enviandoTexto: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#059669',
-    marginTop: 16,
-  },
-  enviandoSubtexto: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginTop: 6,
-  },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
+    brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    brandIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: c.primarySoft, justifyContent: 'center', alignItems: 'center' },
+    brandTexto: { fontSize: 12, color: c.textSecondary, fontWeight: '600' },
+    estadoPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.primarySoft, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
+    estadoDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: c.primary },
+    estadoTexto: { fontSize: 11, color: c.primary, fontWeight: '700' },
+    contenido: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
+    titulo: { fontSize: 28, fontWeight: '800', color: c.textPrimary, letterSpacing: -0.4 },
+    instruccion: { fontSize: 15, color: c.textMuted, marginTop: 6, marginBottom: 56 },
+    botonZona: { width: 280, height: 280, justifyContent: 'center', alignItems: 'center' },
+    ring: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: c.danger },
+    botonPanico: {
+      width: 220,
+      height: 220,
+      borderRadius: 110,
+      backgroundColor: c.danger,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      shadowColor: c.danger,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.45,
+      shadowRadius: 24,
+      elevation: 14,
+      borderWidth: 8,
+      borderColor: c.bg,
+    },
+    botonPanicoPressed: { transform: [{ scale: 0.96 }] },
+    botonPanicoTexto: { color: '#ffffff', fontSize: 22, fontWeight: '900', letterSpacing: 1.5 },
+    avisoCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      marginTop: 56,
+      borderWidth: 1,
+      borderColor: c.borderSoft,
+    },
+    aviso: { flex: 1, fontSize: 13, color: c.textSecondary, lineHeight: 19 },
+    navBar: { flexDirection: 'row', backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.borderSoft, paddingVertical: 10, paddingHorizontal: 8 },
+    navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, gap: 3 },
+    navTexto: { fontSize: 10, color: c.textMuted, fontWeight: '600' },
+    navTextoActivo: { color: c.primary, fontWeight: '800' },
+    modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center', alignItems: 'center', padding: 24 },
+    modalCard: { backgroundColor: c.surface, borderRadius: 24, padding: 28, width: '100%', maxWidth: 380, alignItems: 'center' },
+    modalIcono: { width: 64, height: 64, borderRadius: 32, backgroundColor: c.dangerSoft, borderWidth: 2, borderColor: c.danger, justifyContent: 'center', alignItems: 'center', marginBottom: 18 },
+    modalTitulo: { fontSize: 20, fontWeight: '800', color: c.textPrimary, marginBottom: 10, textAlign: 'center' },
+    modalDescripcion: { fontSize: 14, color: c.textSecondary, textAlign: 'center', lineHeight: 21, marginBottom: 24 },
+    btnConfirmar: { width: '100%', height: 54, backgroundColor: c.danger, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    btnConfirmarTexto: { color: '#ffffff', fontSize: 15, fontWeight: '900', letterSpacing: 0.8 },
+    btnCancelar: { width: '100%', height: 48, justifyContent: 'center', alignItems: 'center' },
+    btnCancelarTexto: { color: c.textMuted, fontSize: 14, fontWeight: '600' },
+  });

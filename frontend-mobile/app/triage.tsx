@@ -1,28 +1,37 @@
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { useTheme, Colors } from '@/theme/theme';
 
 interface Pregunta {
   titulo: string;
   subtitulo: string;
+  // GIF con la seña en LSCh. null = aún sin GIF (muestra placeholder de manos).
+  gif: number | null;
 }
 
 const PREGUNTAS: Pregunta[] = [
-  { titulo: '¿Estás herido?', subtitulo: 'Si tienes alguna lesión o necesitas atención médica' },
-  { titulo: '¿El agresor está armado?', subtitulo: 'Con arma de fuego, arma blanca u objeto peligroso' },
-  { titulo: '¿El agresor está dentro de la casa?', subtitulo: 'En tu domicilio o en el mismo espacio que tú' },
+  { titulo: 'TÚ ¿HERIDO?', subtitulo: 'TÚ ¿TIENES HERIDA? ¿NECESITAS MÉDICO?', gif: require('../assets/gifs/01-herido.gif') },
+  { titulo: 'AGRESOR ¿TIENE ARMA?', subtitulo: 'PISTOLA, CUCHILLO U OBJETO PELIGROSO', gif: require('../assets/gifs/02-arma.gif') },
+  // Pregunta 3: aún sin GIF. Cuando tengas el archivo, guárdalo en
+  // assets/gifs/03-casa.gif y cambia esta línea por:
+  // gif: require('../assets/gifs/03-casa.gif')
+  { titulo: 'AGRESOR ¿DENTRO CASA?', subtitulo: 'EN TU CASA O MISMO LUGAR QUE TÚ', gif: null },
 ];
 
 export default function TriageScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [cargando, setCargando] = useState(true);
+  const [continuar, setContinuar] = useState(false);
   const [paso, setPaso] = useState(0);
   const [respuestas, setRespuestas] = useState<boolean[]>([]);
   const [enviado, setEnviado] = useState(false);
 
-  // Envío de la alerta (simulado). Es una pantalla normal (no un modal), así
-  // que el botón de camuflaje (snake) sigue disponible mientras carga.
   useEffect(() => {
     // TODO: Enviar la alerta + ubicación GPS al backend (Spring Boot)
     const t = setTimeout(() => setCargando(false), 2000);
@@ -32,45 +41,53 @@ export default function TriageScreen() {
   const responder = (valor: boolean) => {
     const nuevas = [...respuestas, valor];
     setRespuestas(nuevas);
-
-    if (paso < PREGUNTAS.length - 1) {
-      setPaso(paso + 1);
-    } else {
-      // TODO: Enviar respuestas de triage al backend (Spring Boot)
-      // await fetch('http://IP:8080/api/emergencia/triage', { method: 'POST', body: JSON.stringify(nuevas) });
-      setEnviado(true);
-    }
+    if (paso < PREGUNTAS.length - 1) setPaso(paso + 1);
+    else setEnviado(true);
   };
 
-  // Pantalla de carga: enviando la alerta
   if (cargando) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.finalWrapper}>
-          <ActivityIndicator size="large" color="#059669" />
-          <Text style={styles.cargandoTitulo}>Enviando alerta a Carabineros…</Text>
-          <Text style={styles.cargandoTexto}>
-            Obteniendo tu ubicación GPS y notificando a la central CENCO.
-          </Text>
+        <View style={styles.centerWrapper}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.cargandoTitulo}>ENVIANDO ALERTA A CARABINEROS…</Text>
+          <Text style={styles.cargandoTexto}>BUSCANDO TU UBICACIÓN GPS. AVISANDO A CENCO.</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Pantalla final: información enviada
+  if (!continuar && !enviado) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerWrapper}>
+          <View style={styles.avisoCircle}>
+            <Ionicons name="shield-checkmark" size={54} color={colors.primary} />
+          </View>
+          <Text style={styles.avisoTitulo}>¡AYUDA YA ENVIADA!</Text>
+          <Text style={styles.avisoTexto}>
+            CARABINEROS (CENCO) YA TIENE TU ALERTA + TU UBICACIÓN. AYUDA VIENE.
+            {'\n\n'}AHORA TÚ RESPONDER 3 PREGUNTAS. AYUDAR PATRULLA.
+          </Text>
+          <TouchableOpacity style={styles.botonPrimario} onPress={() => setContinuar(true)}>
+            <Text style={styles.botonPrimarioTexto}>SEGUIR</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (enviado) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.finalWrapper}>
-          <View style={styles.finalCircle}>
-            <Ionicons name="checkmark" size={52} color="#059669" />
+        <View style={styles.centerWrapper}>
+          <View style={styles.avisoCircle}>
+            <Ionicons name="checkmark" size={52} color={colors.primary} />
           </View>
-          <Text style={styles.finalTitulo}>Información enviada al operador</Text>
-          <Text style={styles.finalTexto}>
-            El operador CENCO ya tiene tu información de triage y está preparando la respuesta.
-          </Text>
-          <TouchableOpacity style={styles.verEstadoBtn} onPress={() => router.replace('/estado')}>
-            <Text style={styles.verEstadoTexto}>VER ESTADO</Text>
+          <Text style={styles.avisoTitulo}>INFORMACIÓN YA ENVIADA A OPERADOR</Text>
+          <Text style={styles.avisoTexto}>OPERADOR CENCO YA TIENE TU INFORMACIÓN. PREPARANDO RESPUESTA.</Text>
+          <TouchableOpacity style={styles.botonPrimario} onPress={() => router.replace('/estado')}>
+            <Text style={styles.botonPrimarioTexto}>VER ESTADO</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -81,7 +98,6 @@ export default function TriageScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Encabezado: TRIAGE + progreso */}
       <View style={styles.topRow}>
         <Text style={styles.triageLabel}>TRIAGE</Text>
         <Text style={styles.pasoLabel}>{paso + 1} / {PREGUNTAS.length}</Text>
@@ -93,40 +109,39 @@ export default function TriageScreen() {
         ))}
       </View>
 
-      {/* Tarjeta de seña (GIF LSCh) */}
       <View style={styles.gifCard}>
         <View style={styles.gifBadge}>
           <Text style={styles.gifBadgeTexto}>GIF</Text>
         </View>
-        <View style={styles.gifContenido}>
-          <View style={styles.manosRow}>
-            <Ionicons name="hand-left" size={56} color="#9ca3af" />
-            <Ionicons name="hand-right" size={56} color="#9ca3af" />
+        {pregunta.gif ? (
+          <Image
+            source={pregunta.gif}
+            style={styles.gifImagen}
+            contentFit="contain"
+            autoplay
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={styles.gifContenido}>
+            <View style={styles.manosRow}>
+              <Ionicons name="hand-left" size={56} color={colors.textMuted} />
+              <Ionicons name="hand-right" size={56} color={colors.textMuted} />
+            </View>
+            <Text style={styles.gifCaption}>Lengua de Señas Chilena (LSCh)</Text>
           </View>
-          <Text style={styles.gifCaption}>Lengua de Señas Chilena (LSCh)</Text>
-        </View>
+        )}
       </View>
 
-      {/* Pregunta */}
       <View style={styles.preguntaWrapper}>
         <Text style={styles.preguntaTitulo}>{pregunta.titulo}</Text>
         <Text style={styles.preguntaSubtitulo}>{pregunta.subtitulo}</Text>
       </View>
 
-      {/* Botones Sí / No */}
       <View style={styles.botonesRow}>
-        <TouchableOpacity
-          style={[styles.boton, styles.botonSi]}
-          onPress={() => responder(true)}
-          activeOpacity={0.85}
-        >
+        <TouchableOpacity style={[styles.boton, styles.botonSi]} onPress={() => responder(true)} activeOpacity={0.85}>
           <Text style={styles.botonTexto}>SÍ</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.boton, styles.botonNo]}
-          onPress={() => responder(false)}
-          activeOpacity={0.85}
-        >
+        <TouchableOpacity style={[styles.boton, styles.botonNo]} onPress={() => responder(false)} activeOpacity={0.85}>
           <Text style={styles.botonTexto}>NO</Text>
         </TouchableOpacity>
       </View>
@@ -134,193 +149,36 @@ export default function TriageScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 20,
-  },
-  cargandoTitulo: {
-    color: '#111827',
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  cargandoTexto: {
-    color: '#6b7280',
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginTop: 10,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    marginBottom: 12,
-  },
-  triageLabel: {
-    color: '#059669',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  pasoLabel: {
-    color: '#059669',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  progressRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  progressSeg: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#e5e7eb',
-  },
-  progressSegActivo: {
-    backgroundColor: '#059669',
-  },
-  gifCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 16,
-    marginBottom: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  gifBadge: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#059669',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  gifBadgeTexto: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  gifContenido: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    paddingVertical: 36,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  manosRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  gifCaption: {
-    color: '#6b7280',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  preguntaWrapper: {
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  preguntaTitulo: {
-    color: '#111827',
-    fontSize: 26,
-    fontWeight: '800',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  preguntaSubtitulo: {
-    color: '#6b7280',
-    fontSize: 15,
-    textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 21,
-  },
-  botonesRow: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  boton: {
-    flex: 1,
-    height: 96,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-  },
-  botonSi: {
-    backgroundColor: '#059669',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  botonNo: {
-    backgroundColor: '#dc2626',
-    shadowColor: '#dc2626',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  botonTexto: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  finalWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-  },
-  finalCircle: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    borderWidth: 3,
-    borderColor: '#059669',
-    backgroundColor: '#d1fae5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  finalTitulo: {
-    color: '#111827',
-    fontSize: 24,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 14,
-  },
-  finalTexto: {
-    color: '#6b7280',
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 36,
-  },
-  verEstadoBtn: {
-    width: '100%',
-    height: 56,
-    backgroundColor: '#059669',
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  verEstadoTexto: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg, paddingHorizontal: 20 },
+    centerWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
+    cargandoTitulo: { color: c.textPrimary, fontSize: 20, fontWeight: '800', textAlign: 'center', marginTop: 20 },
+    cargandoTexto: { color: c.textSecondary, fontSize: 15, textAlign: 'center', lineHeight: 22, marginTop: 10 },
+    avisoCircle: { width: 104, height: 104, borderRadius: 52, borderWidth: 3, borderColor: c.primary, backgroundColor: c.primarySoft, justifyContent: 'center', alignItems: 'center', marginBottom: 28 },
+    avisoTitulo: { color: c.textPrimary, fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 14 },
+    avisoTexto: { color: c.textSecondary, fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 36 },
+    botonPrimario: { width: '100%', height: 56, backgroundColor: c.primary, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    botonPrimarioTexto: { color: c.primaryText, fontSize: 16, fontWeight: '800', letterSpacing: 1 },
+    topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 12 },
+    triageLabel: { color: c.primary, fontSize: 14, fontWeight: '800', letterSpacing: 2 },
+    pasoLabel: { color: c.primary, fontSize: 14, fontWeight: '800' },
+    progressRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+    progressSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: c.border },
+    progressSegActivo: { backgroundColor: c.primary },
+    gifCard: { backgroundColor: c.surface, borderRadius: 20, borderWidth: 1, borderColor: c.border, padding: 16, marginBottom: 28 },
+    gifBadge: { alignSelf: 'flex-end', backgroundColor: c.primary, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
+    gifBadgeTexto: { color: c.primaryText, fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
+    gifContenido: { backgroundColor: c.surfaceAlt, borderRadius: 12, paddingVertical: 36, alignItems: 'center', marginTop: 8 },
+    gifImagen: { width: '100%', height: 200, borderRadius: 12, marginTop: 8, backgroundColor: c.surfaceAlt },
+    manosRow: { flexDirection: 'row', marginBottom: 16 },
+    gifCaption: { color: c.textSecondary, fontSize: 14, fontWeight: '500' },
+    preguntaWrapper: { alignItems: 'center', marginBottom: 28 },
+    preguntaTitulo: { color: c.textPrimary, fontSize: 26, fontWeight: '800', textAlign: 'center', letterSpacing: 0.3 },
+    preguntaSubtitulo: { color: c.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 10, lineHeight: 21 },
+    botonesRow: { flexDirection: 'row', gap: 16 },
+    boton: { flex: 1, height: 96, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    botonSi: { backgroundColor: c.primary },
+    botonNo: { backgroundColor: c.danger },
+    botonTexto: { color: '#ffffff', fontSize: 28, fontWeight: '900', letterSpacing: 1 },
+  });

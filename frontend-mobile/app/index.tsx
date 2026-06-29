@@ -1,47 +1,41 @@
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme, Colors } from '@/theme/theme';
 
-// Funciones compatibles con web y movil
 const guardarDato = async (key: string, value: string) => {
-  if (Platform.OS === 'web') {
-    localStorage.setItem(key, value);
-  } else {
-    await SecureStore.setItemAsync(key, value);
-  }
+  if (Platform.OS === 'web') localStorage.setItem(key, value);
+  else await SecureStore.setItemAsync(key, value);
 };
 
 const obtenerDato = async (key: string): Promise<string | null> => {
-  if (Platform.OS === 'web') {
-    return localStorage.getItem(key);
-  } else {
-    return await SecureStore.getItemAsync(key);
-  }
+  if (Platform.OS === 'web') return localStorage.getItem(key);
+  return await SecureStore.getItemAsync(key);
 };
 
 export default function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [rut, setRut] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [foco, setFoco] = useState<'rut' | 'clave' | null>(null);
 
   useEffect(() => {
     const verificarSesion = async () => {
       try {
         const token = await obtenerDato('token');
         const rol = await obtenerDato('rol');
-
-        if (token && rol === 'Sordo') {
-          router.replace('/(tabs)/home');
-        }
+        if (token && rol === 'Sordo') router.replace('/(tabs)/home');
       } catch (e) {
         // SecureStore no disponible en web, se ignora
       }
     };
-
     verificarSesion();
   }, []);
 
@@ -57,12 +51,10 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     setError('');
-
     if (!rut || !password) {
-      setError('Por favor complete todos los campos.');
+      setError('FALTAN DATOS. COMPLETA TODO.');
       return;
     }
-
     setLoading(true);
 
     // =========================================================================
@@ -86,25 +78,18 @@ export default function LoginScreen() {
     try {
       const baseUrl = 'http://192.168.1.123:8080'; // IP del servidor en la red Wi-Fi
       const cleanRut = rut.replace(/\./g, '');
-
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rut: cleanRut, clave: password }),
       });
-
-      if (!response.ok) {
-        throw new Error('Credenciales incorrectas o error de conexión.');
-      }
-
+      if (!response.ok) throw new Error('Credenciales incorrectas o error de conexión.');
       const data = await response.json();
-
       if (data.rol === 'Carabinero') {
         setError('Acceso denegado: Usa el portal web de Carabineros.');
         setLoading(false);
         return;
       }
-
       if (data.rol === 'Sordo') {
         await guardarDato('token', data.token);
         await guardarDato('rol', data.rol);
@@ -122,250 +107,171 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.header}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="ear-outline" size={48} color="#059669" />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.brand}>
+            <View style={styles.iconRingOuter}>
+              <View style={styles.iconRing}>
+                <Ionicons name="ear" size={40} color={colors.primary} />
+              </View>
             </View>
-            <Text style={styles.title}>Emergencia Inclusiva</Text>
-            <Text style={styles.subtitle}>Conexión directa y accesible</Text>
+            <Text style={styles.title}>Emergencia{'\n'}Inclusiva</Text>
+            <View style={styles.subtitleRow}>
+              <View style={styles.dot} />
+              <Text style={styles.subtitle}>CONEXIÓN DIRECTA CARABINEROS</Text>
+            </View>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.formTitle}>Iniciar Sesión</Text>
-            <Text style={styles.formSubtitle}>Ingresa tus datos para continuar</Text>
+          <View style={styles.form}>
+            <Text style={styles.formTitle}>HOLA, BIENVENIDO</Text>
+            <Text style={styles.formSubtitle}>TÚ ENTRAR TU CUENTA</Text>
 
             {error ? (
               <View style={styles.errorBox}>
-                <Ionicons name="alert-circle" size={20} color="#dc2626" />
+                <Ionicons name="alert-circle" size={18} color={colors.danger} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>RUT</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="12.345.678-9"
-                  placeholderTextColor="#9ca3af"
-                  value={rut}
-                  onChangeText={handleRutChange}
-                  autoCapitalize="none"
-                />
-              </View>
+            <Text style={styles.label}>RUT</Text>
+            <View style={[styles.inputWrap, foco === 'rut' && styles.inputWrapFoco]}>
+              <Ionicons name="person-outline" size={20} color={foco === 'rut' ? colors.primary : colors.textMuted} />
+              <TextInput
+                style={styles.input}
+                placeholder="12.345.678-9"
+                placeholderTextColor={colors.textMuted}
+                value={rut}
+                onChangeText={handleRutChange}
+                onFocus={() => setFoco('rut')}
+                onBlur={() => setFoco(null)}
+                autoCapitalize="none"
+              />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Clave Única</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="••••••••"
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
-              </View>
+            <Text style={styles.label}>CLAVE ÚNICA</Text>
+            <View style={[styles.inputWrap, foco === 'clave' && styles.inputWrapFoco]}>
+              <Ionicons name="lock-closed-outline" size={20} color={foco === 'clave' ? colors.primary : colors.textMuted} />
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setFoco('clave')}
+                onBlur={() => setFoco(null)}
+              />
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+            <Pressable
+              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed, loading && styles.buttonDisabled]}
               onPress={handleLogin}
               disabled={loading}
             >
-              <Text style={styles.buttonText}>
-                {loading ? 'CONECTANDO...' : 'INGRESAR'}
-              </Text>
-            </TouchableOpacity>
+              <Text style={styles.buttonText}>{loading ? 'CONECTANDO…' : 'ENTRAR'}</Text>
+              {!loading && <Ionicons name="arrow-forward" size={18} color={colors.primaryText} />}
+            </Pressable>
 
-            <TouchableOpacity style={styles.forgotLink} onPress={() => router.push('/recuperar-clave')}>
-              <Text style={styles.forgotLinkText}>¿Olvidaste tu Clave Única?</Text>
-            </TouchableOpacity>
+            <Pressable style={styles.forgotLink} onPress={() => router.push('/recuperar-clave')}>
+              <Text style={styles.forgotLinkText}>¿CLAVE ÚNICA OLVIDASTE?</Text>
+            </Pressable>
           </View>
 
-          <TouchableOpacity style={styles.registroLink} onPress={() => router.push('/registro')}>
+          <Pressable style={styles.registroLink} onPress={() => router.push('/registro')}>
             <Text style={styles.registroLinkText}>
-              ¿No tienes cuenta? <Text style={styles.registroLinkBold}>Regístrate aquí</Text>
+              ¿CUENTA NO TIENES? <Text style={styles.registroLinkBold}>REGISTRAR AQUÍ</Text>
             </Text>
-          </TouchableOpacity>
-
-          <Text style={styles.footer}>
-            Desarrollado para la comunidad sorda.{'\n'}
-            Garantizando acceso igualitario a emergencias.
-          </Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  iconCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#d1fae5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#059669',
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 4,
-  },
-  formTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  formSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 24,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef2f2',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 13,
-    fontWeight: '500',
-    marginLeft: 8,
-    flex: 1,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 54,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    height: '100%',
-  },
-  button: {
-    backgroundColor: '#059669',
-    borderRadius: 12,
-    height: 54,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 12,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  buttonDisabled: {
-    backgroundColor: '#6ee7b7',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  forgotLink: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  forgotLinkText: {
-    color: '#059669',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  registroLink: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  registroLinkText: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-  registroLinkBold: {
-    color: '#059669',
-    fontWeight: '700',
-  },
-  footer: {
-    marginTop: 40,
-    textAlign: 'center',
-    color: '#9ca3af',
-    fontSize: 12,
-    lineHeight: 18,
-  },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    flex: { flex: 1 },
+    scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 40 },
+    brand: { alignItems: 'center', marginBottom: 36 },
+    iconRingOuter: {
+      width: 104,
+      height: 104,
+      borderRadius: 52,
+      backgroundColor: c.primarySoft,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    iconRing: {
+      width: 76,
+      height: 76,
+      borderRadius: 38,
+      backgroundColor: c.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.18,
+      shadowRadius: 14,
+      elevation: 6,
+    },
+    title: { fontSize: 34, lineHeight: 38, fontWeight: '800', color: c.textPrimary, textAlign: 'center', letterSpacing: -0.5 },
+    subtitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 14 },
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: c.primary },
+    subtitle: { fontSize: 14, color: c.textSecondary, fontWeight: '500' },
+    form: {
+      backgroundColor: c.surface,
+      borderRadius: 24,
+      padding: 26,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.08,
+      shadowRadius: 30,
+      elevation: 4,
+      borderWidth: 1,
+      borderColor: c.borderSoft,
+    },
+    formTitle: { fontSize: 22, fontWeight: '800', color: c.textPrimary },
+    formSubtitle: { fontSize: 14, color: c.textMuted, marginTop: 4, marginBottom: 22 },
+    errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.dangerSoft, padding: 12, borderRadius: 12, marginBottom: 18 },
+    errorText: { color: c.danger, fontSize: 13, fontWeight: '500', flex: 1 },
+    label: { fontSize: 12, fontWeight: '700', color: c.textSecondary, marginBottom: 8, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.6 },
+    inputWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: c.inputBg,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      height: 58,
+      marginBottom: 16,
+    },
+    inputWrapFoco: { borderColor: c.primary, backgroundColor: c.surface },
+    input: { flex: 1, fontSize: 16, color: c.textPrimary, height: '100%' },
+    button: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: c.primary,
+      borderRadius: 14,
+      height: 58,
+      marginTop: 10,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.32,
+      shadowRadius: 14,
+      elevation: 6,
+    },
+    buttonPressed: { transform: [{ scale: 0.98 }], shadowOpacity: 0.2 },
+    buttonDisabled: { opacity: 0.6 },
+    buttonText: { color: c.primaryText, fontSize: 16, fontWeight: '800', letterSpacing: 0.8 },
+    forgotLink: { alignItems: 'center', marginTop: 18 },
+    forgotLinkText: { color: c.primary, fontSize: 14, fontWeight: '600' },
+    registroLink: { alignItems: 'center', marginTop: 26 },
+    registroLinkText: { color: c.textMuted, fontSize: 14 },
+    registroLinkBold: { color: c.primary, fontWeight: '700' },
+  });

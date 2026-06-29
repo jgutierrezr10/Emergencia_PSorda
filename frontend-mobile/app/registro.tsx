@@ -1,10 +1,14 @@
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme, Colors } from '@/theme/theme';
 
 export default function RegistroScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [nombre, setNombre] = useState('');
   const [rut, setRut] = useState('');
   const [email, setEmail] = useState('');
@@ -20,40 +24,29 @@ export default function RegistroScreen() {
       setRut(clean);
       return;
     }
-    let formatted = clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + clean.slice(-1);
-    setRut(formatted);
+    setRut(clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + clean.slice(-1));
   };
 
   const handleRegistro = async () => {
     setError('');
-
     if (!nombre || !rut || !email || !password || !confirmar) {
-      setError('Por favor complete todos los campos.');
+      setError('FALTAN DATOS. COMPLETA TODO.');
       return;
     }
-
-    const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!emailValido) {
-      setError('Ingrese un correo electrónico válido.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('CORREO MAL. ESCRIBE BIEN.');
       return;
     }
-
     if (password.length < 6) {
-      setError('La clave debe tener al menos 6 caracteres.');
+      setError('CLAVE CORTA. MÍNIMO 6 LETRAS.');
       return;
     }
-
     if (password !== confirmar) {
-      setError('Las claves no coinciden.');
+      setError('CLAVES DIFERENTES. DEBEN SER IGUAL.');
       return;
     }
-
     setLoading(true);
-
     // TODO: Conectar con Spring Boot + PostgreSQL
-    // await fetch('http://IP:8080/auth/registro', { method: 'POST', ... });
-
-    // Simulación de registro
     setTimeout(() => {
       setLoading(false);
       setExito(true);
@@ -65,136 +58,77 @@ export default function RegistroScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.exitoWrapper}>
           <View style={styles.exitoCircle}>
-            <Ionicons name="checkmark" size={48} color="#059669" />
+            <Ionicons name="checkmark" size={48} color={colors.primary} />
           </View>
-          <Text style={styles.exitoTitulo}>¡Cuenta creada!</Text>
-          <Text style={styles.exitoTexto}>
-            Tu cuenta fue registrada correctamente.{'\n'}Ya puedes iniciar sesión.
-          </Text>
+          <Text style={styles.exitoTitulo}>¡CUENTA YA CREADA!</Text>
+          <Text style={styles.exitoTexto}>TU CUENTA LISTA.{'\n'}AHORA TÚ ENTRAR.</Text>
           <TouchableOpacity style={styles.button} onPress={() => router.replace('/')}>
-            <Text style={styles.buttonText}>IR A INICIAR SESIÓN</Text>
+            <Text style={styles.buttonText}>IR A ENTRAR</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
+  const campos = [
+    { label: 'NOMBRE COMPLETO', icon: 'person-outline' as const, ph: 'Ej: Carlos Muñoz Rojas', val: nombre, set: setNombre, kt: 'default' as const, sec: false },
+    { label: 'RUT', icon: 'card-outline' as const, ph: '12.345.678-9', val: rut, set: handleRutChange, kt: 'default' as const, sec: false },
+    { label: 'CORREO', icon: 'mail-outline' as const, ph: 'correo@email.com', val: email, set: setEmail, kt: 'email-address' as const, sec: false },
+    { label: 'CLAVE ÚNICA', icon: 'lock-closed-outline' as const, ph: '••••••••', val: password, set: setPassword, kt: 'default' as const, sec: true },
+    { label: 'CONFIRMAR CLAVE', icon: 'lock-closed-outline' as const, ph: '••••••••', val: confirmar, set: setConfirmar, kt: 'default' as const, sec: true },
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <TouchableOpacity style={styles.backLink} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#059669" />
-            <Text style={styles.backLinkText}>Volver</Text>
+            <Ionicons name="arrow-back" size={22} color={colors.primary} />
+            <Text style={styles.backLinkText}>VOLVER</Text>
           </TouchableOpacity>
 
           <View style={styles.header}>
             <View style={styles.iconCircle}>
-              <Ionicons name="person-add-outline" size={44} color="#059669" />
+              <Ionicons name="person-add-outline" size={44} color={colors.primary} />
             </View>
-            <Text style={styles.title}>Crear Cuenta</Text>
-            <Text style={styles.subtitle}>Únete a Emergencia Inclusiva</Text>
+            <Text style={styles.title}>CREAR CUENTA</Text>
+            <Text style={styles.subtitle}>TÚ UNIR EMERGENCIA INCLUSIVA</Text>
           </View>
 
           <View style={styles.card}>
             {error ? (
               <View style={styles.errorBox}>
-                <Ionicons name="alert-circle" size={20} color="#dc2626" />
+                <Ionicons name="alert-circle" size={20} color={colors.danger} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nombre completo</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ej: Carlos Muñoz Rojas"
-                  placeholderTextColor="#9ca3af"
-                  value={nombre}
-                  onChangeText={setNombre}
-                />
+            {campos.map((f) => (
+              <View key={f.label} style={styles.inputGroup}>
+                <Text style={styles.label}>{f.label}</Text>
+                <View style={styles.inputContainer}>
+                  <Ionicons name={f.icon} size={20} color={colors.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder={f.ph}
+                    placeholderTextColor={colors.textMuted}
+                    value={f.val}
+                    onChangeText={f.set}
+                    keyboardType={f.kt}
+                    secureTextEntry={f.sec}
+                    autoCapitalize={f.kt === 'email-address' || f.label === 'RUT' ? 'none' : 'sentences'}
+                  />
+                </View>
               </View>
-            </View>
+            ))}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>RUT</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="card-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="12.345.678-9"
-                  placeholderTextColor="#9ca3af"
-                  value={rut}
-                  onChangeText={handleRutChange}
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Correo electrónico</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="correo@email.com"
-                  placeholderTextColor="#9ca3af"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Clave Única</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="••••••••"
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirmar Clave</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="••••••••"
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry
-                  value={confirmar}
-                  onChangeText={setConfirmar}
-                />
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleRegistro}
-              disabled={loading}
-            >
+            <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleRegistro} disabled={loading}>
               <Text style={styles.buttonText}>{loading ? 'CREANDO...' : 'CREAR CUENTA'}</Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.loginLink} onPress={() => router.replace('/')}>
-            <Text style={styles.loginLinkText}>
-              ¿Ya tienes cuenta? <Text style={styles.loginLinkBold}>Inicia sesión</Text>
-            </Text>
+            <Text style={styles.loginLinkText}>¿YA TIENES CUENTA? <Text style={styles.loginLinkBold}>ENTRAR</Text></Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -202,177 +136,32 @@ export default function RegistroScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  backLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  backLinkText: {
-    color: '#059669',
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  iconCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: '#d1fae5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#059669',
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 4,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef2f2',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 13,
-    fontWeight: '500',
-    marginLeft: 8,
-    flex: 1,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 54,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    height: '100%',
-  },
-  button: {
-    backgroundColor: '#059669',
-    borderRadius: 12,
-    height: 54,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 12,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  buttonDisabled: {
-    backgroundColor: '#6ee7b7',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  loginLink: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  loginLinkText: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-  loginLinkBold: {
-    color: '#059669',
-    fontWeight: '700',
-  },
-  exitoWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  exitoCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#d1fae5',
-    borderWidth: 3,
-    borderColor: '#059669',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  exitoTitulo: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  exitoTexto: {
-    fontSize: 15,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
-  },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+    backLink: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 8 },
+    backLinkText: { color: c.primary, fontSize: 15, fontWeight: '600', marginLeft: 4 },
+    header: { alignItems: 'center', marginBottom: 28 },
+    iconCircle: { width: 84, height: 84, borderRadius: 42, backgroundColor: c.primarySoft, justifyContent: 'center', alignItems: 'center', marginBottom: 14 },
+    title: { fontSize: 26, fontWeight: '800', color: c.textPrimary, letterSpacing: 0.5 },
+    subtitle: { fontSize: 15, color: c.primary, fontWeight: '600', marginTop: 6 },
+    card: { backgroundColor: c.surface, borderRadius: 20, padding: 28, borderWidth: 1, borderColor: c.borderSoft },
+    errorBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.dangerSoft, padding: 12, borderRadius: 10, marginBottom: 20 },
+    errorText: { color: c.danger, fontSize: 13, fontWeight: '500', marginLeft: 8, flex: 1 },
+    inputGroup: { marginBottom: 18 },
+    label: { fontSize: 13, fontWeight: '700', color: c.textSecondary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+    inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.inputBg, borderWidth: 1.5, borderColor: c.border, borderRadius: 12, paddingHorizontal: 16, height: 54 },
+    inputIcon: { marginRight: 12 },
+    input: { flex: 1, fontSize: 16, color: c.textPrimary, height: '100%' },
+    button: { backgroundColor: c.primary, borderRadius: 12, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 12 },
+    buttonDisabled: { opacity: 0.6 },
+    buttonText: { color: c.primaryText, fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },
+    loginLink: { marginTop: 24, alignItems: 'center' },
+    loginLinkText: { color: c.textMuted, fontSize: 14 },
+    loginLinkBold: { color: c.primary, fontWeight: '700' },
+    exitoWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+    exitoCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: c.primarySoft, borderWidth: 3, borderColor: c.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+    exitoTitulo: { fontSize: 24, fontWeight: '800', color: c.textPrimary, marginBottom: 12 },
+    exitoTexto: { fontSize: 15, color: c.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  });

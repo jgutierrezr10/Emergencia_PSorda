@@ -1,20 +1,22 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import BotonSnake from '@/components/BotonSnake';
+import { ThemeProvider, useTheme } from '@/theme/theme';
+import { FUENTES } from '@/theme/fonts'; // importa y aplica el parche de fuente
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function RootNav() {
+  const { esquema } = useTheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <NavThemeProvider value={esquema === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -29,7 +31,19 @@ export default function RootLayout() {
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <BotonSnake />
-      <StatusBar style="auto" />
+      <StatusBar style={esquema === 'dark' ? 'light' : 'dark'} />
+    </NavThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  const [fuentesListas] = useFonts(FUENTES);
+
+  if (!fuentesListas) return null;
+
+  return (
+    <ThemeProvider>
+      <RootNav />
     </ThemeProvider>
   );
 }

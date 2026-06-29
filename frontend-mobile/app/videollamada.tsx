@@ -22,7 +22,7 @@ export default function VideollamadaScreen() {
       <View style={styles.topRow}>
         <View style={styles.pill}>
           <Ionicons name="wifi" size={16} color="#34d399" />
-          <Text style={styles.pillTexto}>Señal estable</Text>
+          <Text style={styles.pillTexto}>SEÑAL ESTABLE</Text>
         </View>
         <View style={styles.pill}>
           <Ionicons name="time-outline" size={16} color="#ffffff" />
@@ -46,7 +46,7 @@ export default function VideollamadaScreen() {
       {/* Tu cámara (PiP) */}
       <View style={styles.pip}>
         <Ionicons name="person" size={34} color="#9ca3af" />
-        <Text style={styles.pipTexto}>Tu cámara</Text>
+        <Text style={styles.pipTexto}>TU CÁMARA</Text>
       </View>
 
       {/* Controles */}
@@ -58,21 +58,21 @@ export default function VideollamadaScreen() {
           >
             <Ionicons name={silenciado ? 'mic-off' : 'mic'} size={26} color="#ffffff" />
           </TouchableOpacity>
-          <Text style={styles.controlLabel}>{silenciado ? 'Activar' : 'Silenciar'}</Text>
+          <Text style={styles.controlLabel}>{silenciado ? 'ACTIVAR' : 'SILENCIAR'}</Text>
         </View>
 
         <View style={styles.controlItem}>
           <TouchableOpacity style={[styles.controlBtn, styles.btnColgar]} onPress={() => router.back()}>
             <Ionicons name="call" size={30} color="#ffffff" style={styles.iconoColgar} />
           </TouchableOpacity>
-          <Text style={styles.controlLabel}>Colgar</Text>
+          <Text style={styles.controlLabel}>COLGAR</Text>
         </View>
 
         <View style={styles.controlItem}>
           <TouchableOpacity style={[styles.controlBtn, styles.btnCambiar]}>
             <Ionicons name="camera-reverse" size={26} color="#ffffff" />
           </TouchableOpacity>
-          <Text style={styles.controlLabel}>Cambiar</Text>
+          <Text style={styles.controlLabel}>CAMBIAR</Text>
         </View>
       </View>
     </SafeAreaView>

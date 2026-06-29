@@ -1,17 +1,18 @@
 import { Pressable, Text, StyleSheet, Platform } from 'react-native';
 import { router, usePathname } from 'expo-router';
+import { useTheme } from '@/theme/theme';
 
-// Botón de camuflaje: presente en todas las pantallas. Al tocarlo abre un
-// juego de Snake, de modo que la persona pueda aparentar que solo está jugando
-// y no pidiendo ayuda si el agresor está cerca.
+// Botón de camuflaje: presente en todas las pantallas. Abre un juego de Snake
+// para aparentar que la persona solo juega y no pide ayuda si el agresor mira.
 export default function BotonSnake() {
   const pathname = usePathname();
+  const { colors } = useTheme();
   if (pathname === '/snake') return null;
 
   return (
     <Pressable
       accessibilityLabel="Juego"
-      style={styles.fab}
+      style={[styles.fab, { backgroundColor: colors.surface, borderColor: colors.border }]}
       onPress={() => router.push('/snake')}
       hitSlop={10}
     >
@@ -28,11 +29,9 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -40,7 +39,5 @@ const styles = StyleSheet.create({
     elevation: 10,
     zIndex: 1000,
   },
-  emoji: {
-    fontSize: 26,
-  },
+  emoji: { fontSize: 26 },
 });
