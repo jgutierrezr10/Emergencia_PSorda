@@ -59,4 +59,10 @@ public class UsuarioServiceImpl implements IUsuarioService {
         UsuarioEntity existente = findById(id);
         usuarioRepository.delete(existente);
     }
+
+    @Override
+    public UsuarioEntity findByRut(String rut) {
+        return usuarioRepository.findByRut(rut)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con RUT: " + rut));
+    }
 }

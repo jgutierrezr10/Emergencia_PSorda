@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,20 @@ interface Contacto {
   id: number;
   nombre: string;
   relacion: string;
+  numero: string;
+}
+
+interface Entorno {
+  id: number;
+  nombre: string;
+  parentesco: string;
+  viveConUsuario: boolean;
+}
+
+interface Usuario {
+  nombre: string;
+  apellido: string;
+  rut: string;
   telefono: string;
 }
 
@@ -29,10 +43,50 @@ export default function PerfilScreen() {
   const [compartirUbicacion, setCompartirUbicacion] = useState(true);
   const [vibracion, setVibracion] = useState(true);
 
-  const [contactos, setContactos] = useState<Contacto[]>([
-    { id: 1, nombre: 'Ana Muñoz', relacion: 'Madre', telefono: '+56 9 8765 4321' },
-    { id: 2, nombre: 'Pedro González', relacion: 'Hermano', telefono: '+56 9 5555 1234' },
-  ]);
+  const [contactos, setContactos] = useState<Contacto[]>([]);
+  const [entornos, setEntornos] = useState<Entorno[]>([]);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const baseUrl = 'http://10.83.92.211:8080';
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        const rut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut'));
+        const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+        if (rut) {
+          // 1. Cargar Usuario
+          const resUser = await fetch(`${baseUrl}/usuarios/rut/${rut}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resUser.ok) {
+            const dataUser = await resUser.json();
+            setUsuario(dataUser);
+          }
+
+          // 2. Cargar Contactos
+          const resC = await fetch(`${baseUrl}/api/contactos-emergencia/usuario/${rut}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resC.ok) {
+            const dataC = await resC.json();
+            setContactos(dataC);
+          }
+          
+          // 3. Cargar Entorno
+          const resE = await fetch(`${baseUrl}/api/entornos/usuario/${rut}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resE.ok) {
+            const dataE = await resE.json();
+            setEntornos(dataE);
+          }
+        }
+      } catch (err) {
+        console.error("Error al cargar datos del perfil", err);
+      }
+    };
+    cargarDatos();
+  }, []);
 
   const [modalContacto, setModalContacto] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState('');
@@ -40,24 +94,109 @@ export default function PerfilScreen() {
   const [nuevoTelefono, setNuevoTelefono] = useState('');
   const [errorContacto, setErrorContacto] = useState('');
 
-  const agregarContacto = () => {
+  const agregarContacto = async () => {
     setErrorContacto('');
     if (!nuevoNombre || !nuevoRelacion || !nuevoTelefono) {
       setErrorContacto('FALTAN DATOS. COMPLETA TODO.');
       return;
     }
-    const nuevo: Contacto = { id: Date.now(), nombre: nuevoNombre, relacion: nuevoRelacion, telefono: nuevoTelefono };
-    setContactos([...contactos, nuevo]);
-    // TODO: Guardar en Spring Boot + PostgreSQL
-    setNuevoNombre('');
-    setNuevoRelacion('');
-    setNuevoTelefono('');
-    setModalContacto(false);
+    
+    try {
+      const rut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut'));
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      
+      const res = await fetch(`${baseUrl}/api/contactos-emergencia/usuario/${rut}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ nombre: nuevoNombre, relacion: nuevoRelacion, numero: nuevoTelefono })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setContactos([...contactos, data]);
+        setNuevoNombre('');
+        setNuevoRelacion('');
+        setNuevoTelefono('');
+        setModalContacto(false);
+      } else {
+        setErrorContacto('Error al guardar contacto en el servidor.');
+      }
+    } catch (err) {
+      setErrorContacto('Error de red. Intenta nuevamente.');
+    }
   };
 
-  const eliminarContacto = (id: number) => {
-    setContactos(contactos.filter((c) => c.id !== id));
-    // TODO: Eliminar en Spring Boot + PostgreSQL
+  const eliminarContacto = async (id: number) => {
+    try {
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      const res = await fetch(`${baseUrl}/api/contactos-emergencia/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setContactos(contactos.filter((c) => c.id !== id));
+      }
+    } catch (err) {
+      console.error("Error al eliminar contacto", err);
+    }
+  };
+  const [modalEntorno, setModalEntorno] = useState(false);
+  const [nuevoEntornoNombre, setNuevoEntornoNombre] = useState('');
+  const [nuevoEntornoParentesco, setNuevoEntornoParentesco] = useState('');
+  const [nuevoEntornoVive, setNuevoEntornoVive] = useState(false);
+  const [errorEntorno, setErrorEntorno] = useState('');
+
+  const agregarEntorno = async () => {
+    setErrorEntorno('');
+    if (!nuevoEntornoNombre || !nuevoEntornoParentesco) {
+      setErrorEntorno('FALTAN DATOS. COMPLETA TODO.');
+      return;
+    }
+    
+    try {
+      const rut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut'));
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      
+      const res = await fetch(`${baseUrl}/api/entornos/usuario/${rut}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ nombre: nuevoEntornoNombre, parentesco: nuevoEntornoParentesco, viveConUsuario: nuevoEntornoVive })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setEntornos([...entornos, data]);
+        setNuevoEntornoNombre('');
+        setNuevoEntornoParentesco('');
+        setNuevoEntornoVive(false);
+        setModalEntorno(false);
+      } else {
+        setErrorEntorno('Error al guardar familiar en el servidor.');
+      }
+    } catch (err) {
+      setErrorEntorno('Error de red. Intenta nuevamente.');
+    }
+  };
+
+  const eliminarEntorno = async (id: number) => {
+    try {
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      const res = await fetch(`${baseUrl}/api/entornos/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setEntornos(entornos.filter((e) => e.id !== id));
+      }
+    } catch (err) {
+      console.error("Error al eliminar entorno", err);
+    }
   };
 
   const cerrarSesion = async () => {
@@ -78,19 +217,19 @@ export default function PerfilScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitulo}>HOLA, CARLOS</Text>
+        <Text style={styles.headerTitulo}>HOLA, {usuario ? usuario.nombre.toUpperCase() : 'USUARIO'}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.contenido} showsVerticalScrollIndicator={false}>
         {/* Card usuario */}
         <View style={styles.userCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarTexto}>CM</Text>
+            <Text style={styles.avatarTexto}>{usuario ? usuario.nombre.charAt(0).toUpperCase() : '?'}</Text>
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>Carlos Muñoz Rojas</Text>
-            <Text style={styles.userRut}>RUT: 12.345.678-9</Text>
-            <Text style={styles.userEmail}>carlos.munoz@email.com</Text>
+            <Text style={styles.userName}>{usuario ? `${usuario.nombre} ${usuario.apellido}` : 'Cargando...'}</Text>
+            <Text style={styles.userRut}>RUT: {usuario ? usuario.rut : 'Cargando...'}</Text>
+            <Text style={styles.userEmail}>TEL: {usuario ? usuario.telefono : 'Cargando...'}</Text>
             <View style={styles.verificadoBadge}>
               <Text style={styles.verificadoTexto}>CUENTA VERIFICADA</Text>
             </View>
@@ -186,10 +325,45 @@ export default function PerfilScreen() {
                 </View>
                 <View style={styles.contactoInfo}>
                   <Text style={styles.contactoNombre}>{contacto.nombre}</Text>
-                  <Text style={styles.contactoDetalle}>{contacto.relacion} · {contacto.telefono}</Text>
+                  <Text style={styles.contactoDetalle}>{contacto.relacion} · {contacto.numero}</Text>
                 </View>
                 <TouchableOpacity style={styles.btnEliminar} onPress={() => eliminarContacto(contacto.id)}>
                   <Ionicons name="close" size={16} color={colors.danger} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Entorno Familiar */}
+        <View style={[styles.seccionCard, styles.contactosCard, { borderColor: colors.primary }]}>
+          <View style={styles.contactosHeader}>
+            <View style={styles.seccionHeaderLeft}>
+              <Ionicons name="home-outline" size={20} color={colors.primary} />
+              <Text style={[styles.seccionTitulo, { color: colors.primary }]}>ENTORNO FAMILIAR</Text>
+            </View>
+            <TouchableOpacity style={[styles.btnAgregar, { backgroundColor: colors.primary }]} onPress={() => setModalEntorno(true)}>
+              <Text style={styles.btnAgregarTexto}>+ AGREGAR</Text>
+            </TouchableOpacity>
+          </View>
+
+          {entornos.length === 0 && <Text style={styles.sinContactos}>NO HAY FAMILIARES REGISTRADOS.</Text>}
+
+          {entornos.map((entornoItem, index) => (
+            <View key={entornoItem.id}>
+              {index > 0 && <View style={styles.divisor} />}
+              <View style={styles.contactoRow}>
+                <View style={[styles.contactoAvatar, { backgroundColor: colors.surfaceAlt, borderColor: colors.primary }]}>
+                  <Text style={[styles.contactoAvatarTexto, { color: colors.primary }]}>{entornoItem.nombre.charAt(0)}</Text>
+                </View>
+                <View style={styles.contactoInfo}>
+                  <Text style={styles.contactoNombre}>{entornoItem.nombre}</Text>
+                  <Text style={styles.contactoDetalle}>
+                    {entornoItem.parentesco} · {entornoItem.viveConUsuario ? 'Vive conmigo' : 'No vive conmigo'}
+                  </Text>
+                </View>
+                <TouchableOpacity style={[styles.btnEliminar, { backgroundColor: colors.surfaceAlt, borderColor: colors.primary }]} onPress={() => eliminarEntorno(entornoItem.id)}>
+                  <Ionicons name="close" size={16} color={colors.primary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -281,6 +455,52 @@ export default function PerfilScreen() {
                 setNuevoNombre('');
                 setNuevoRelacion('');
                 setNuevoTelefono('');
+              }}
+            >
+              <Text style={styles.btnCancelarModalTexto}>CANCELAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal agregar entorno */}
+      <Modal visible={modalEntorno} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitulo}>AGREGAR FAMILIAR</Text>
+
+            <Text style={styles.fieldLabel}>NOMBRE COMPLETO</Text>
+            <TextInput style={styles.fieldInput} placeholder="Ej: Juan Pérez" placeholderTextColor={colors.textMuted} value={nuevoEntornoNombre} onChangeText={setNuevoEntornoNombre} />
+
+            <Text style={styles.fieldLabel}>PARENTESCO</Text>
+            <TextInput style={styles.fieldInput} placeholder="Ej: Hermano, Abuelo" placeholderTextColor={colors.textMuted} value={nuevoEntornoParentesco} onChangeText={setNuevoEntornoParentesco} />
+
+            <View style={[styles.switchRow, { paddingHorizontal: 0, marginBottom: 16 }]}>
+              <View style={styles.switchInfo}>
+                <Text style={styles.switchLabel}>¿VIVE CONTIGO?</Text>
+                <Text style={styles.switchSubtexto}>MARCAR SI VIVEN EN LA MISMA CASA</Text>
+              </View>
+              <Switch
+                value={nuevoEntornoVive}
+                onValueChange={setNuevoEntornoVive}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#ffffff"
+              />
+            </View>
+
+            {errorEntorno ? <Text style={styles.errorTexto}>{errorEntorno}</Text> : null}
+
+            <TouchableOpacity style={styles.btnGuardar} onPress={agregarEntorno}>
+              <Text style={styles.btnGuardarTexto}>GUARDAR FAMILIAR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnCancelarModal}
+              onPress={() => {
+                setModalEntorno(false);
+                setErrorEntorno('');
+                setNuevoEntornoNombre('');
+                setNuevoEntornoParentesco('');
+                setNuevoEntornoVive(false);
               }}
             >
               <Text style={styles.btnCancelarModalTexto}>CANCELAR</Text>

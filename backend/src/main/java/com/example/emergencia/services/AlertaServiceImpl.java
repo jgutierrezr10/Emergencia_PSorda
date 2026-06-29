@@ -47,4 +47,22 @@ public class AlertaServiceImpl implements IAlertaService {
         AlertaEntity existente = findById(id);
         alertaRepository.delete(existente);
     }
+
+    @Autowired
+    private com.example.emergencia.repository.PersonaSordaRepository personaSordaRepository;
+
+    @Override
+    public AlertaEntity crearAlertaPorRut(String rut, String latitudLongitud) {
+        com.example.emergencia.entity.PersonaSordaEntity persona = personaSordaRepository.findByUsuarioRut(rut)
+                .orElseThrow(() -> new ResourceNotFoundException("Persona sorda no encontrada para el RUT: " + rut));
+
+        AlertaEntity alerta = new AlertaEntity();
+        alerta.setFechaHoraInicio(java.time.LocalDateTime.now());
+        alerta.setLatitudLongitud(latitudLongitud);
+        alerta.setDisponibleTriage(true); // Estará disponible para triage a continuación
+        alerta.setEstado("CREADA");
+        alerta.setPersonaSorda(persona);
+
+        return alertaRepository.save(alerta);
+    }
 }

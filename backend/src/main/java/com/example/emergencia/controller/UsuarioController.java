@@ -50,4 +50,9 @@ public class UsuarioController {
     public void delete(@PathVariable Long id) {
         usuarioService.delete(id);
     }
+
+    @GetMapping("/rut/{rut}")
+    public UsuarioEntity findByRut(@PathVariable String rut) {
+        return usuarioService.findByRut(rut);
+    }
 }

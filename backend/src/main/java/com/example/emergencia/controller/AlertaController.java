@@ -43,4 +43,9 @@ public class AlertaController {
         alertaService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/nueva")
+    public ResponseEntity<AlertaEntity> crearNuevaAlerta(@RequestBody com.example.emergencia.dto.NuevaAlertaRequest request) {
+        return new ResponseEntity<>(alertaService.crearAlertaPorRut(request.getRut(), request.getLatitudLongitud()), HttpStatus.CREATED);
+    }
 }

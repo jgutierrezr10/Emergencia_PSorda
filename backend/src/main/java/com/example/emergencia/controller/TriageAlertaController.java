@@ -48,4 +48,10 @@ public class TriageAlertaController {
         triageAlertaService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/lote")
+    public ResponseEntity<Void> guardarRespuestas(@RequestBody com.example.emergencia.dto.TriageRequest request) {
+        triageAlertaService.guardarRespuestas(request);
+        return ResponseEntity.ok().build();
+    }
 }

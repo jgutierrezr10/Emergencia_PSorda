@@ -9,4 +9,6 @@ public interface IContactoEmergenciaService {
     ContactoEmergenciaEntity save(ContactoEmergenciaEntity contacto);
     ContactoEmergenciaEntity update(ContactoEmergenciaEntity contacto);
     void delete(Long id);
+    List<ContactoEmergenciaEntity> buscarPorRut(String rut);
+    ContactoEmergenciaEntity crearParaRut(String rut, ContactoEmergenciaEntity contacto);
 }

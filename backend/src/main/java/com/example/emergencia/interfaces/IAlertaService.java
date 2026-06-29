@@ -9,4 +9,5 @@ public interface IAlertaService {
     AlertaEntity save(AlertaEntity alerta);
     AlertaEntity update(AlertaEntity alerta);
     void delete(Long id);
+    AlertaEntity crearAlertaPorRut(String rut, String latitudLongitud);
 }

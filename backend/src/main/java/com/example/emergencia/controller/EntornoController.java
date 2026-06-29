@@ -43,4 +43,14 @@ public class EntornoController {
         entornoService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/usuario/{rut}")
+    public ResponseEntity<List<EntornoEntity>> getByRut(@PathVariable String rut) {
+        return ResponseEntity.ok(entornoService.buscarPorRut(rut));
+    }
+
+    @PostMapping("/usuario/{rut}")
+    public ResponseEntity<EntornoEntity> createForRut(@PathVariable String rut, @RequestBody EntornoEntity entorno) {
+        return new ResponseEntity<>(entornoService.crearParaRut(rut, entorno), HttpStatus.CREATED);
+    }
 }

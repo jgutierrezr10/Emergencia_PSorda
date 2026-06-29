@@ -47,8 +47,28 @@ public class TriageAlertaServiceImpl implements ITriageAlertaService {
         triageAlertaRepository.delete(existente);
     }
 
+    @Autowired
+    private com.example.emergencia.repository.AlertaRepository alertaRepository;
+
     @Override
     public List<TriageAlertaEntity> findByAlertaId(Long alertaId) {
         return triageAlertaRepository.findByAlertaIdOrderByHoraRespuestaAsc(alertaId);
+    }
+
+    @Override
+    public void guardarRespuestas(com.example.emergencia.dto.TriageRequest request) {
+        com.example.emergencia.entity.AlertaEntity alerta = alertaRepository.findById(request.getAlertaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Alerta no encontrada con ID: " + request.getAlertaId()));
+
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+
+        for (com.example.emergencia.dto.TriageRespuestaDTO res : request.getRespuestas()) {
+            TriageAlertaEntity entidad = new TriageAlertaEntity();
+            entidad.setPreguntaClave(res.getPreguntaClave());
+            entidad.setRespuestaSordo(res.getRespuestaSordo());
+            entidad.setHoraRespuesta(ahora);
+            entidad.setAlerta(alerta);
+            triageAlertaRepository.save(entidad);
+        }
     }
 }

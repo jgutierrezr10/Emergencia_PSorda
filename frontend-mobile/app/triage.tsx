@@ -18,19 +18,16 @@ const obtenerDato = async (key: string): Promise<string | null> => {
   return await SecureStore.getItemAsync(key);
 };
 
+
 interface Pregunta {
   titulo: string;
   subtitulo: string;
-  // GIF con la seña en LSCh. null = aún sin GIF (muestra placeholder de manos).
   gif: number | null;
 }
 
 const PREGUNTAS: Pregunta[] = [
   { titulo: 'TÚ ¿HERIDO?', subtitulo: 'TÚ ¿TIENES HERIDA? ¿NECESITAS MÉDICO?', gif: require('../assets/gifs/01-herido.gif') },
   { titulo: 'AGRESOR ¿TIENE ARMA?', subtitulo: 'PISTOLA, CUCHILLO U OBJETO PELIGROSO', gif: require('../assets/gifs/02-arma.gif') },
-  // Pregunta 3: aún sin GIF. Cuando tengas el archivo, guárdalo en
-  // assets/gifs/03-casa.gif y cambia esta línea por:
-  // gif: require('../assets/gifs/03-casa.gif')
   { titulo: 'AGRESOR ¿DENTRO CASA?', subtitulo: 'EN TU CASA O MISMO LUGAR QUE TÚ', gif: null },
 ];
 
@@ -48,9 +45,9 @@ export default function TriageScreen() {
   useEffect(() => {
     const crearAlerta = async () => {
       try {
-        let ip = 'localhost';
-        if (Platform.OS === 'android') {
-          ip = '10.0.2.2';
+        let ip = '10.83.92.211'; // IP de desarrollo del PC en red Wi-Fi
+        if (Platform.OS === 'web') {
+          ip = window.location.hostname || 'localhost';
         }
         const baseUrl = `http://${ip}:8080`;
 
@@ -59,15 +56,17 @@ export default function TriageScreen() {
 
         let lat = -33.4503;
         let lng = -70.6781;
-        try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted') {
-            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-            lat = pos.coords.latitude;
-            lng = pos.coords.longitude;
+        if (Platform.OS !== 'web') {
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+              const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+              lat = pos.coords.latitude;
+              lng = pos.coords.longitude;
+            }
+          } catch (e) {
+            console.warn('No se pudo obtener la ubicación GPS, usando por defecto');
           }
-        } catch (e) {
-          console.warn('No se pudo obtener la ubicación GPS, usando por defecto');
         }
 
         const response = await fetch(`${baseUrl}/api/alertas`, {
@@ -91,11 +90,11 @@ export default function TriageScreen() {
         
         setAlertaId(data.id);
         await guardarDato('currentAlertaId', String(data.id));
-        setCargando(false);
       } catch (err) {
         console.error('Error creando alerta real, usando simulación:', err);
         setAlertaId(999);
         await guardarDato('currentAlertaId', '999');
+      } finally {
         setCargando(false);
       }
     };
@@ -106,11 +105,10 @@ export default function TriageScreen() {
   const responder = async (valor: boolean) => {
     const nuevas = [...respuestas, valor];
     setRespuestas(nuevas);
-
     try {
-      let ip = 'localhost';
-      if (Platform.OS === 'android') {
-        ip = '10.0.2.2';
+      let ip = '10.83.92.211';
+      if (Platform.OS === 'web') {
+        ip = window.location.hostname || 'localhost';
       }
       const baseUrl = `http://${ip}:8080`;
       const currentId = alertaId || Number(await obtenerDato('currentAlertaId'));
@@ -134,8 +132,11 @@ export default function TriageScreen() {
       console.warn('Error enviando triage al backend:', e);
     }
 
-    if (paso < PREGUNTAS.length - 1) setPaso(paso + 1);
-    else setEnviado(true);
+    if (paso < PREGUNTAS.length - 1) {
+      setPaso(paso + 1);
+    } else {
+      setEnviado(true);
+    }
   };
 
   if (cargando) {
@@ -160,11 +161,16 @@ export default function TriageScreen() {
           <Text style={styles.avisoTitulo}>¡AYUDA YA ENVIADA!</Text>
           <Text style={styles.avisoTexto}>
             CARABINEROS (CENCO) YA TIENE TU ALERTA + TU UBICACIÓN. AYUDA VIENE.
-            {'\n\n'}AHORA TÚ RESPONDER 3 PREGUNTAS. AYUDAR PATRULLA.
+            {'\n\n'}¿PUEDES RESPONDER PREGUNTAS PARA AYUDAR A PATRULLA?
           </Text>
-          <TouchableOpacity style={styles.botonPrimario} onPress={() => setContinuar(true)}>
-            <Text style={styles.botonPrimarioTexto}>SEGUIR</Text>
-          </TouchableOpacity>
+          <View style={[styles.botonesRow, { width: '100%', marginTop: 20 }]}>
+            <TouchableOpacity style={[styles.boton, styles.botonSi]} onPress={() => setContinuar(true)} activeOpacity={0.85}>
+              <Text style={styles.botonTexto}>SÍ</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.boton, styles.botonNo]} onPress={() => setEnviado(true)} activeOpacity={0.85}>
+              <Text style={styles.botonTexto}>NO</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );

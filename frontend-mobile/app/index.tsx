@@ -58,9 +58,9 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      let ip = 'localhost';
-      if (Platform.OS === 'android') {
-        ip = '10.0.2.2';
+      let ip = '10.83.92.211'; // IP de desarrollo del PC en red Wi-Fi
+      if (Platform.OS === 'web') {
+        ip = window.location.hostname || 'localhost';
       }
       const baseUrl = `http://${ip}:8080`;
       const cleanRut = rut.replace(/\./g, '');
@@ -87,6 +87,7 @@ export default function LoginScreen() {
         try {
           await guardarDato('token', data.token);
           await guardarDato('rol', data.rol);
+          await guardarDato('rut', data.rut || cleanRut);
           await guardarDato('usuarioId', String(data.usuarioId));
           await guardarDato('personaSordaId', String(data.personaSordaId));
         } catch (e) {
