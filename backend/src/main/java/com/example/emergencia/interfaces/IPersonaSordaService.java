@@ -9,4 +9,5 @@ public interface IPersonaSordaService {
     PersonaSordaEntity save(PersonaSordaEntity personaSorda);
     PersonaSordaEntity update(PersonaSordaEntity personaSorda);
     void delete(Long id);
+    PersonaSordaEntity findByUsuarioRut(String rut);
 }

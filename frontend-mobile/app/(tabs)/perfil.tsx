@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, Colors, Preferencia } from '@/theme/theme';
+import { baseUrl } from '../_config';
 
 interface Contacto {
   id: number;
@@ -46,7 +47,6 @@ export default function PerfilScreen() {
   const [contactos, setContactos] = useState<Contacto[]>([]);
   const [entornos, setEntornos] = useState<Entorno[]>([]);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const baseUrl = 'http://10.83.92.211:8080';
 
   useEffect(() => {
     const cargarDatos = async () => {

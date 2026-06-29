@@ -45,4 +45,10 @@ public class PersonaSordaServiceImpl implements IPersonaSordaService {
         PersonaSordaEntity existente = findById(id);
         personaSordaRepository.delete(existente);
     }
+
+    @Override
+    public PersonaSordaEntity findByUsuarioRut(String rut) {
+        return personaSordaRepository.findByUsuarioRut(rut)
+                .orElseThrow(() -> new ResourceNotFoundException("Persona sorda no encontrada con RUT: " + rut));
+    }
 }

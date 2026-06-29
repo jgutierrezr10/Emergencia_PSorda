@@ -43,4 +43,9 @@ public class PersonaSordaController {
         personaSordaService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/usuario/{rut}")
+    public ResponseEntity<PersonaSordaEntity> getByUsuarioRut(@PathVariable String rut) {
+        return ResponseEntity.ok(personaSordaService.findByUsuarioRut(rut));
+    }
 }
