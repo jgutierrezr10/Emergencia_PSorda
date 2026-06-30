@@ -14,8 +14,9 @@ import java.util.Map;
 @Component
 public class JwtUtil {
 
-    // En un entorno de producción, esto debería estar en application.properties
-    private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    // Clave secreta estática para que los tokens no se invaliden al reiniciar el servidor
+    private static final String SECRET_STRING = "EstaEsUnaClaveSecretaMuyLargaParaEmergenciaPSorda2026";
+    private static final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET_STRING.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     private static final long EXPIRATION_TIME = 86400000; // 24 horas
 
     public String generateToken(String rut, String rol) {
