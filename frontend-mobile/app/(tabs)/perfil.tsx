@@ -204,9 +204,15 @@ export default function PerfilScreen() {
       if (Platform.OS === 'web') {
         localStorage.removeItem('token');
         localStorage.removeItem('rol');
+        localStorage.removeItem('rut');
+        localStorage.removeItem('personaSordaId');
+        localStorage.removeItem('currentAlertaId');
       } else {
         await SecureStore.deleteItemAsync('token');
         await SecureStore.deleteItemAsync('rol');
+        await SecureStore.deleteItemAsync('rut');
+        await SecureStore.deleteItemAsync('personaSordaId');
+        await SecureStore.deleteItemAsync('currentAlertaId');
       }
     } catch (e) {
       // Ignorar errores de borrado

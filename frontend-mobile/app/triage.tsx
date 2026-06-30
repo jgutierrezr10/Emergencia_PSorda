@@ -47,6 +47,13 @@ export default function TriageScreen() {
   const [errorCritico, setErrorCritico] = useState(false);
 
   useEffect(() => {
+    alert("Versión V7 cargada. Iniciando alerta (GPS Bypass)...");
+    const timeoutSeguridad = setTimeout(() => {
+      alert("Error: La aplicación se congeló por más de 15 segundos.");
+      setCargando(false);
+      setErrorCritico(true);
+    }, 15000);
+
     const crearAlerta = async () => {
       let latitudLongitud = 'SIN_GPS';
       
@@ -60,25 +67,30 @@ export default function TriageScreen() {
         }
         console.log('[ALERTA] Paso 1 OK - personaSordaId:', personaSordaId);
 
-        // PASO 2: Intentar GPS con timeout total de 5s
+        // PASO 2: Intentar GPS con timeout total de 3s para TODO el bloque
         if (Platform.OS !== 'web') {
           try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === 'granted') {
-              const pos = await Location.getLastKnownPositionAsync({});
-              if (pos) {
-                latitudLongitud = `${pos.coords.latitude},${pos.coords.longitude}`;
-              } else {
-                const gpsPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-                const gpsTimeout = new Promise<null>((r) => setTimeout(() => r(null), 5000));
-                const gpsResult = await Promise.race([gpsPromise, gpsTimeout]) as Location.LocationObject | null;
-                if (gpsResult) {
-                  latitudLongitud = `${gpsResult.coords.latitude},${gpsResult.coords.longitude}`;
+            const gpsTask = async () => {
+              const { status } = await Location.requestForegroundPermissionsAsync();
+              if (status === 'granted') {
+                const pos = await Location.getLastKnownPositionAsync({});
+                if (pos) {
+                  return `${pos.coords.latitude},${pos.coords.longitude}`;
+                } else {
+                  const gpsResult = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                  if (gpsResult) {
+                    return `${gpsResult.coords.latitude},${gpsResult.coords.longitude}`;
+                  }
                 }
               }
-            }
+              return 'SIN_GPS';
+            };
+
+            const gpsTimeout = new Promise<string>((r) => setTimeout(() => r('SIN_GPS'), 3000));
+            latitudLongitud = await Promise.race([gpsTask(), gpsTimeout]);
           } catch (_gpsErr) {
             console.warn('[ALERTA] GPS falló, usando SIN_GPS');
+            latitudLongitud = 'SIN_GPS';
           }
         }
         console.log('[ALERTA] Paso 2 OK - ubicación:', latitudLongitud);
@@ -126,6 +138,7 @@ export default function TriageScreen() {
         alert(`Error creando alerta: ${err.message || err}`);
         setErrorCritico(true);
       } finally {
+        clearTimeout(timeoutSeguridad);
         setCargando(false);
       }
     };
