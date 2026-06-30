@@ -49,13 +49,19 @@ export default function EstadoScreen() {
       try {
         const currentId = await obtenerDato('currentAlertaId');
         if (currentId && currentId !== '999') {
-          const getResp = await fetch(`${baseUrl}/api/alertas/${currentId}`);
+          const token = await obtenerDato('token');
+          const getResp = await fetch(`${baseUrl}/api/alertas/${currentId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
           if (getResp.ok) {
             const alertData = await getResp.json();
             alertData.latitudLongitud = `${lat},${lng}`;
             await fetch(`${baseUrl}/api/alertas/${currentId}`, {
               method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+              },
               body: JSON.stringify(alertData)
             });
           }
@@ -91,7 +97,10 @@ export default function EstadoScreen() {
         const currentId = await obtenerDato('currentAlertaId');
         if (!currentId || currentId === '999') return;
         
-        const res = await fetch(`${baseUrl}/api/alertas/${currentId}`);
+        const token = await obtenerDato('token');
+        const res = await fetch(`${baseUrl}/api/alertas/${currentId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
           const data = await res.json();
           setAlertaEstado(data.estado);

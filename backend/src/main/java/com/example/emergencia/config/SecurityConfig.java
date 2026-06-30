@@ -35,7 +35,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/usuarios", "/api/personas-sordas").permitAll()
                 .requestMatchers("/auth/**", "/api/auth/**", "/error").permitAll()
                 .requestMatchers("/ws-chat/**").permitAll()
-                .requestMatchers("/api/alertas/**", "/api/triage-alertas/**", "/api/chats/**").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtUtil),
                     UsernamePasswordAuthenticationFilter.class);

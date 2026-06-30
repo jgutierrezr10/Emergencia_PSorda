@@ -1,15 +1,70 @@
 import { View, Text, Pressable, Modal, Animated, Easing, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useTheme, Colors } from '@/theme/theme';
+import { baseUrl } from '../_config';
+
+const obtenerDato = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') return localStorage.getItem(key);
+  return await SecureStore.getItemAsync(key);
+};
 
 export default function HomeScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [modalConfirmar, setModalConfirmar] = useState(false);
+  const [alertaActiva, setAlertaActiva] = useState(false);
+  const [verificando, setVerificando] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const verificarEstado = async () => {
+        try {
+          const currentId = await obtenerDato('currentAlertaId');
+          if (currentId && currentId !== '999') {
+            const token = await obtenerDato('token');
+            const res = await fetch(`${baseUrl}/api/alertas/${currentId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.estado !== 'Finalizada') {
+                if (isMounted) setAlertaActiva(true);
+              } else {
+                // Alerta finalizada, limpiamos
+                await (Platform.OS === 'web' ? localStorage.removeItem('currentAlertaId') : SecureStore.deleteItemAsync('currentAlertaId'));
+                if (isMounted) setAlertaActiva(false);
+              }
+            } else {
+              if (isMounted) setAlertaActiva(false);
+            }
+          } else if (currentId === '999') {
+            // Caso de SMS
+            if (isMounted) setAlertaActiva(true);
+          } else {
+            if (isMounted) setAlertaActiva(false);
+          }
+        } catch (e) {
+          console.warn('Error verificando estado de alerta:', e);
+          if (isMounted) setAlertaActiva(false); // Default a mostrar botón si hay error
+        } finally {
+          if (isMounted) setVerificando(false);
+        }
+      };
+      
+      verificarEstado();
+      
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
 
   const ring1 = useRef(new Animated.Value(0)).current;
   const ring2 = useRef(new Animated.Value(0)).current;
@@ -59,27 +114,59 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.contenido}>
-        <Text style={styles.titulo}>¿NECESITAS AYUDA?</Text>
-        <Text style={styles.instruccion}>CALMA. TOCA BOTÓN.</Text>
+        {verificando ? (
+          <Text style={styles.titulo}>CARGANDO...</Text>
+        ) : alertaActiva ? (
+          <>
+            <Text style={styles.titulo}>¡EMERGENCIA EN CURSO!</Text>
+            <Text style={[styles.instruccion, { color: colors.danger, fontWeight: 'bold' }]}>
+              CARABINEROS YA TIENE TU UBICACIÓN
+            </Text>
 
-        <View style={styles.botonZona}>
-          <Animated.View style={[styles.ring, ringStyle(ring1)]} />
-          <Animated.View style={[styles.ring, ringStyle(ring2)]} />
-          <Pressable
-            style={({ pressed }) => [styles.botonPanico, pressed && styles.botonPanicoPressed]}
-            onPress={() => setModalConfirmar(true)}
-          >
-            <Ionicons name="alert" size={52} color="#ffffff" />
-            <Text style={styles.botonPanicoTexto}>URGENCIA</Text>
-          </Pressable>
-        </View>
+            <View style={styles.botonZona}>
+              <Animated.View style={[styles.ring, ringStyle(ring1), { backgroundColor: colors.primary }]} />
+              <Animated.View style={[styles.ring, ringStyle(ring2), { backgroundColor: colors.primary }]} />
+              <Pressable
+                style={({ pressed }) => [styles.botonPanico, { backgroundColor: colors.primary, shadowColor: colors.primary }, pressed && styles.botonPanicoPressed]}
+                onPress={() => router.push('/estado')}
+              >
+                <Ionicons name="map" size={52} color="#ffffff" />
+                <Text style={styles.botonPanicoTexto}>VER ESTADO</Text>
+              </Pressable>
+            </View>
 
-        <View style={styles.avisoCard}>
-          <Ionicons name="location" size={18} color={colors.primary} />
-          <Text style={styles.aviso}>
-            TÚ TOCAR BOTÓN. ENVIAR TU UBICACIÓN GPS A CARABINEROS (CENCO).
-          </Text>
-        </View>
+            <View style={styles.avisoCard}>
+              <Ionicons name="information-circle" size={18} color={colors.primary} />
+              <Text style={styles.aviso}>
+                TOCA EL BOTÓN AZUL PARA VER EL MAPA Y CHATEAR CON EL OPERADOR.
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.titulo}>¿NECESITAS AYUDA?</Text>
+            <Text style={styles.instruccion}>CALMA. TOCA BOTÓN.</Text>
+
+            <View style={styles.botonZona}>
+              <Animated.View style={[styles.ring, ringStyle(ring1)]} />
+              <Animated.View style={[styles.ring, ringStyle(ring2)]} />
+              <Pressable
+                style={({ pressed }) => [styles.botonPanico, pressed && styles.botonPanicoPressed]}
+                onPress={() => setModalConfirmar(true)}
+              >
+                <Ionicons name="alert" size={52} color="#ffffff" />
+                <Text style={styles.botonPanicoTexto}>URGENCIA</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.avisoCard}>
+              <Ionicons name="location" size={18} color={colors.primary} />
+              <Text style={styles.aviso}>
+                TÚ TOCAR BOTÓN. ENVIAR TU UBICACIÓN GPS A CARABINEROS (CENCO).
+              </Text>
+            </View>
+          </>
+        )}
       </View>
 
       <View style={styles.navBar}>

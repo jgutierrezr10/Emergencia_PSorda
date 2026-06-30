@@ -89,9 +89,13 @@ export default function TriageScreen() {
           }
         }
 
+        const token = await obtenerDato('token');
         const response = await fetch(`${baseUrl}/api/alertas`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          },
           body: JSON.stringify({
             fechaHoraInicio: new Date().toISOString(),
             latitudLongitud: `${lat},${lng}`,
@@ -147,9 +151,13 @@ export default function TriageScreen() {
 
       if (currentId && currentId !== 999) {
         const pregunta = PREGUNTAS[paso];
+        const token = await obtenerDato('token');
         await fetch(`${baseUrl}/api/triage-alertas`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          },
           body: JSON.stringify({
             preguntaClave: pregunta.titulo,
             respuestaSordo: valor,
