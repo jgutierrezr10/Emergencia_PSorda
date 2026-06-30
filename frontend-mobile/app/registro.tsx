@@ -1,10 +1,19 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, Colors } from '@/theme/theme';
 import { baseUrl } from './_config';
+import { TERMINOS_VERSION } from '@/constants/terminos';
+
+const guardarDato = async (key: string, value: string) => {
+  try {
+    if (Platform.OS === 'web') localStorage.setItem(key, value);
+    else await SecureStore.setItemAsync(key, value);
+  } catch (e) {}
+};
 
 export default function RegistroScreen() {
   const { colors } = useTheme();
@@ -18,6 +27,7 @@ export default function RegistroScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [exito, setExito] = useState(false);
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
 
   const handleRutChange = (text: string) => {
     let clean = text.replace(/[^0-9kK]/g, '').toUpperCase();
@@ -34,6 +44,10 @@ export default function RegistroScreen() {
       setError('FALTAN DATOS. COMPLETA TODO.');
       return;
     }
+    if (!aceptaTerminos) {
+      setError('DEBES ACEPTAR LOS TÉRMINOS Y CONDICIONES.');
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('CORREO MAL. ESCRIBE BIEN.');
       return;
@@ -47,8 +61,9 @@ export default function RegistroScreen() {
       return;
     }
     setLoading(true);
-    // TODO: Conectar con Spring Boot + PostgreSQL
-    setTimeout(() => {
+    
+    setTimeout(async () => {
+      await guardarDato('terminos_version', TERMINOS_VERSION);
       setLoading(false);
       setExito(true);
     }, 1500);
@@ -123,7 +138,26 @@ export default function RegistroScreen() {
               </View>
             ))}
 
-            <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleRegistro} disabled={loading}>
+            {/* CHECKBOX DE TÉRMINOS Y CONDICIONES (Modificado) */}
+            <View style={styles.checkboxContainer}>
+              <Pressable onPress={() => setAceptaTerminos(!aceptaTerminos)} style={styles.checkbox}>
+                <Ionicons 
+                  name={aceptaTerminos ? "checkbox" : "square-outline"} 
+                  size={24} 
+                  color={aceptaTerminos ? colors.primary : colors.textMuted} 
+                />
+              </Pressable>
+              
+              <View style={styles.textRow}>
+                <Text style={styles.checkboxText}>Acepto los </Text>
+                {/* Se añade "as any" para evitar el error de TypeScript temporalmente */}
+                <TouchableOpacity onPress={() => router.push('/terminos' as any)}>
+                  <Text style={styles.linkText}>Términos y Condiciones</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity style={[styles.button, (!aceptaTerminos || loading) && styles.buttonDisabled]} onPress={handleRegistro} disabled={loading || !aceptaTerminos}>
               <Text style={styles.buttonText}>{loading ? 'CREANDO...' : 'CREAR CUENTA'}</Text>
             </TouchableOpacity>
           </View>
@@ -155,6 +189,14 @@ const makeStyles = (c: Colors) =>
     inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.inputBg, borderWidth: 1.5, borderColor: c.border, borderRadius: 12, paddingHorizontal: 16, height: 54 },
     inputIcon: { marginRight: 12 },
     input: { flex: 1, fontSize: 16, color: c.textPrimary, height: '100%' },
+    
+    // ESTILOS NUEVOS DEL CHECKBOX
+    checkboxContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 4 },
+    checkbox: { marginRight: 10 },
+    textRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', flex: 1 },
+    checkboxText: { fontSize: 14, color: c.textSecondary },
+    linkText: { color: c.primary, fontWeight: '700', textDecorationLine: 'underline', fontSize: 14 },
+    
     button: { backgroundColor: c.primary, borderRadius: 12, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 12 },
     buttonDisabled: { opacity: 0.6 },
     buttonText: { color: c.primaryText, fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },

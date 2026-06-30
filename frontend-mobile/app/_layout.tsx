@@ -1,4 +1,4 @@
-// Polyfill para 'global' en entorno web (necesario para stompjs y otras librerías RN en web)
+// Polyfill para 'global' en entorno web
 if (typeof window !== 'undefined' && typeof window.global === 'undefined') {
   window.global = window;
 }
@@ -11,7 +11,7 @@ import 'react-native-reanimated';
 
 import BotonSnake from '@/components/BotonSnake';
 import { ThemeProvider, useTheme } from '@/theme/theme';
-import { FUENTES } from '@/theme/fonts'; // importa y aplica el parche de fuente
+import { FUENTES } from '@/theme/fonts';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -33,6 +33,8 @@ function RootNav() {
         <Stack.Screen name="chat" options={{ headerShown: false }} />
         <Stack.Screen name="videollamada" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="snake" options={{ headerShown: false }} />
+        {/* NUEVA PANTALLA DE TÉRMINOS */}
+        <Stack.Screen name="terminos" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <BotonSnake />
