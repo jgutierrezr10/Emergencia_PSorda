@@ -120,18 +120,6 @@ export default function LoginScreen() {
       }
     } catch (err: any) {
       setError(err.message || 'Error de red. Verifica que el servidor esté activo.');
-      
-      console.warn('Conexión fallida. Iniciando en modo simulación...');
-      setTimeout(async () => {
-        try {
-          await guardarDato('token', 'demo-token');
-          await guardarDato('rol', 'Sordo');
-          await guardarDato('usuarioId', '2');
-          await guardarDato('personaSordaId', '1');
-        } catch (e) {}
-        
-        await procesarIngresoExitoso(); // Reemplaza router.replace directo en el fallback
-      }, 1000);
     } finally {
       setLoading(false);
     }

@@ -20,8 +20,9 @@ export default function RegistroScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
   const [rut, setRut] = useState('');
-  const [email, setEmail] = useState('');
+  const [telefono, setTelefono] = useState('');
   const [password, setPassword] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [error, setError] = useState('');
@@ -40,7 +41,7 @@ export default function RegistroScreen() {
 
   const handleRegistro = async () => {
     setError('');
-    if (!nombre || !rut || !email || !password || !confirmar) {
+    if (!nombre || !apellido || !rut || !telefono || !password || !confirmar) {
       setError('FALTAN DATOS. COMPLETA TODO.');
       return;
     }
@@ -48,8 +49,8 @@ export default function RegistroScreen() {
       setError('DEBES ACEPTAR LOS TÉRMINOS Y CONDICIONES.');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('CORREO MAL. ESCRIBE BIEN.');
+    if (!/^\d{8,9}$/.test(telefono)) {
+      setError('TELÉFONO DEBE TENER 8 O 9 NÚMEROS.');
       return;
     }
     if (password.length < 6) {
@@ -62,11 +63,55 @@ export default function RegistroScreen() {
     }
     setLoading(true);
     
-    setTimeout(async () => {
+    try {
+      const cleanRut = rut.replace(/\./g, '');
+      if (cleanRut.length < 8) {
+        setError('RUT MUY CORTO.');
+        setLoading(false);
+        return;
+      }
+      
+      const resUsuario = await fetch(`${baseUrl}/usuarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre,
+          apellido,
+          rut: cleanRut,
+          telefono,
+          clave: password,
+          estado: 'ACTIVO',
+          rol: 'Sordo'
+        })
+      });
+
+      if (!resUsuario.ok) {
+        throw new Error('Error al crear cuenta. Quizás el RUT ya existe.');
+      }
+
+      const dataUsuario = await resUsuario.json();
+
+      const resPersonaSorda = await fetch(`${baseUrl}/api/personas-sordas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          direccion: 'No definida',
+          infoMedica: '',
+          usuario: { id: dataUsuario.id }
+        })
+      });
+
+      if (!resPersonaSorda.ok) {
+        throw new Error('Error al configurar cuenta inclusiva.');
+      }
+
       await guardarDato('terminos_version', TERMINOS_VERSION);
-      setLoading(false);
       setExito(true);
-    }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Error de conexión. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (exito) {
@@ -87,9 +132,10 @@ export default function RegistroScreen() {
   }
 
   const campos = [
-    { label: 'NOMBRE COMPLETO', icon: 'person-outline' as const, ph: 'Ej: Carlos Muñoz Rojas', val: nombre, set: setNombre, kt: 'default' as const, sec: false },
+    { label: 'NOMBRE', icon: 'person-outline' as const, ph: 'Ej: Carlos', val: nombre, set: setNombre, kt: 'default' as const, sec: false },
+    { label: 'APELLIDO', icon: 'person-outline' as const, ph: 'Ej: Muñoz', val: apellido, set: setApellido, kt: 'default' as const, sec: false },
     { label: 'RUT', icon: 'card-outline' as const, ph: '12.345.678-9', val: rut, set: handleRutChange, kt: 'default' as const, sec: false },
-    { label: 'CORREO', icon: 'mail-outline' as const, ph: 'correo@email.com', val: email, set: setEmail, kt: 'email-address' as const, sec: false },
+    { label: 'TELÉFONO', icon: 'call-outline' as const, ph: '987654321', val: telefono, set: setTelefono, kt: 'phone-pad' as const, sec: false },
     { label: 'CLAVE ÚNICA', icon: 'lock-closed-outline' as const, ph: '••••••••', val: password, set: setPassword, kt: 'default' as const, sec: true },
     { label: 'CONFIRMAR CLAVE', icon: 'lock-closed-outline' as const, ph: '••••••••', val: confirmar, set: setConfirmar, kt: 'default' as const, sec: true },
   ];
@@ -132,7 +178,7 @@ export default function RegistroScreen() {
                     onChangeText={f.set}
                     keyboardType={f.kt}
                     secureTextEntry={f.sec}
-                    autoCapitalize={f.kt === 'email-address' || f.label === 'RUT' ? 'none' : 'sentences'}
+                    autoCapitalize={f.label === 'RUT' ? 'none' : 'sentences'}
                   />
                 </View>
               </View>

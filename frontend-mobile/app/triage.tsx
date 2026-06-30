@@ -44,17 +44,18 @@ export default function TriageScreen() {
   const [respuestas, setRespuestas] = useState<boolean[]>([]);
   const [enviado, setEnviado] = useState(false);
   const [alertaId, setAlertaId] = useState<number | null>(null);
+  const [errorCritico, setErrorCritico] = useState(false);
 
   useEffect(() => {
     const crearAlerta = async () => {
+      let lat = -33.4503;
+      let lng = -70.6781;
       try {
         // BORRAMOS let ip = '10.83.92.211'... etc.
 
         const personaSordaIdStr = await obtenerDato('personaSordaId');
         const personaSordaId = personaSordaIdStr ? Number(personaSordaIdStr) : 1;
 
-        let lat = -33.4503;
-        let lng = -70.6781;
         if (Platform.OS !== 'web') {
           try {
             const { status } = await Location.requestForegroundPermissionsAsync();
@@ -110,9 +111,25 @@ export default function TriageScreen() {
         setAlertaId(data.id);
         await guardarDato('currentAlertaId', String(data.id));
       } catch (err) {
-        console.error('Error creando alerta real, usando simulación:', err);
-        setAlertaId(999);
-        await guardarDato('currentAlertaId', '999');
+        console.error('Error creando alerta, intentando SMS de emergencia:', err);
+        const isAvailable = await SMS.isAvailableAsync();
+        if (isAvailable) {
+          const rut = await obtenerDato('rut') || 'DESCONOCIDO';
+          const numeroGateway = '+56900000000'; 
+          const mensajeSms = `ALERTA ${rut} ${lat} ${lng}`;
+          
+          await SMS.sendSMSAsync([numeroGateway], mensajeSms);
+          
+          // Asignamos un ID ficticio para que el flujo UI continue solo porque se envió por SMS
+          setAlertaId(999);
+          await guardarDato('currentAlertaId', '999');
+        } else {
+          // Alert is not imported but we can use console.error or a state for global error.
+          // Since it's an emergency app, setting ID to null will just stop the flow or we can still let them answer locally?
+          // If no SMS and no backend, nothing is sent.
+          setAlertaId(null);
+          setErrorCritico(true);
+        }
       } finally {
         setCargando(false);
       }
@@ -161,6 +178,23 @@ export default function TriageScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.cargandoTitulo}>ENVIANDO ALERTA A CARABINEROS…</Text>
           <Text style={styles.cargandoTexto}>BUSCANDO TU UBICACIÓN GPS. AVISANDO A CENCO.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (errorCritico) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerWrapper}>
+          <Ionicons name="alert-circle" size={64} color={colors.danger} />
+          <Text style={[styles.avisoTitulo, { marginTop: 16 }]}>ERROR DE CONEXIÓN</Text>
+          <Text style={styles.avisoTexto}>
+            No pudimos contactar a Carabineros vía internet ni por SMS. Por favor, pida ayuda a alguien cercano o intente enviar un SMS al 133 manualmente.
+          </Text>
+          <TouchableOpacity style={[styles.botonPrimario, { backgroundColor: colors.danger }]} onPress={() => router.replace('/(tabs)/home')}>
+            <Text style={[styles.botonPrimarioTexto, { color: '#ffffff' }]}>VOLVER A INICIO</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );

@@ -32,7 +32,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
+                .requestMatchers(HttpMethod.POST, "/usuarios", "/api/personas-sordas").permitAll()
                 .requestMatchers("/auth/**", "/api/auth/**", "/error").permitAll()
                 .requestMatchers("/ws-chat/**").permitAll()
                 .requestMatchers("/api/alertas/**", "/api/triage-alertas/**", "/api/chats/**").permitAll()
