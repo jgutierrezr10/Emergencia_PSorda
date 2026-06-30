@@ -1,2 +1,14 @@
 package-lock.json
 .vscode/settings.json
+node_modules/
+.env
+*.log
+target/
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+sts-tmp/
+

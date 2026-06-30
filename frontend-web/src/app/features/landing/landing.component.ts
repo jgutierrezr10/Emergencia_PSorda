@@ -5,6 +5,7 @@ import { AuthService } from '../auth/services/auth.service';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { WebsocketService } from '../../core/services/websocket.service';
+import { environment } from '../../../environments/environment';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -178,7 +179,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   startPollingAlertas() {
     const fetchAlerts = () => {
-      this.http.get<any[]>('http://localhost:8080/api/alertas')
+      this.http.get<any[]>(`${environment.apiUrl}/api/alertas`)
         .subscribe({
           next: (alertas) => {
             this.ngZone.run(() => {
@@ -239,7 +240,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     const alertId = this.selectedEmergency.id;
 
     // Obtener triage
-    this.http.get<any[]>(`http://localhost:8080/api/triage-alertas/alerta/${alertId}`)
+    this.http.get<any[]>(`${environment.apiUrl}/api/triage-alertas/alerta/${alertId}`)
       .subscribe({
         next: (triageList) => {
           if (!this.selectedEmergency || this.selectedEmergency.id !== alertId) return;
@@ -262,7 +263,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
     // Obtener chats
-    this.http.get<any[]>(`http://localhost:8080/api/chats/alerta/${alertId}`)
+    this.http.get<any[]>(`${environment.apiUrl}/api/chats/alerta/${alertId}`)
       .subscribe({
         next: (chatList) => {
           if (!this.selectedEmergency || this.selectedEmergency.id !== alertId) return;
@@ -479,7 +480,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   exportCasePDF(caso: EmergencyCase) {
     const id = caso.id;
     // Traemos triage y chat frescos del backend para un informe completo
-    this.http.get<any[]>(`http://localhost:8080/api/triage-alertas/alerta/${id}`).subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/api/triage-alertas/alerta/${id}`).subscribe({
       next: (triageList) => {
         let victimaHerida: 'SI' | 'NO' = 'NO';
         let agresorLugar: 'SI' | 'NO' = 'NO';
@@ -491,7 +492,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           if (pre.includes('CASA') || pre.includes('LUGAR')) agresorLugar = t.respuestaSordo ? 'SI' : 'NO';
         });
         const triage: TriageInfo = { victimaHerida, agresorLugar, armaFuego };
-        this.http.get<any[]>(`http://localhost:8080/api/chats/alerta/${id}`).subscribe({
+        this.http.get<any[]>(`${environment.apiUrl}/api/chats/alerta/${id}`).subscribe({
           next: (chatList) => this.buildCasePDF(caso, triage, this.mapChatList(chatList, caso)),
           error: () => this.buildCasePDF(caso, triage, caso.mensajes || [])
         });
@@ -647,7 +648,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     const txt = this.chatText.trim();
     this.chatText = '';
     
-    this.http.post('http://localhost:8080/api/chats', {
+    this.http.post(`${environment.apiUrl}/api/chats`, {
       texto: txt,
       fechaHoraEnvio: new Date().toISOString(),
       emisorId: 1, // operator
@@ -662,7 +663,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   sendPresetGifMsg(gifLabel: string) {
     if (!this.selectedEmergency) return;
     
-    this.http.post('http://localhost:8080/api/chats', {
+    this.http.post(`${environment.apiUrl}/api/chats`, {
       texto: gifLabel,
       fechaHoraEnvio: new Date().toISOString(),
       emisorId: 1, // operator
@@ -680,10 +681,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       const formData = new FormData();
       formData.append('file', file);
 
-      this.http.post<any>('http://localhost:8080/api/uploads', formData)
+      this.http.post<any>(`${environment.apiUrl}/api/uploads`, formData)
         .subscribe({
           next: (res) => {
-            this.http.post('http://localhost:8080/api/chats', {
+            this.http.post(`${environment.apiUrl}/api/chats`, {
               texto: res.fileName,
               fechaHoraEnvio: new Date().toISOString(),
               emisorId: 1, // operator
@@ -721,14 +722,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       actionText = 'SE ENLAZÓ CON BOMBEROS: Carro bomba despachado.';
     }
 
-    this.http.get<any>(`http://localhost:8080/api/alertas/${this.selectedEmergency.id}`)
+    this.http.get<any>(`${environment.apiUrl}/api/alertas/${this.selectedEmergency.id}`)
       .subscribe({
         next: (alerta) => {
           alerta.estado = nextEstado;
-          this.http.put(`http://localhost:8080/api/alertas/${this.selectedEmergency!.id}`, alerta)
+          this.http.put(`${environment.apiUrl}/api/alertas/${this.selectedEmergency!.id}`, alerta)
             .subscribe({
               next: () => {
-                this.http.post('http://localhost:8080/api/chats', {
+                this.http.post(`${environment.apiUrl}/api/chats`, {
                   texto: actionText,
                   fechaHoraEnvio: new Date().toISOString(),
                   emisorId: 0, // system
@@ -751,14 +752,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   resolveEmergency() {
     if (!this.selectedEmergency) return;
 
-    this.http.get<any>(`http://localhost:8080/api/alertas/${this.selectedEmergency.id}`)
+    this.http.get<any>(`${environment.apiUrl}/api/alertas/${this.selectedEmergency.id}`)
       .subscribe({
         next: (alerta) => {
           alerta.estado = 'Finalizada';
-          this.http.put(`http://localhost:8080/api/alertas/${this.selectedEmergency!.id}`, alerta)
+          this.http.put(`${environment.apiUrl}/api/alertas/${this.selectedEmergency!.id}`, alerta)
             .subscribe({
               next: () => {
-                this.http.post('http://localhost:8080/api/chats', {
+                this.http.post(`${environment.apiUrl}/api/chats`, {
                   texto: 'CASO CERRADO: Operación finalizada y guardada en historial.',
                   fechaHoraEnvio: new Date().toISOString(),
                   emisorId: 0, // system
@@ -787,11 +788,11 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     // Reflejar al instante en la lista del historial (no espera al backend ni al polling)
     const enLista = this.emergencies.find(e => e.id === this.selectedEmergency!.id);
     if (enLista) enLista.notasOperador = notas;
-    this.http.get<any>(`http://localhost:8080/api/alertas/${this.selectedEmergency.id}`)
+    this.http.get<any>(`${environment.apiUrl}/api/alertas/${this.selectedEmergency.id}`)
       .subscribe({
         next: (alerta) => {
           alerta.notasOperador = notas;
-          this.http.put(`http://localhost:8080/api/alertas/${this.selectedEmergency!.id}`, alerta)
+          this.http.put(`${environment.apiUrl}/api/alertas/${this.selectedEmergency!.id}`, alerta)
             .subscribe({
               next: () => alert('Notas de despacho guardadas correctamente.'),
               error: (err) => { console.error('Error al guardar notas:', err); alert('No se pudieron guardar las notas.'); }
@@ -840,7 +841,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     const idx = Math.floor(Math.random() * randomNames.length);
     const coordIdx = Math.floor(Math.random() * randomCoords.length);
 
-    this.http.post('http://localhost:8080/api/alertas', {
+    this.http.post(`${environment.apiUrl}/api/alertas`, {
       fechaHoraInicio: new Date().toISOString(),
       latitudLongitud: randomCoords[coordIdx],
       disponibleTriage: true,
@@ -853,7 +854,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     }).subscribe({
       next: (res: any) => {
         // Enviar primer mensaje automático del sistema
-        this.http.post('http://localhost:8080/api/chats', {
+        this.http.post(`${environment.apiUrl}/api/chats`, {
           texto: 'Estoy en peligro',
           fechaHoraEnvio: new Date().toISOString(),
           emisorId: 2, // sordo

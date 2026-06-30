@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Subject, Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +14,7 @@ export class WebsocketService {
   constructor() {
     this.client = new Client({
       // Usar webSocketFactory para SockJS
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws-chat'),
+      webSocketFactory: () => new SockJS(`${environment.apiUrl}/ws-chat`),
       debug: (str) => {
         // Descomentar para ver logs de STOMP
         // console.log(str);
