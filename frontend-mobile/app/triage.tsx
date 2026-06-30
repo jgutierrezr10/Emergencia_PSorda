@@ -121,13 +121,19 @@ export default function TriageScreen() {
           }),
         });
 
-        if (!response.ok) throw new Error('Error al crear la alerta');
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Status: ${response.status}. Detalle: ${errorText}`);
+        }
         const data = await response.json();
         
         setAlertaId(data.id);
         await guardarDato('currentAlertaId', String(data.id));
-      } catch (err) {
-        console.error('Error creando alerta, intentando SMS de emergencia:', err);
+      } catch (err: any) {
+        console.error('Error creando alerta:', err);
+        // Mostrar el error real en pantalla
+        alert(`Error al enviar alerta: ${err.message}`);
+        
         const isAvailable = await SMS.isAvailableAsync();
         if (isAvailable) {
           const rut = await obtenerDato('rut') || 'DESCONOCIDO';
