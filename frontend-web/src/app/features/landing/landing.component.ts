@@ -87,6 +87,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private patrolLine: any;
   private patrolInterval: any;
   private dispatchStarts: { [id: number]: number } = {};
+  private patrolRoutes: { [id: number]: [number, number][] } = {};
+  private patrolRouteFetching: { [id: number]: boolean } = {};
   private readonly ETA_TOTAL_SEG = 360; // 6 min (debe coincidir con el móvil)
 
   // Video call simulated state
@@ -385,11 +387,12 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.dispatchStarts[em.id]) this.dispatchStarts[em.id] = Date.now();
 
     const inicio = this.patrolStart(em.lat, em.lng, em.id);
+    this.fetchPatrolRoute(em.id, inicio, { lat: em.lat, lng: em.lng });
     const progreso = Math.max(0, Math.min(1, (Date.now() - this.dispatchStarts[em.id]) / (this.ETA_TOTAL_SEG * 1000)));
-    const pos: [number, number] = [
-      inicio.lat + (em.lat - inicio.lat) * progreso,
-      inicio.lng + (em.lng - inicio.lng) * progreso,
-    ];
+    const ruta = this.patrolRoutes[em.id];
+    const pos: [number, number] = (ruta && ruta.length > 1)
+      ? this.pointAlongRoute(ruta, progreso)
+      : [inicio.lat + (em.lat - inicio.lat) * progreso, inicio.lng + (em.lng - inicio.lng) * progreso];
 
     if (!this.patrolMarker) {
       const patrolIcon = L.divIcon({
@@ -405,9 +408,48 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (this.patrolLine) { this.map.removeLayer(this.patrolLine); }
-    this.patrolLine = L.polyline([pos, [em.lat, em.lng]], {
-      color: '#2563eb', weight: 4, opacity: 0.7, dashArray: '2,10', lineCap: 'round'
+    const lineaPts: [number, number][] = (ruta && ruta.length > 1) ? ruta : [pos, [em.lat, em.lng]];
+    this.patrolLine = L.polyline(lineaPts, {
+      color: '#2563eb', weight: 4, opacity: 0.75, lineJoin: 'round', lineCap: 'round'
     }).addTo(this.map);
+  }
+
+  // Trae la ruta por calles desde OSRM (gratis, sin API key). fetch nativo para no pasar por el interceptor.
+  private fetchPatrolRoute(id: number, inicio: { lat: number; lng: number }, dest: { lat: number; lng: number }) {
+    if (this.patrolRoutes[id] || this.patrolRouteFetching[id]) return;
+    this.patrolRouteFetching[id] = true;
+    const url = `https://router.project-osrm.org/route/v1/driving/${inicio.lng},${inicio.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => {
+        const coords = data?.routes?.[0]?.geometry?.coordinates;
+        this.patrolRoutes[id] = (coords && coords.length > 1)
+          ? coords.map((c: number[]) => [c[1], c[0]] as [number, number])
+          : [[inicio.lat, inicio.lng], [dest.lat, dest.lng]];
+      })
+      .catch(() => { this.patrolRoutes[id] = [[inicio.lat, inicio.lng], [dest.lat, dest.lng]]; })
+      .finally(() => { this.patrolRouteFetching[id] = false; });
+  }
+
+  // Posición a lo largo de la ruta según progreso (0..1), por distancia recorrida.
+  private pointAlongRoute(route: [number, number][], p: number): [number, number] {
+    const prog = Math.max(0, Math.min(1, p));
+    if (route.length === 1) return route[0];
+    const dist = (a: [number, number], b: [number, number]) =>
+      Math.hypot(a[0] - b[0], (a[1] - b[1]) * Math.cos((a[0] * Math.PI) / 180));
+    const seg: number[] = [];
+    let total = 0;
+    for (let i = 1; i < route.length; i++) { const d = dist(route[i - 1], route[i]); seg.push(d); total += d; }
+    if (total === 0) return route[route.length - 1];
+    let target = prog * total;
+    for (let i = 0; i < seg.length; i++) {
+      if (target <= seg[i]) {
+        const f = seg[i] === 0 ? 0 : target / seg[i];
+        return [route[i][0] + (route[i + 1][0] - route[i][0]) * f, route[i][1] + (route[i + 1][1] - route[i][1]) * f];
+      }
+      target -= seg[i];
+    }
+    return route[route.length - 1];
   }
 
   selectEmergency(item: EmergencyCase) {

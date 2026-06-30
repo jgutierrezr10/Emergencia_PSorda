@@ -6,10 +6,11 @@ interface Props {
   lng: number;
   patrolLat?: number | null;
   patrolLng?: number | null;
+  routeCoords?: [number, number][] | null; // ruta por calles [lat, lng][]
 }
 
 // Mapa Leaflet dentro de un WebView: muestra al usuario y, cuando hay patrulla
-// despachada, su marcador acercándose con una línea hacia el usuario.
+// despachada, su marcador avanzando POR LAS CALLES con la ruta dibujada.
 const buildHtml = (lat: number, lng: number) => `<!DOCTYPE html>
 <html>
 <head>
@@ -33,16 +34,21 @@ const buildHtml = (lat: number, lng: number) => `<!DOCTYPE html>
 
   var patrolM = null, line = null;
 
-  window.updateUser = function(uLat, uLng){
-    userM.setLatLng([uLat, uLng]);
+  window.updateUser = function(uLat, uLng){ userM.setLatLng([uLat, uLng]); };
+
+  // Dibuja la ruta por calles una sola vez y encuadra el mapa.
+  window.setRoute = function(routeJson, uLat, uLng){
+    var pts; try { pts = JSON.parse(routeJson); } catch(e){ pts = null; }
+    if (!pts || pts.length < 2) return;
+    if (line) { map.removeLayer(line); }
+    line = L.polyline(pts, { color: '#2563eb', weight: 5, opacity: 0.8, lineJoin: 'round', lineCap: 'round' }).addTo(map);
+    try { map.fitBounds(line.getBounds(), { padding: [55,55], maxZoom: 16 }); } catch(e){}
   };
 
-  window.setPatrol = function(pLat, pLng, uLat, uLng){
-    if (!patrolM) { patrolM = L.marker([pLat, pLng], { icon: patrolIcon }).addTo(map); }
+  // Mueve (o crea) el marcador de la patrulla. Se llama en cada tick.
+  window.movePatrol = function(pLat, pLng){
+    if (!patrolM) { patrolM = L.marker([pLat, pLng], { icon: patrolIcon, zIndexOffset: 1000 }).addTo(map); }
     else { patrolM.setLatLng([pLat, pLng]); }
-    if (line) { map.removeLayer(line); }
-    line = L.polyline([[pLat, pLng],[uLat, uLng]], { color: '#2563eb', weight: 4, opacity: 0.7, dashArray: '2,10', lineCap: 'round' }).addTo(map);
-    try { map.fitBounds([[pLat, pLng],[uLat, uLng]], { padding: [55,55], maxZoom: 15 }); } catch(e){}
   };
 
   window.clearPatrol = function(uLat, uLng){
@@ -54,7 +60,7 @@ const buildHtml = (lat: number, lng: number) => `<!DOCTYPE html>
 </body>
 </html>`;
 
-export default function MapaUbicacion({ lat, lng, patrolLat, patrolLng }: Props) {
+export default function MapaUbicacion({ lat, lng, patrolLat, patrolLng, routeCoords }: Props) {
   const ref = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
   const inicial = useRef({ lat, lng });
@@ -65,11 +71,18 @@ export default function MapaUbicacion({ lat, lng, patrolLat, patrolLng }: Props)
     if (ready) ref.current?.injectJavaScript(`window.updateUser && window.updateUser(${lat}, ${lng});true;`);
   }, [ready, lat, lng]);
 
-  // Mostrar / mover / quitar la patrulla.
+  // Dibujar la ruta por calles cuando llega (una vez).
+  useEffect(() => {
+    if (!ready || !routeCoords || routeCoords.length < 2) return;
+    const routeJson = JSON.stringify(routeCoords);
+    ref.current?.injectJavaScript(`window.setRoute && window.setRoute(${JSON.stringify(routeJson)}, ${lat}, ${lng});true;`);
+  }, [ready, routeCoords, lat, lng]);
+
+  // Mover / quitar la patrulla en cada tick.
   useEffect(() => {
     if (!ready) return;
     if (patrolLat != null && patrolLng != null) {
-      ref.current?.injectJavaScript(`window.setPatrol && window.setPatrol(${patrolLat}, ${patrolLng}, ${lat}, ${lng});true;`);
+      ref.current?.injectJavaScript(`window.movePatrol && window.movePatrol(${patrolLat}, ${patrolLng});true;`);
     } else {
       ref.current?.injectJavaScript(`window.clearPatrol && window.clearPatrol(${lat}, ${lng});true;`);
     }

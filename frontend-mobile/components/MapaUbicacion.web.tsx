@@ -5,6 +5,7 @@ interface Props {
   lng: number;
   patrolLat?: number | null;
   patrolLng?: number | null;
+  routeCoords?: [number, number][] | null;
 }
 
 export default function MapaUbicacion({ lat, lng }: Props) {

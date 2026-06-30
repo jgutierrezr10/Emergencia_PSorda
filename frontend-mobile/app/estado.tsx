@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import MapaUbicacion from '@/components/MapaUbicacion';
-import { inicioPatrulla, posicionPatrulla, LatLng } from '@/components/patrulla-sim';
+import { inicioPatrulla, posicionPatrulla, obtenerRutaCalles, puntoEnRuta, LatLng } from '@/components/patrulla-sim';
 import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
 import { baseUrl } from './_config';
@@ -37,6 +37,7 @@ export default function EstadoScreen() {
   const [etaRestante, setEtaRestante] = useState<number | null>(null);
   const [alertaId, setAlertaId] = useState<number | null>(null);
   const [patrulla, setPatrulla] = useState<LatLng | null>(null);
+  const [ruta, setRuta] = useState<LatLng[] | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setSegundos((s) => s + 1), 1000);
@@ -140,6 +141,16 @@ export default function EstadoScreen() {
     }
   }, [alertaEstado, despachoInicio]);
 
+  // Al despachar, traer la ruta por calles (OSRM) una sola vez.
+  useEffect(() => {
+    if (despachoInicio === null || !coords || ruta !== null) return;
+    const destino: LatLng = { lat: coords.lat, lng: coords.lng };
+    const inicio = inicioPatrulla(destino, alertaId ?? 7);
+    let cancelado = false;
+    obtenerRutaCalles(inicio, destino).then((r) => { if (!cancelado) setRuta(r); });
+    return () => { cancelado = true; };
+  }, [despachoInicio, coords, alertaId, ruta]);
+
   // Cuenta regresiva del ETA en tiempo real (1 vez por segundo).
   useEffect(() => {
     if (despachoInicio === null) return;
@@ -148,14 +159,19 @@ export default function EstadoScreen() {
       setEtaRestante(Math.max(0, ETA_TOTAL_SEG - transcurrido));
       if (coords) {
         const destino: LatLng = { lat: coords.lat, lng: coords.lng };
-        const inicio = inicioPatrulla(destino, alertaId ?? 7);
-        setPatrulla(posicionPatrulla(inicio, destino, transcurrido / ETA_TOTAL_SEG));
+        const progreso = transcurrido / ETA_TOTAL_SEG;
+        if (ruta && ruta.length > 1) {
+          setPatrulla(puntoEnRuta(ruta, progreso));
+        } else {
+          const inicio = inicioPatrulla(destino, alertaId ?? 7);
+          setPatrulla(posicionPatrulla(inicio, destino, progreso));
+        }
       }
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [despachoInicio, coords, alertaId]);
+  }, [despachoInicio, coords, alertaId, ruta]);
 
   const mm = String(Math.floor(segundos / 60)).padStart(2, '0');
   const ss = String(segundos % 60).padStart(2, '0');
@@ -195,6 +211,7 @@ export default function EstadoScreen() {
               lng={coords.lng}
               patrolLat={patrullaDespachada ? patrulla?.lat : null}
               patrolLng={patrullaDespachada ? patrulla?.lng : null}
+              routeCoords={patrullaDespachada && ruta ? ruta.map((p) => [p.lat, p.lng] as [number, number]) : null}
             />
           ) : (
             <View style={styles.mapaEstado}>
