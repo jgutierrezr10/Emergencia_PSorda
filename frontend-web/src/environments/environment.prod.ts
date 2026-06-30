@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://backend-production.up.railway.app'
+  apiUrl: 'emergenciapsorda-production.up.railway.app'
 };
