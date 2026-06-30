@@ -29,7 +29,7 @@ interface Pregunta {
 const PREGUNTAS: Pregunta[] = [
   { titulo: 'TÚ ¿HERIDO?', subtitulo: 'TÚ ¿TIENES HERIDA? ¿NECESITAS MÉDICO?', gif: require('../assets/gifs/01-herido.gif') },
   { titulo: 'AGRESOR ¿TIENE ARMA?', subtitulo: 'PISTOLA, CUCHILLO U OBJETO PELIGROSO', gif: require('../assets/gifs/02-arma.gif') },
-  { titulo: 'AGRESOR ¿DENTRO CASA?', subtitulo: 'EN TU CASA O MISMO LUGAR QUE TÚ', gif: null },
+  { titulo: 'AGRESOR ¿DENTRO CASA?', subtitulo: 'EN TU CASA O MISMO LUGAR QUE TÚ', gif: require('../assets/gifs/03-casa.gif') },
 ];
 
 export default function TriageScreen() {
@@ -161,7 +161,7 @@ export default function TriageScreen() {
               <Text style={styles.botonTexto}>SÍ</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.boton, styles.botonNo]} onPress={() => setEnviado(true)} activeOpacity={0.85}>
-              <Text style={styles.botonTexto}>NO</Text>
+              <Text style={[styles.botonTexto, styles.botonTextoNo]}>NO</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -234,7 +234,7 @@ export default function TriageScreen() {
           <Text style={styles.botonTexto}>SÍ</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.boton, styles.botonNo]} onPress={() => responder(false)} activeOpacity={0.85}>
-          <Text style={styles.botonTexto}>NO</Text>
+          <Text style={[styles.botonTexto, styles.botonTextoNo]}>NO</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -270,7 +270,8 @@ const makeStyles = (c: Colors) =>
     preguntaSubtitulo: { color: c.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 10, lineHeight: 21 },
     botonesRow: { flexDirection: 'row', gap: 16 },
     boton: { flex: 1, height: 96, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-    botonSi: { backgroundColor: c.primary },
-    botonNo: { backgroundColor: c.danger },
+    botonSi: { backgroundColor: c.danger },
+    botonNo: { backgroundColor: c.surfaceAlt, borderWidth: 2, borderColor: c.border },
     botonTexto: { color: '#ffffff', fontSize: 28, fontWeight: '900', letterSpacing: 1 },
+    botonTextoNo: { color: c.textPrimary },
   });
