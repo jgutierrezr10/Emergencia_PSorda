@@ -31,6 +31,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
                 .requestMatchers("/auth/**", "/api/auth/**", "/error").permitAll()
                 .requestMatchers("/ws-chat/**").permitAll()
@@ -44,10 +45,10 @@ public class SecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.Arrays.asList(
+        configuration.setAllowedOrigins(java.util.Arrays.asList(
             "https://emergencia-ruby.vercel.app",
-            "http://localhost:*",
-            "*"
+            "http://localhost:8080",
+            "http://localhost:8100"
         ));
         configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
