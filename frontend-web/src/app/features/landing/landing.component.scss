@@ -679,7 +679,7 @@
    COLUMNA DETALLE DERECHO (30%)
    ========================================== */
 .details-panel {
-  width: 410px;
+  width: 470px;
   background-color: #FFFFFF;
   border-left: 1px solid #E5E7EB;
   display: flex;
@@ -988,6 +988,19 @@
     }
   }
 
+  /* Botón secundario: DESCARGAR INFORME PDF del caso (outline verde) */
+  .download-report {
+    height: 46px;
+    background-color: #FFFFFF;
+    color: #1B4332;
+    font-size: 0.82rem;
+    border: 1.5px solid #1B4332;
+
+    &:hover {
+      background-color: #F0FDF4;
+    }
+  }
+
   /* Fila de secundarios: SAMU (Azul) y Bomberos (Rojo) (44px) */
   .secondary-actions-row {
     display: grid;
@@ -1098,7 +1111,7 @@
   }
 
   .chat-scroll-container {
-    height: 180px;
+    height: 360px;
     overflow-y: auto;
     border: 1px solid #E2E8F0;
     background-color: #F8FAFC;
@@ -1500,6 +1513,26 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  .col-report { text-align: center; white-space: nowrap; }
+
+  .btn-row-pdf {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #FFFFFF;
+    color: #1B4332;
+    border: 1.5px solid #1B4332;
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+
+    &:hover { background-color: #1B4332; color: #FFFFFF; }
+    &:active { transform: translateY(1px); }
+  }
 
   .history-table {
     width: 100%;

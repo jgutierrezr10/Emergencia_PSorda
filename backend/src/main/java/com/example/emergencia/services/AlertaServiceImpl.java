@@ -42,6 +42,7 @@ public class AlertaServiceImpl implements IAlertaService {
         existente.setDisponibleTriage(alerta.getDisponibleTriage());
         existente.setEstado(alerta.getEstado());
         existente.setPersonaSorda(alerta.getPersonaSorda());
+        existente.setNotasOperador(alerta.getNotasOperador());
         return alertaRepository.save(existente);
     }
 

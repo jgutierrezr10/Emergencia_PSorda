@@ -166,53 +166,28 @@ export default function ChatScreen() {
   }, [alertaId, usuarioId]);
 
   const enviarMensajeBackend = async (tipo: 'texto' | 'gif' | 'archivo', textoVal: string, archivoUrlVal?: string, tipoArchivoVal?: string) => {
-    if (!alertaId || alertaId === '999') {
-      setMensajes((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          autor: 'yo',
-          tipo: tipo,
-          texto: textoVal,
-          hora: ahora(),
-          archivoUrl: archivoUrlVal,
-          tipoArchivo: tipoArchivoVal
-        }
-      ]);
-      return;
-    }
+    const emisor = usuarioId ? Number(usuarioId) : 2;
 
-    if (stompClient.current && stompClient.current.connected) {
-      const emisor = usuarioId ? Number(usuarioId) : 2;
-      const msg = {
-        texto: textoVal,
-        fechaHoraEnvio: new Date().toISOString(),
-        emisorId: emisor,
+    // Mostrar el mensaje de inmediato en pantalla (optimista)
+    setMensajes((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        autor: 'yo',
         tipo: tipo,
+        texto: textoVal,
+        hora: ahora(),
         archivoUrl: archivoUrlVal,
         tipoArchivo: tipoArchivoVal,
-        alerta: { id: Number(alertaId) }
-      };
-      // Optimistic UI update
-      setMensajes((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          autor: 'yo',
-          tipo: tipo,
-          texto: textoVal,
-          hora: ahora(),
-          archivoUrl: archivoUrlVal,
-          tipoArchivo: tipoArchivoVal
-        }
-      ]);
-      stompClient.current.publish({ destination: `/app/chat/${alertaId}`, body: JSON.stringify(msg) });
-      return;
-    }
+      },
+    ]);
 
+    // Modo simulado (sin alerta real): solo queda local
+    if (!alertaId || alertaId === '999') return;
+
+    // SIEMPRE guardar por REST en el backend (el WebSocket no persiste, por eso
+    // antes los mensajes del usuario no le llegaban a CENCO y desaparecían).
     try {
-      const emisor = usuarioId ? Number(usuarioId) : 2;
-
       await fetch(`${baseUrl}/api/chats`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -223,9 +198,7 @@ export default function ChatScreen() {
           tipo: tipo,
           archivoUrl: archivoUrlVal,
           tipoArchivo: tipoArchivoVal,
-          alerta: {
-            id: Number(alertaId)
-          }
+          alerta: { id: Number(alertaId) },
         }),
       });
     } catch (e) {
