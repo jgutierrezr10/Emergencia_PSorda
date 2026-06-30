@@ -7,6 +7,8 @@ import { Image } from 'expo-image';
 import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
 import * as Location from 'expo-location';
+import NetInfo from '@react-native-community/netinfo';
+import * as SMS from 'expo-sms';
 import { baseUrl } from './_config';
 
 const guardarDato = async (key: string, value: string) => {
@@ -63,6 +65,26 @@ export default function TriageScreen() {
             }
           } catch (e) {
             console.warn('No se pudo obtener la ubicación GPS, usando por defecto');
+          }
+        }
+
+        const netInfo = await NetInfo.fetch();
+        if (netInfo.isConnected === false) {
+          console.log("No hay conexión a internet. Usando SMS offline.");
+          const isAvailable = await SMS.isAvailableAsync();
+          if (isAvailable) {
+            const rut = await obtenerDato('rut') || 'DESCONOCIDO';
+            // Número ficticio del Gateway en CENCO, ajustable después
+            const numeroGateway = '+56900000000'; 
+            const mensajeSms = `ALERTA ${rut} ${lat} ${lng}`;
+            
+            await SMS.sendSMSAsync([numeroGateway], mensajeSms);
+            
+            // Asignamos un ID ficticio para que el flujo UI continue
+            setAlertaId(999);
+            await guardarDato('currentAlertaId', '999');
+            setCargando(false);
+            return;
           }
         }
 
