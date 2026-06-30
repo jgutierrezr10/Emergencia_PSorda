@@ -49,65 +49,52 @@ export default function TriageScreen() {
   useEffect(() => {
     const crearAlerta = async () => {
       let latitudLongitud = 'SIN_GPS';
+      
       try {
-        // BORRAMOS let ip = '10.83.92.211'... etc.
-
+        // PASO 1: Obtener personaSordaId
         const personaSordaIdStr = await obtenerDato('personaSordaId');
         let personaSordaId = 1;
         if (personaSordaIdStr && personaSordaIdStr !== 'undefined' && personaSordaIdStr !== 'null') {
           const parsed = Number(personaSordaIdStr);
           if (!isNaN(parsed)) personaSordaId = parsed;
         }
+        console.log('[ALERTA] Paso 1 OK - personaSordaId:', personaSordaId);
 
+        // PASO 2: Intentar GPS con timeout total de 5s
         if (Platform.OS !== 'web') {
           try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
-              // Intento rápido de última ubicación
-              let pos = await Location.getLastKnownPositionAsync({});
+              const pos = await Location.getLastKnownPositionAsync({});
               if (pos) {
                 latitudLongitud = `${pos.coords.latitude},${pos.coords.longitude}`;
               } else {
-                // Si no hay última ubicación, intentamos con timeout de 5 segundos
-                const posPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-                const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-                const result = await Promise.race([posPromise, timeoutPromise]) as Location.LocationObject | null;
-                if (result) {
-                  latitudLongitud = `${result.coords.latitude},${result.coords.longitude}`;
+                const gpsPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                const gpsTimeout = new Promise<null>((r) => setTimeout(() => r(null), 5000));
+                const gpsResult = await Promise.race([gpsPromise, gpsTimeout]) as Location.LocationObject | null;
+                if (gpsResult) {
+                  latitudLongitud = `${gpsResult.coords.latitude},${gpsResult.coords.longitude}`;
                 }
               }
             }
-          } catch (e) {
-            console.warn('No se pudo obtener la ubicación GPS, enviando SIN_GPS');
+          } catch (_gpsErr) {
+            console.warn('[ALERTA] GPS falló, usando SIN_GPS');
           }
         }
+        console.log('[ALERTA] Paso 2 OK - ubicación:', latitudLongitud);
 
-        const netInfo = await NetInfo.fetch();
-        if (netInfo.isConnected === false) {
-          console.log("No hay conexión a internet. Usando SMS offline.");
-          const isAvailable = await SMS.isAvailableAsync();
-          if (isAvailable) {
-            const rut = await obtenerDato('rut') || 'DESCONOCIDO';
-            // Número ficticio del Gateway en CENCO, ajustable después
-            const numeroGateway = '+56900000000'; 
-            const mensajeSms = `ALERTA ${rut} Ubicacion: ${latitudLongitud}`;
-            
-            await SMS.sendSMSAsync([numeroGateway], mensajeSms);
-            
-            // Asignamos un ID ficticio para que el flujo UI continue
-            setAlertaId(999);
-            await guardarDato('currentAlertaId', '999');
-            setCargando(false);
-            return;
-          }
-        }
-
+        // PASO 3: Enviar alerta al backend
         const token = await obtenerDato('token');
+        console.log('[ALERTA] Paso 3 - Enviando a:', `${baseUrl}/api/alertas`, 'Token:', token ? 'SÍ' : 'NO');
+        
+        const controller = new AbortController();
+        const fetchTimeout = setTimeout(() => controller.abort(), 10000); // 10s timeout para fetch
+        
         const response = await fetch(`${baseUrl}/api/alertas`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           },
           body: JSON.stringify({
             latitudLongitud: latitudLongitud,
@@ -115,49 +102,36 @@ export default function TriageScreen() {
             estado: 'ACTIVO',
             incidente: 'Alerta de Pánico (Sordo)',
             modoCamuflaje: true,
-            personaSorda: {
-              id: personaSordaId
-            }
+            personaSorda: { id: personaSordaId }
           }),
+          signal: controller.signal,
         });
+        
+        clearTimeout(fetchTimeout);
+        console.log('[ALERTA] Paso 3 - Response status:', response.status);
 
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Status: ${response.status}. Detalle: ${errorText}`);
-        }
-        const data = await response.json();
-        
-        setAlertaId(data.id);
-        await guardarDato('currentAlertaId', String(data.id));
-      } catch (err: any) {
-        console.error('Error creando alerta:', err);
-        // Mostrar el error real en pantalla
-        alert(`Error al enviar alerta: ${err.message}`);
-        
-        const isAvailable = await SMS.isAvailableAsync();
-        if (isAvailable) {
-          const rut = await obtenerDato('rut') || 'DESCONOCIDO';
-          const numeroGateway = '+56900000000'; 
-          const mensajeSms = `ALERTA ${rut} Ubicacion: ${latitudLongitud}`;
-          
-          await SMS.sendSMSAsync([numeroGateway], mensajeSms);
-          
-          // Asignamos un ID ficticio para que el flujo UI continue solo porque se envió por SMS
-          setAlertaId(999);
-          await guardarDato('currentAlertaId', '999');
-        } else {
-          // Alert is not imported but we can use console.error or a state for global error.
-          // Since it's an emergency app, setting ID to null will just stop the flow or we can still let them answer locally?
-          // If no SMS and no backend, nothing is sent.
-          setAlertaId(null);
+          const errorBody = await response.text();
+          console.error('[ALERTA] Backend rechazó:', response.status, errorBody);
+          alert(`Error del servidor: ${response.status}\n${errorBody}`);
           setErrorCritico(true);
+        } else {
+          const data = await response.json();
+          console.log('[ALERTA] Paso 4 OK - Alerta creada con ID:', data.id);
+          setAlertaId(data.id);
+          await guardarDato('currentAlertaId', String(data.id));
         }
+      } catch (err: any) {
+        console.error('[ALERTA] Error fatal:', err);
+        alert(`Error creando alerta: ${err.message || err}`);
+        setErrorCritico(true);
       } finally {
         setCargando(false);
       }
     };
 
     crearAlerta();
+
   }, []);
 
   const responder = async (valor: boolean) => {
@@ -179,7 +153,6 @@ export default function TriageScreen() {
           body: JSON.stringify({
             preguntaClave: pregunta.titulo,
             respuestaSordo: valor,
-            horaRespuesta: new Date().toISOString(),
             alerta: {
               id: currentId
             }
