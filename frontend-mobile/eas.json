@@ -10,12 +10,12 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://backend-production.up.railway.app"
+        "EXPO_PUBLIC_BACKEND_URL": "https://emergenciapsorda-production.up.railway.app"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://backend-production.up.railway.app"
+        "EXPO_PUBLIC_BACKEND_URL": "https://emergenciapsorda-production.up.railway.app"
       }
     }
   },
