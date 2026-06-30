@@ -48,24 +48,37 @@ export default function TriageScreen() {
 
   useEffect(() => {
     const crearAlerta = async () => {
-      let lat = -33.4503;
-      let lng = -70.6781;
+      let latitudLongitud = 'SIN_GPS';
       try {
         // BORRAMOS let ip = '10.83.92.211'... etc.
 
         const personaSordaIdStr = await obtenerDato('personaSordaId');
-        const personaSordaId = personaSordaIdStr ? Number(personaSordaIdStr) : 1;
+        let personaSordaId = 1;
+        if (personaSordaIdStr && personaSordaIdStr !== 'undefined' && personaSordaIdStr !== 'null') {
+          const parsed = Number(personaSordaIdStr);
+          if (!isNaN(parsed)) personaSordaId = parsed;
+        }
 
         if (Platform.OS !== 'web') {
           try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
-              const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-              lat = pos.coords.latitude;
-              lng = pos.coords.longitude;
+              // Intento rápido de última ubicación
+              let pos = await Location.getLastKnownPositionAsync({});
+              if (pos) {
+                latitudLongitud = `${pos.coords.latitude},${pos.coords.longitude}`;
+              } else {
+                // Si no hay última ubicación, intentamos con timeout de 5 segundos
+                const posPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+                const result = await Promise.race([posPromise, timeoutPromise]) as Location.LocationObject | null;
+                if (result) {
+                  latitudLongitud = `${result.coords.latitude},${result.coords.longitude}`;
+                }
+              }
             }
           } catch (e) {
-            console.warn('No se pudo obtener la ubicación GPS, usando por defecto');
+            console.warn('No se pudo obtener la ubicación GPS, enviando SIN_GPS');
           }
         }
 
@@ -77,7 +90,7 @@ export default function TriageScreen() {
             const rut = await obtenerDato('rut') || 'DESCONOCIDO';
             // Número ficticio del Gateway en CENCO, ajustable después
             const numeroGateway = '+56900000000'; 
-            const mensajeSms = `ALERTA ${rut} ${lat} ${lng}`;
+            const mensajeSms = `ALERTA ${rut} Ubicacion: ${latitudLongitud}`;
             
             await SMS.sendSMSAsync([numeroGateway], mensajeSms);
             
@@ -98,7 +111,7 @@ export default function TriageScreen() {
           },
           body: JSON.stringify({
             fechaHoraInicio: new Date().toISOString(),
-            latitudLongitud: `${lat},${lng}`,
+            latitudLongitud: latitudLongitud,
             disponibleTriage: true,
             estado: 'ACTIVO',
             incidente: 'Alerta de Pánico (Sordo)',
@@ -120,7 +133,7 @@ export default function TriageScreen() {
         if (isAvailable) {
           const rut = await obtenerDato('rut') || 'DESCONOCIDO';
           const numeroGateway = '+56900000000'; 
-          const mensajeSms = `ALERTA ${rut} ${lat} ${lng}`;
+          const mensajeSms = `ALERTA ${rut} Ubicacion: ${latitudLongitud}`;
           
           await SMS.sendSMSAsync([numeroGateway], mensajeSms);
           
