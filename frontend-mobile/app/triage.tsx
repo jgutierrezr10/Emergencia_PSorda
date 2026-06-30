@@ -110,7 +110,6 @@ export default function TriageScreen() {
             'Authorization': `Bearer ${token}` 
           },
           body: JSON.stringify({
-            fechaHoraInicio: new Date().toISOString(),
             latitudLongitud: latitudLongitud,
             disponibleTriage: true,
             estado: 'ACTIVO',
