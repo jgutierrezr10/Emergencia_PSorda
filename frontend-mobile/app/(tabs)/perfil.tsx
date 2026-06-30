@@ -372,7 +372,7 @@ export default function PerfilScreen() {
 
         {/* Opciones */}
         <View style={styles.seccionCard}>
-          <TouchableOpacity style={styles.opcionRow} onPress={() => router.push('/privacidad')}>
+          <TouchableOpacity style={styles.opcionRow} onPress={() => router.push('/privacidad' as any)}>
             <View style={styles.seccionHeaderLeft}>
               <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
               <View>
@@ -383,7 +383,7 @@ export default function PerfilScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
           <View style={styles.divisor} />
-          <TouchableOpacity style={styles.opcionRow} onPress={() => router.push('/ayuda')}>
+          <TouchableOpacity style={styles.opcionRow} onPress={() => router.push('/ayuda' as any)}>
             <View style={styles.seccionHeaderLeft}>
               <Ionicons name="help-circle-outline" size={20} color={colors.primary} />
               <View>
@@ -394,7 +394,7 @@ export default function PerfilScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
           <View style={styles.divisor} />
-          <TouchableOpacity style={styles.opcionRow} onPress={() => router.push('/sobre')}>
+          <TouchableOpacity style={styles.opcionRow} onPress={() => router.push('/sobre' as any)}>
             <View style={styles.seccionHeaderLeft}>
               <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
               <View>

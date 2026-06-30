@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Modal, Animated, Easing, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Modal, Animated, Easing, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { router } from 'expo-router';
