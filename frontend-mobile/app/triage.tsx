@@ -47,6 +47,13 @@ export default function TriageScreen() {
   const [errorCritico, setErrorCritico] = useState(false);
 
   useEffect(() => {
+    alert("Versión V6 cargada. Iniciando creación de alerta...");
+    const timeoutSeguridad = setTimeout(() => {
+      alert("Error: La aplicación se congeló por más de 15 segundos.");
+      setCargando(false);
+      setErrorCritico(true);
+    }, 15000);
+
     const crearAlerta = async () => {
       let latitudLongitud = 'SIN_GPS';
       
@@ -126,6 +133,7 @@ export default function TriageScreen() {
         alert(`Error creando alerta: ${err.message || err}`);
         setErrorCritico(true);
       } finally {
+        clearTimeout(timeoutSeguridad);
         setCargando(false);
       }
     };
