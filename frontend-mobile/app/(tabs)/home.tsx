@@ -70,7 +70,7 @@ export default function HomeScreen() {
             onPress={() => setModalConfirmar(true)}
           >
             <Ionicons name="alert" size={52} color="#ffffff" />
-            <Text style={styles.botonPanicoTexto}>EMERGENCIA</Text>
+            <Text style={styles.botonPanicoTexto}>URGENCIA</Text>
           </Pressable>
         </View>
 
@@ -99,7 +99,7 @@ export default function HomeScreen() {
             <View style={styles.modalIcono}>
               <Ionicons name="alert" size={30} color={colors.danger} />
             </View>
-            <Text style={styles.modalTitulo}>¿CONFIRMAR EMERGENCIA?</Text>
+            <Text style={styles.modalTitulo}>¿CONFIRMAR URGENCIA?</Text>
             <Text style={styles.modalDescripcion}>
               ENVIAR ALERTA + TU UBICACIÓN GPS A CARABINEROS. AHORA.
             </Text>

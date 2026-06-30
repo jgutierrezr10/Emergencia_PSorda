@@ -5,6 +5,8 @@ import { AuthService } from '../auth/services/auth.service';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { WebsocketService } from '../../core/services/websocket.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 declare const L: any; // Leaflet library loaded via index.html CDN
 
@@ -71,9 +73,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Preset response GIFs (LSCh)
   presetGifs = [
-    { label: 'Patrulla en camino', icon: 'fa-car-side' },
-    { label: 'Mantén la calma', icon: 'fa-heart' },
-    { label: 'Escribe si es seguro', icon: 'fa-keyboard' }
+    { label: 'PATRULLA YA VA. ESPERA.', icon: 'fa-car-side' },
+    { label: 'CALMA. TÚ TRANQUILO.', icon: 'fa-heart' },
+    { label: 'SI SEGURO, TÚ ESCRIBIR.', icon: 'fa-keyboard' },
+    { label: 'TÚ ¿DÓNDE ESTÁS?', icon: 'fa-location-dot' }
   ];
 
   // Map reference
@@ -146,7 +149,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     if (estado === 'Pendiente') tags.push('NUEVA');
     else if (estado === 'En Proceso' || estado === 'Despachada') tags.push('EN ATENCIÓN');
     else if (estado === 'Finalizada') tags.push('RESUELTA');
-    if (alerta.modoCamuflaje) tags.push('CAMUFLAJE');
 
     return {
       id: alerta.id,
@@ -169,7 +171,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       tags: tags,
       modoCamuflaje: !!alerta.modoCamuflaje,
       mensajes: [],
-      notasOperador: '',
+      notasOperador: alerta.notasOperador || '',
       infoMedica: alerta.personaSorda ? alerta.personaSorda.infoMedica : 'Sin información médica registrada'
     };
   }
@@ -201,11 +203,13 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
                 if (stillExists) {
                   const prevMsgs = this.selectedEmergency.mensajes;
                   const prevTriage = this.selectedEmergency.triage;
+                  const prevNotas = this.selectedEmergency.notasOperador;
                   Object.assign(this.selectedEmergency, stillExists);
                   if (this.selectedEmergency.mensajes.length === 0) {
                     this.selectedEmergency.mensajes = prevMsgs;
                   }
                   this.selectedEmergency.triage = prevTriage;
+                  this.selectedEmergency.notasOperador = prevNotas;
                 } else {
                   this.selectedEmergency = this.emergencies.length > 0 ? this.emergencies[0] : null;
                 }
@@ -327,12 +331,12 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const customIcon = L.divIcon({
-      className: `custom-map-pin ${markerColorClass} ${this.selectedEmergency.modoCamuflaje ? 'is-camuflaje' : ''}`,
+      className: `custom-map-pin ${markerColorClass}`,
       html: `
         <div class="pin-wrapper">
           <div class="pin-drop"></div>
           <div class="pin-center">
-            ${this.selectedEmergency.modoCamuflaje ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>'}
+            <i class="fa-solid fa-circle-exclamation"></i>
           </div>
         </div>
       `,
@@ -422,7 +426,220 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   exportHistoryPDF() {
-    alert('Exportando historial de emergencias en formato PDF... El archivo se ha descargado correctamente.');
+    const casos = this.getFilteredHistory();
+    const fecha = new Date().toLocaleString('es-CL');
+
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+
+    // Encabezado institucional
+    doc.setFillColor(27, 67, 50); // verde CENCO
+    doc.rect(0, 0, doc.internal.pageSize.getWidth(), 70, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('CENCO — Historial de Emergencias', 40, 34);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Carabineros de Chile', 40, 52);
+
+    doc.setTextColor(90, 90, 90);
+    doc.setFontSize(9);
+    doc.text(`Generado: ${fecha}  ·  Total de casos: ${casos.length}`, 40, 90);
+
+    autoTable(doc, {
+      startY: 104,
+      head: [['Ciudadano', 'RUT', 'Incidente', 'Hora', 'Estado', 'Notas de Despacho']],
+      body: casos.map((c) => [c.nombre, c.rut, c.incidente, c.horaIngreso, c.estado, (c.notasOperador && c.notasOperador.trim()) ? c.notasOperador : '—']),
+      styles: { fontSize: 8, cellPadding: 5, valign: 'top' },
+      headStyles: { fillColor: [27, 67, 50], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: { 2: { cellWidth: 95 }, 5: { cellWidth: 120 } },
+      margin: { left: 40, right: 40 },
+      didDrawPage: (data: any) => {
+        const pageSize = doc.internal.pageSize;
+        const pageHeight = pageSize.getHeight();
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Documento generado por el Panel CENCO · Uso interno', 40, pageHeight - 20);
+        doc.text(`Página ${doc.getNumberOfPages()}`, pageSize.getWidth() - 80, pageHeight - 20);
+      },
+    });
+
+    if (casos.length === 0) {
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(11);
+      doc.text('No hay emergencias registradas en el historial.', 40, 130);
+    }
+
+    const nombreArchivo = `historial-emergencias-cenco-${new Date().toISOString().slice(0, 10)}.pdf`;
+    doc.save(nombreArchivo);
+  }
+
+  // ===== INFORME DETALLADO DE UN CASO INDIVIDUAL (PDF) =====
+  exportCasePDF(caso: EmergencyCase) {
+    const id = caso.id;
+    // Traemos triage y chat frescos del backend para un informe completo
+    this.http.get<any[]>(`http://localhost:8080/api/triage-alertas/alerta/${id}`).subscribe({
+      next: (triageList) => {
+        let victimaHerida: 'SI' | 'NO' = 'NO';
+        let agresorLugar: 'SI' | 'NO' = 'NO';
+        let armaFuego: 'SI' | 'NO' = 'NO';
+        (triageList || []).forEach((t: any) => {
+          const pre = (t.preguntaClave || '').toUpperCase();
+          if (pre.includes('HERIDO')) victimaHerida = t.respuestaSordo ? 'SI' : 'NO';
+          if (pre.includes('ARMA')) armaFuego = t.respuestaSordo ? 'SI' : 'NO';
+          if (pre.includes('CASA') || pre.includes('LUGAR')) agresorLugar = t.respuestaSordo ? 'SI' : 'NO';
+        });
+        const triage: TriageInfo = { victimaHerida, agresorLugar, armaFuego };
+        this.http.get<any[]>(`http://localhost:8080/api/chats/alerta/${id}`).subscribe({
+          next: (chatList) => this.buildCasePDF(caso, triage, this.mapChatList(chatList, caso)),
+          error: () => this.buildCasePDF(caso, triage, caso.mensajes || [])
+        });
+      },
+      error: () => this.buildCasePDF(caso, caso.triage, caso.mensajes || [])
+    });
+  }
+
+  private mapChatList(chatList: any[], caso: EmergencyCase): ChatMessage[] {
+    const lista = (chatList || []).map((m: any) => {
+      let hora = '00:00';
+      if (m.fechaHoraEnvio && m.fechaHoraEnvio.includes('T')) hora = m.fechaHoraEnvio.substring(11, 16);
+      let autor: 'usuario' | 'operador' | 'sistema' = 'usuario';
+      if (m.emisorId === 1) autor = 'operador';
+      else if (m.emisorId === 0) autor = 'sistema';
+      return { id: m.id, autor, texto: m.texto, hora, esGif: m.tipo === 'gif' } as ChatMessage;
+    });
+    return lista.length ? lista : (caso.mensajes || []);
+  }
+
+  private buildCasePDF(caso: EmergencyCase, triage: TriageInfo, mensajes: ChatMessage[]) {
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const fecha = new Date().toLocaleString('es-CL');
+
+    // Encabezado institucional
+    doc.setFillColor(27, 67, 50);
+    doc.rect(0, 0, W, 78, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(17);
+    doc.text('CENCO — Informe de Emergencia', 40, 32);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Carabineros de Chile · Documento operativo confidencial', 40, 50);
+    doc.setFontSize(9);
+    doc.text(`Folio #${caso.id.toString().slice(-6)}   ·   Estado: ${caso.estado}`, 40, 66);
+    doc.setTextColor(210, 225, 215);
+    doc.setFontSize(8);
+    doc.text(`Generado: ${fecha}`, W - 40, 66, { align: 'right' });
+
+    const sectionTitle = (txt: string, y: number) => {
+      doc.setDrawColor(27, 67, 50);
+      doc.setLineWidth(2);
+      doc.line(40, y - 9, 40, y + 1);
+      doc.setTextColor(27, 67, 50);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(txt, 50, y);
+      return y + 8;
+    };
+
+    let y = 100;
+
+    y = sectionTitle('DATOS DEL CIUDADANO', y);
+    autoTable(doc, {
+      startY: y, theme: 'plain', margin: { left: 40, right: 40 },
+      styles: { fontSize: 10, cellPadding: 3 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 150, textColor: [90, 90, 90] } },
+      body: [
+        ['Nombre', caso.nombre],
+        ['RUT', caso.rut],
+        ['Teléfono', caso.telefono || 'No registrado'],
+        ['Información médica', caso.infoMedica || 'Sin información registrada'],
+      ],
+    });
+    y = (doc as any).lastAutoTable.finalY + 20;
+
+    y = sectionTitle('DATOS DEL INCIDENTE', y);
+    autoTable(doc, {
+      startY: y, theme: 'plain', margin: { left: 40, right: 40 },
+      styles: { fontSize: 10, cellPadding: 3 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 150, textColor: [90, 90, 90] } },
+      body: [
+        ['Tipo de incidente', caso.incidente],
+        ['Hora de ingreso', caso.horaIngreso],
+        ['Estado actual', caso.estado],
+        ['Ubicación', caso.ubicacionNombre || '—'],
+        ['Coordenadas GPS', `${caso.lat}, ${caso.lng}`],
+      ],
+    });
+    y = (doc as any).lastAutoTable.finalY + 20;
+
+    y = sectionTitle('EVALUACIÓN TÁCTICA (TRIAGE)', y);
+    autoTable(doc, {
+      startY: y, margin: { left: 40, right: 40 },
+      styles: { fontSize: 10, cellPadding: 6 },
+      headStyles: { fillColor: [27, 67, 50], textColor: 255, fontStyle: 'bold' },
+      head: [['Evaluación', 'Respuesta']],
+      body: [
+        ['¿Víctima herida?', triage.victimaHerida],
+        ['¿Agresor en el lugar?', triage.agresorLugar],
+        ['¿Arma de fuego involucrada?', triage.armaFuego],
+      ],
+      didParseCell: (d: any) => {
+        if (d.section === 'body' && d.column.index === 1) {
+          d.cell.styles.fontStyle = 'bold';
+          d.cell.styles.textColor = d.cell.raw === 'SI' ? [197, 48, 48] : [56, 120, 80];
+        }
+      },
+    });
+    y = (doc as any).lastAutoTable.finalY + 20;
+
+    y = sectionTitle('NOTAS DE DESPACHO', y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(45, 45, 45);
+    const notas = (caso.notasOperador && caso.notasOperador.trim()) ? caso.notasOperador : 'Sin anotaciones registradas.';
+    const notasLines = doc.splitTextToSize(notas, W - 80) as string[];
+    doc.text(notasLines, 40, y + 10);
+    y = y + 10 + notasLines.length * 13 + 16;
+
+    y = sectionTitle('HISTORIAL DE CONVERSACIÓN (CHAT)', y);
+    if (!mensajes || mensajes.length === 0) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(10);
+      doc.setTextColor(125, 125, 125);
+      doc.text('No hay mensajes registrados para este caso.', 40, y + 12);
+    } else {
+      const autorLabel = (a: string) => a === 'operador' ? 'CENCO' : a === 'sistema' ? 'Sistema' : 'Ciudadano';
+      autoTable(doc, {
+        startY: y + 4, margin: { left: 40, right: 40 },
+        styles: { fontSize: 9, cellPadding: 5, valign: 'top' },
+        headStyles: { fillColor: [27, 67, 50], textColor: 255, fontStyle: 'bold' },
+        head: [['Hora', 'Emisor', 'Mensaje']],
+        body: mensajes.map(m => [m.hora, autorLabel(m.autor), m.esGif ? '[Mensaje en LSCh]' : (m.texto || '')]),
+        columnStyles: { 0: { cellWidth: 48 }, 1: { cellWidth: 72, fontStyle: 'bold' }, 2: { cellWidth: 'auto' } },
+        didParseCell: (d: any) => {
+          if (d.section === 'body' && d.column.index === 1) {
+            d.cell.styles.textColor = d.cell.raw === 'CENCO' ? [27, 67, 50] : [70, 70, 70];
+          }
+        },
+      });
+    }
+
+    // Pie de página en todas las páginas
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      const H = doc.internal.pageSize.getHeight();
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Documento confidencial · Panel CENCO · Uso interno Carabineros de Chile', 40, H - 20);
+      doc.text(`Página ${i} de ${pages}`, W - 40, H - 20, { align: 'right' });
+    }
+
+    doc.save(`informe-caso-${caso.id.toString().slice(-6)}-${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
   sendTextMessage() {
@@ -446,10 +663,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.selectedEmergency) return;
     
     this.http.post('http://localhost:8080/api/chats', {
-      texto: `[Respuesta en LSCh] ${gifLabel}`,
+      texto: gifLabel,
       fechaHoraEnvio: new Date().toISOString(),
       emisorId: 1, // operator
-      tipo: 'gif',
+      tipo: 'texto',
       alerta: { id: this.selectedEmergency.id }
     }).subscribe({
       next: () => this.fetchSelectedEmergencyDetails(),
@@ -565,7 +782,23 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveDispatchNotes() {
-    alert('Notas de despacho actualizadas y registradas correctamente.');
+    if (!this.selectedEmergency) return;
+    const notas = this.selectedEmergency.notasOperador || '';
+    // Reflejar al instante en la lista del historial (no espera al backend ni al polling)
+    const enLista = this.emergencies.find(e => e.id === this.selectedEmergency!.id);
+    if (enLista) enLista.notasOperador = notas;
+    this.http.get<any>(`http://localhost:8080/api/alertas/${this.selectedEmergency.id}`)
+      .subscribe({
+        next: (alerta) => {
+          alerta.notasOperador = notas;
+          this.http.put(`http://localhost:8080/api/alertas/${this.selectedEmergency!.id}`, alerta)
+            .subscribe({
+              next: () => alert('Notas de despacho guardadas correctamente.'),
+              error: (err) => { console.error('Error al guardar notas:', err); alert('No se pudieron guardar las notas.'); }
+            });
+        },
+        error: (err) => { console.error('Error al obtener la alerta:', err); alert('No se pudieron guardar las notas.'); }
+      });
   }
 
   // --- Videollamada simulada ---
@@ -671,9 +904,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       ubicacionNombre: persona.direccion || 'Ubicación GPS detectada',
       lat: lat,
       lng: lng,
-      tags: ['CAMUFLAJE', 'NUEVA'],
+      tags: ['NUEVA'],
       modoCamuflaje: backendAlerta.modoCamuflaje || false,
-      notasOperador: '',
+      notasOperador: backendAlerta.notasOperador || '',
       infoMedica: persona.infoMedica || 'Sin información médica registrada',
       mensajes: [
         { id: 1, autor: 'usuario', texto: 'Alerta disparada desde la aplicación', hora: timeStr, esGif: false }

@@ -106,9 +106,6 @@
             <div class="card-top-row">
               <span class="citizen-name">{{ item.nombre }}</span>
               <div class="card-badges">
-                <span class="badge-camuflaje" *ngIf="item.modoCamuflaje">
-                  <i class="fa-solid fa-eye-slash"></i> CAMUFLAJE
-                </span>
                 <span class="badge-tag nueva" *ngIf="item.tags.includes('NUEVA')">NUEVA</span>
                 <span class="badge-tag atencion" *ngIf="item.tags.includes('EN ATENCIÓN')">EN ATENCIÓN</span>
               </div>
@@ -159,12 +156,6 @@
             <li>
               <span class="legend-dot green"></span>
               <span>Resuelta</span>
-            </li>
-            <li>
-              <span class="legend-icon camuflaje">
-                <i class="fa-solid fa-eye-slash"></i>
-              </span>
-              <span>Modo Camuflaje</span>
             </li>
           </ul>
         </div>
@@ -259,6 +250,7 @@
               <th>Hora Ingreso</th>
               <th>Estado</th>
               <th>Notas de Despacho</th>
+              <th>Informe</th>
             </tr>
           </thead>
           <tbody>
@@ -278,9 +270,14 @@
                 </span>
               </td>
               <td class="col-notes">{{ case.notasOperador || 'Sin anotaciones registradas.' }}</td>
+              <td class="col-report">
+                <button class="btn-row-pdf" (click)="exportCasePDF(case)" title="Descargar informe completo de este caso en PDF">
+                  <i class="fa-solid fa-file-pdf"></i> PDF
+                </button>
+              </td>
             </tr>
             <tr *ngIf="getFilteredHistory().length === 0">
-              <td colspan="7" class="empty-table">
+              <td colspan="8" class="empty-table">
                 <i class="fa-solid fa-folder-open"></i>
                 <p>No se encontraron registros en el historial con los filtros aplicados.</p>
               </td>
@@ -319,18 +316,10 @@
         </div>
         <div class="profile-info">
           <h4>{{ selectedEmergency.nombre }}</h4>
-          <span class="badge-camuflaje-inline" *ngIf="selectedEmergency.modoCamuflaje">
-            <i class="fa-solid fa-eye-slash"></i> MODO CAMUFLAJE
-          </span>
           <span class="profile-rut">{{ selectedEmergency.rut }}</span>
         </div>
       </div>
 
-      <!-- BANNER DE ADVERTENCIA DE MODO CAMUFLAJE -->
-      <div class="camuflaje-warning-banner" *ngIf="selectedEmergency.modoCamuflaje">
-        <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
-        <p>Alerta silenciosa. La víctima puede tener el dispositivo camuflado. No iniciar contacto directo.</p>
-      </div>
 
       <!-- TIPO DE INCIDENTE -->
       <div class="detail-section">
@@ -407,6 +396,10 @@
         <button class="btn-action dispatch-patrol" (click)="dispatchUnit('patrulla')" title="Despachar Radio Patrulla (Carabineros) de forma inmediata">
           <i class="fa-solid fa-car-side" aria-hidden="true"></i>
           <span>DESPACHAR PATRULLA</span>
+        </button>
+        <button class="btn-action download-report" (click)="exportCasePDF(selectedEmergency)" title="Descargar informe completo del caso en PDF (datos, triage, notas y chat)">
+          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+          <span>DESCARGAR INFORME PDF</span>
         </button>
       </div>
 
