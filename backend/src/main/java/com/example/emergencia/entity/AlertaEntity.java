@@ -37,4 +37,7 @@ public class AlertaEntity {
 
     @Column(name = "modo_camuflaje")
     private Boolean modoCamuflaje;
+
+    @Column(name = "notas_operador", columnDefinition = "TEXT")
+    private String notasOperador;
 }

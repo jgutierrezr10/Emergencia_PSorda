@@ -33,6 +33,17 @@ const GIFS = [
   { label: 'MI UBICACIÓN', icon: 'location' as const, color: '#ec4899' },
 ];
 
+// Mensajes de texto predeterminados en LSCh (reemplazan los bloques de GIF).
+// Al tocarlos se envían como un mensaje de texto normal al operador.
+const MENSAJES_RAPIDOS = [
+  'YO NECESITO AYUDA',
+  'YO EN PELIGRO',
+  'VENGAN RÁPIDO',
+  'AGRESOR CERCA DE MÍ',
+  'YO ESCONDIDO',
+  'NO PUEDO SALIR',
+];
+
 const colorGif = (label: string) => GIFS.find((g) => g.label === label)?.color ?? '#ec4899';
 const iconGif = (label: string) => GIFS.find((g) => g.label === label)?.icon ?? 'image';
 
@@ -50,7 +61,7 @@ export default function ChatScreen() {
       id: 1,
       autor: 'op',
       tipo: 'texto',
-      texto: 'HOLA. YO OPERADOR CENCO. YO CONTIGO POR CHAT. TÚ ESCRIBIR O ENVIAR GIF EN LSCh. CUENTA QUÉ PASA.',
+      texto: 'HOLA. YO OPERADOR CENCO. YO CONTIGO POR CHAT. TÚ ESCRIBIR O TOCAR MENSAJE RÁPIDO. CUENTA QUÉ PASA.',
       hora: ahora(),
     },
   ]);
@@ -136,7 +147,7 @@ export default function ChatScreen() {
                 id: 1,
                 autor: 'op',
                 tipo: 'texto',
-                texto: 'HOLA. YO OPERADOR CENCO. YO CONTIGO POR CHAT. TÚ ESCRIBIR O ENVIAR GIF EN LSCh. CUENTA QUÉ PASA.',
+                texto: 'HOLA. YO OPERADOR CENCO. YO CONTIGO POR CHAT. TÚ ESCRIBIR O TOCAR MENSAJE RÁPIDO. CUENTA QUÉ PASA.',
                 hora: ahora(),
               }
             ]);
@@ -155,53 +166,28 @@ export default function ChatScreen() {
   }, [alertaId, usuarioId]);
 
   const enviarMensajeBackend = async (tipo: 'texto' | 'gif' | 'archivo', textoVal: string, archivoUrlVal?: string, tipoArchivoVal?: string) => {
-    if (!alertaId || alertaId === '999') {
-      setMensajes((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          autor: 'yo',
-          tipo: tipo,
-          texto: textoVal,
-          hora: ahora(),
-          archivoUrl: archivoUrlVal,
-          tipoArchivo: tipoArchivoVal
-        }
-      ]);
-      return;
-    }
+    const emisor = usuarioId ? Number(usuarioId) : 2;
 
-    if (stompClient.current && stompClient.current.connected) {
-      const emisor = usuarioId ? Number(usuarioId) : 2;
-      const msg = {
-        texto: textoVal,
-        fechaHoraEnvio: new Date().toISOString(),
-        emisorId: emisor,
+    // Mostrar el mensaje de inmediato en pantalla (optimista)
+    setMensajes((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        autor: 'yo',
         tipo: tipo,
+        texto: textoVal,
+        hora: ahora(),
         archivoUrl: archivoUrlVal,
         tipoArchivo: tipoArchivoVal,
-        alerta: { id: Number(alertaId) }
-      };
-      // Optimistic UI update
-      setMensajes((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          autor: 'yo',
-          tipo: tipo,
-          texto: textoVal,
-          hora: ahora(),
-          archivoUrl: archivoUrlVal,
-          tipoArchivo: tipoArchivoVal
-        }
-      ]);
-      stompClient.current.publish({ destination: `/app/chat/${alertaId}`, body: JSON.stringify(msg) });
-      return;
-    }
+      },
+    ]);
 
+    // Modo simulado (sin alerta real): solo queda local
+    if (!alertaId || alertaId === '999') return;
+
+    // SIEMPRE guardar por REST en el backend (el WebSocket no persiste, por eso
+    // antes los mensajes del usuario no le llegaban a CENCO y desaparecían).
     try {
-      const emisor = usuarioId ? Number(usuarioId) : 2;
-
       await fetch(`${baseUrl}/api/chats`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -212,9 +198,7 @@ export default function ChatScreen() {
           tipo: tipo,
           archivoUrl: archivoUrlVal,
           tipoArchivo: tipoArchivoVal,
-          alerta: {
-            id: Number(alertaId)
-          }
+          alerta: { id: Number(alertaId) },
         }),
       });
     } catch (e) {
@@ -227,55 +211,6 @@ export default function ChatScreen() {
     const txt = texto.trim();
     setTexto('');
     await enviarMensajeBackend('texto', txt);
-  };
-
-  const enviarGif = async (label: string) => {
-    await enviarMensajeBackend('gif', label);
-  };
-
-  const seleccionarYSubirArchivo = async () => {
-    if (Platform.OS === 'web') {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '*/*';
-      input.onchange = async (e: any) => {
-        const file = e.target.files[0];
-        if (file) {
-          await subirArchivo(file);
-        }
-      };
-      input.click();
-    } else {
-      mockSubirArchivo();
-    }
-  };
-
-  const subirArchivo = async (file: File) => {
-    try {
-      
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const res = await fetch(`${baseUrl}/api/uploads`, {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!res.ok) throw new Error('Error al subir archivo');
-      const data = await res.json();
-      
-      await enviarMensajeBackend('archivo', data.fileName, data.fileUrl, data.fileType);
-    } catch (e) {
-      console.error('Error al subir archivo:', e);
-      alert('Error al subir archivo');
-    }
-  };
-
-  const mockSubirArchivo = async () => {
-    alert('Simulando carga de archivo adjunto (foto_emergencia.jpg)...');
-    const fileUrl = 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef?w=500';
-    await enviarMensajeBackend('archivo', 'foto_emergencia.jpg', fileUrl, 'image/jpeg');
   };
 
   return (
@@ -349,23 +284,18 @@ export default function ChatScreen() {
         </ScrollView>
 
         <View style={styles.gifBar}>
-          <Text style={styles.gifBarTitulo}>ENVIAR GIF LSCh:</Text>
-          <View style={styles.gifBarRow}>
-            {GIFS.map((g) => (
-              <TouchableOpacity key={g.label} style={styles.gifQuick} onPress={() => enviarGif(g.label)}>
-                <View style={[styles.gifQuickIcon, { backgroundColor: g.color }]}>
-                  <Ionicons name={g.icon} size={20} color="#ffffff" />
-                </View>
-                <Text style={styles.gifQuickTexto} numberOfLines={1}>{g.label}</Text>
+          <Text style={styles.gifBarTitulo}>MENSAJES RÁPIDOS (LSCh):</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {MENSAJES_RAPIDOS.map((frase) => (
+              <TouchableOpacity key={frase} style={styles.chip} onPress={() => enviarMensajeBackend('texto', frase)}>
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />
+                <Text style={styles.chipTexto} numberOfLines={1}>{frase}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         <View style={styles.inputRow}>
-          <TouchableOpacity style={[styles.sendBtn, { backgroundColor: colors.surfaceAlt, marginRight: 4 }]} onPress={seleccionarYSubirArchivo}>
-            <Ionicons name="attach" size={24} color={colors.primary} />
-          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="ESCRIBIR MENSAJE..."
@@ -415,7 +345,10 @@ const makeStyles = (c: Colors) =>
     horaYo: { color: c.primaryText, opacity: 0.7 },
     horaOp: { color: c.textMuted },
     gifBar: { backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.border, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6 },
-    gifBarTitulo: { fontSize: 12, fontWeight: '700', color: c.primary, marginBottom: 10 },
+    gifBarTitulo: { fontSize: 13, fontWeight: '700', color: c.primary, marginBottom: 10 },
+    chipRow: { flexDirection: 'row', gap: 8, paddingRight: 12 },
+    chip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 14 },
+    chipTexto: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     gifBarRow: { flexDirection: 'row', gap: 8 },
     gifQuick: { flex: 1, alignItems: 'center', backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 4, gap: 6 },
     gifQuickIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
