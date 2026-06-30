@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import MapaUbicacion from '@/components/MapaUbicacion';
+import { inicioPatrulla, posicionPatrulla, LatLng } from '@/components/patrulla-sim';
 import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
 import { baseUrl } from './_config';
@@ -34,6 +35,8 @@ export default function EstadoScreen() {
   const [alertaEstado, setAlertaEstado] = useState('ACTIVO');
   const [despachoInicio, setDespachoInicio] = useState<number | null>(null);
   const [etaRestante, setEtaRestante] = useState<number | null>(null);
+  const [alertaId, setAlertaId] = useState<number | null>(null);
+  const [patrulla, setPatrulla] = useState<LatLng | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setSegundos((s) => s + 1), 1000);
@@ -105,6 +108,7 @@ export default function EstadoScreen() {
       try {
         const currentId = await obtenerDato('currentAlertaId');
         if (!currentId || currentId === '999') return;
+        setAlertaId(Number(currentId));
 
         const token = await obtenerDato('token');
         const res = await fetch(`${baseUrl}/api/alertas/${currentId}`, {
@@ -142,11 +146,16 @@ export default function EstadoScreen() {
     const tick = () => {
       const transcurrido = Math.floor((Date.now() - despachoInicio) / 1000);
       setEtaRestante(Math.max(0, ETA_TOTAL_SEG - transcurrido));
+      if (coords) {
+        const destino: LatLng = { lat: coords.lat, lng: coords.lng };
+        const inicio = inicioPatrulla(destino, alertaId ?? 7);
+        setPatrulla(posicionPatrulla(inicio, destino, transcurrido / ETA_TOTAL_SEG));
+      }
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [despachoInicio]);
+  }, [despachoInicio, coords, alertaId]);
 
   const mm = String(Math.floor(segundos / 60)).padStart(2, '0');
   const ss = String(segundos % 60).padStart(2, '0');
@@ -181,7 +190,12 @@ export default function EstadoScreen() {
         {/* MAPA REAL (OpenStreetMap + expo-location). La patrulla y el ETA vienen del backend. */}
         <View style={styles.mapa}>
           {gps === 'ok' && coords ? (
-            <MapaUbicacion lat={coords.lat} lng={coords.lng} />
+            <MapaUbicacion
+              lat={coords.lat}
+              lng={coords.lng}
+              patrolLat={patrullaDespachada ? patrulla?.lat : null}
+              patrolLng={patrullaDespachada ? patrulla?.lng : null}
+            />
           ) : (
             <View style={styles.mapaEstado}>
               {gps === 'cargando' && (

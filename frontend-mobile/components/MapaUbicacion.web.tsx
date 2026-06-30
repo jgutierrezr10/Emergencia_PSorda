@@ -3,6 +3,8 @@ import { osmEmbedUrl } from './mapa-utils';
 interface Props {
   lat: number;
   lng: number;
+  patrolLat?: number | null;
+  patrolLng?: number | null;
 }
 
 export default function MapaUbicacion({ lat, lng }: Props) {

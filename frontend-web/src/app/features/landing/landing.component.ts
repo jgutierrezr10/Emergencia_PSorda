@@ -83,6 +83,11 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   // Map reference
   private map: any;
   private marker: any;
+  private patrolMarker: any;
+  private patrolLine: any;
+  private patrolInterval: any;
+  private dispatchStarts: { [id: number]: number } = {};
+  private readonly ETA_TOTAL_SEG = 360; // 6 min (debe coincidir con el móvil)
 
   // Video call simulated state
   showVideoCallModal = false;
@@ -113,6 +118,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.startPollingAlertas();
+    this.patrolInterval = setInterval(() => this.updatePatrolMarker(), 1000);
     
     // Suscribirse a las alertas reales provenientes del backend
     this.websocketService.getAlertas().subscribe(alerta => {
@@ -130,6 +136,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     if (this.alertsInterval) clearInterval(this.alertsInterval);
     if (this.chatInterval) clearInterval(this.chatInterval);
+    if (this.patrolInterval) clearInterval(this.patrolInterval);
   }
 
   mapAlertaToEmergencyCase(alerta: any): EmergencyCase {
@@ -348,6 +355,59 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.marker = L.marker(coords, { icon: customIcon }).addTo(this.map);
     this.marker.bindPopup(`<b>${this.selectedEmergency.nombre}</b><br>${this.selectedEmergency.incidente}`).openPopup();
+  }
+
+  // === SIMULACIÓN DE LA PATRULLA EN EL MAPA (estilo Uber) ===
+  // Punto de partida determinista (misma semilla/destino que el móvil => mismo recorrido).
+  // PARA LA VERSIÓN REAL: reemplazar el cálculo por la posición GPS real de la patrulla.
+  private patrolStart(destLat: number, destLng: number, seed: number) {
+    const ang = (((seed * 47) % 360) * Math.PI) / 180;
+    const distKm = 2.5;
+    const dLat = (distKm / 111) * Math.cos(ang);
+    const cosLat = Math.cos((destLat * Math.PI) / 180) || 1;
+    const dLng = (distKm / (111 * cosLat)) * Math.sin(ang);
+    return { lat: destLat + dLat, lng: destLng + dLng };
+  }
+
+  updatePatrolMarker() {
+    if (!this.map || typeof L === 'undefined') return;
+
+    const em = this.selectedEmergency;
+    const despachada = !!em && em.estado === 'Despachada';
+
+    if (!em || !despachada) {
+      if (this.patrolMarker) { this.map.removeLayer(this.patrolMarker); this.patrolMarker = null; }
+      if (this.patrolLine) { this.map.removeLayer(this.patrolLine); this.patrolLine = null; }
+      return;
+    }
+
+    // Registrar el momento del despacho una sola vez por alerta
+    if (!this.dispatchStarts[em.id]) this.dispatchStarts[em.id] = Date.now();
+
+    const inicio = this.patrolStart(em.lat, em.lng, em.id);
+    const progreso = Math.max(0, Math.min(1, (Date.now() - this.dispatchStarts[em.id]) / (this.ETA_TOTAL_SEG * 1000)));
+    const pos: [number, number] = [
+      inicio.lat + (em.lat - inicio.lat) * progreso,
+      inicio.lng + (em.lng - inicio.lng) * progreso,
+    ];
+
+    if (!this.patrolMarker) {
+      const patrolIcon = L.divIcon({
+        className: 'patrol-pin',
+        html: `<div style="width:34px;height:34px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px"><i class="fa-solid fa-car-side"></i></div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+      });
+      this.patrolMarker = L.marker(pos, { icon: patrolIcon, zIndexOffset: 1000 }).addTo(this.map);
+      this.patrolMarker.bindPopup('Patrulla 42 — Carabineros');
+    } else {
+      this.patrolMarker.setLatLng(pos);
+    }
+
+    if (this.patrolLine) { this.map.removeLayer(this.patrolLine); }
+    this.patrolLine = L.polyline([pos, [em.lat, em.lng]], {
+      color: '#2563eb', weight: 4, opacity: 0.7, dashArray: '2,10', lineCap: 'round'
+    }).addTo(this.map);
   }
 
   selectEmergency(item: EmergencyCase) {
