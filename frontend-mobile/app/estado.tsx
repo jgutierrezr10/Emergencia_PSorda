@@ -16,6 +16,13 @@ const obtenerDato = async (key: string): Promise<string | null> => {
 
 type EstadoGps = 'cargando' | 'ok' | 'denegado' | 'error';
 
+// === SIMULACIÓN DEL DESPACHO ===
+// El ETA es simulado: una cuenta regresiva fija que arranca cuando CENCO despacha la patrulla.
+// PARA LA VERSIÓN REAL: reemplazar ETA_TOTAL_SEG por el tiempo estimado que entregue el backend
+// (p. ej. un campo despacho.segundosEstimados, o calcular desde la hora estimada de llegada).
+// El disparo del despacho YA es real: se basa en alerta.estado === 'Despachada'.
+const ETA_TOTAL_SEG = 360; // 6 minutos simulados
+
 export default function EstadoScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -25,6 +32,8 @@ export default function EstadoScreen() {
   const [direccion, setDireccion] = useState('');
   const [gps, setGps] = useState<EstadoGps>('cargando');
   const [alertaEstado, setAlertaEstado] = useState('ACTIVO');
+  const [despachoInicio, setDespachoInicio] = useState<number | null>(null);
+  const [etaRestante, setEtaRestante] = useState<number | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setSegundos((s) => s + 1), 1000);
@@ -58,9 +67,9 @@ export default function EstadoScreen() {
             alertData.latitudLongitud = `${lat},${lng}`;
             await fetch(`${baseUrl}/api/alertas/${currentId}`, {
               method: 'PUT',
-              headers: { 
+              headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
+                'Authorization': `Bearer ${token}`
               },
               body: JSON.stringify(alertData)
             });
@@ -96,7 +105,7 @@ export default function EstadoScreen() {
       try {
         const currentId = await obtenerDato('currentAlertaId');
         if (!currentId || currentId === '999') return;
-        
+
         const token = await obtenerDato('token');
         const res = await fetch(`${baseUrl}/api/alertas/${currentId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -119,8 +128,34 @@ export default function EstadoScreen() {
     return () => clearInterval(intervalId);
   }, []);
 
+  // Detectar el despacho de la patrulla (CENCO apretó "DESPACHAR PATRULLA" => estado 'Despachada')
+  // y arrancar la cuenta regresiva una sola vez.
+  useEffect(() => {
+    if (alertaEstado === 'Despachada' && despachoInicio === null) {
+      setDespachoInicio(Date.now());
+    }
+  }, [alertaEstado, despachoInicio]);
+
+  // Cuenta regresiva del ETA en tiempo real (1 vez por segundo).
+  useEffect(() => {
+    if (despachoInicio === null) return;
+    const tick = () => {
+      const transcurrido = Math.floor((Date.now() - despachoInicio) / 1000);
+      setEtaRestante(Math.max(0, ETA_TOTAL_SEG - transcurrido));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [despachoInicio]);
+
   const mm = String(Math.floor(segundos / 60)).padStart(2, '0');
   const ss = String(segundos % 60).padStart(2, '0');
+
+  const patrullaDespachada = alertaEstado === 'Despachada';
+  const etaSeg = etaRestante ?? ETA_TOTAL_SEG;
+  const etaMin = String(Math.floor(etaSeg / 60)).padStart(2, '0');
+  const etaSs = String(etaSeg % 60).padStart(2, '0');
+  const patrullaLlegando = patrullaDespachada && etaRestante !== null && etaRestante <= 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -133,7 +168,11 @@ export default function EstadoScreen() {
         </View>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitulo}>CENCO YA TIENE TU ALERTA</Text>
-          <Text style={styles.headerSubtitulo}>UNIDADES VIENEN — TIEMPO: {mm}:{ss}</Text>
+          <Text style={styles.headerSubtitulo}>
+            {patrullaDespachada
+              ? (patrullaLlegando ? 'PATRULLA YA LLEGA AL LUGAR' : `PATRULLA EN CAMINO — LLEGA ${etaMin}:${etaSs}`)
+              : `CENCO MIRA TU ALERTA — ${mm}:${ss}`}
+          </Text>
         </View>
         <Ionicons name="navigate" size={22} color="#d1fae5" />
       </View>
@@ -186,21 +225,38 @@ export default function EstadoScreen() {
           </View>
         </View>
 
-        <View style={[styles.card, styles.cardUnidad]}>
-          <View style={styles.cardRow}>
-            <View style={styles.unidadIcono}>
-              <Ionicons name="car-sport" size={24} color="#ffffff" />
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={styles.unidadLabel}>UNIDAD MÁS CERCA</Text>
-              <Text style={styles.cardTitulo}>Patrulla 42 — Carabineros</Text>
-              <View style={styles.etaRow}>
-                <Ionicons name="time-outline" size={14} color={colors.primary} />
-                <Text style={styles.etaTexto}>LLEGA: ~4 MINUTOS · 1.2 KM</Text>
+        {patrullaDespachada ? (
+          <View style={[styles.card, styles.cardUnidad]}>
+            <View style={styles.cardRow}>
+              <View style={styles.unidadIcono}>
+                <Ionicons name="car-sport" size={24} color="#ffffff" />
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={styles.unidadLabel}>PATRULLA EN CAMINO</Text>
+                <Text style={styles.cardTitulo}>Patrulla 42 — Carabineros</Text>
+                <View style={styles.etaRow}>
+                  <Ionicons name="time-outline" size={14} color={colors.primary} />
+                  <Text style={styles.etaTexto}>
+                    {patrullaLlegando ? 'PATRULLA YA LLEGA AL LUGAR' : `LLEGA EN ${etaMin}:${etaSs} MIN`}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        ) : (
+          <View style={[styles.card, styles.cardEspera]}>
+            <View style={styles.cardRow}>
+              <View style={styles.esperaIcono}>
+                <ActivityIndicator color="#f59e0b" />
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={styles.esperaLabel}>ESPERANDO DESPACHO</Text>
+                <Text style={styles.cardTitulo}>CENCO MIRA TU ALERTA</Text>
+                <Text style={styles.cardSub}>AÚN NO SALE PATRULLA. TÚ ESPERA.</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         <TouchableOpacity style={styles.btnAccion} onPress={() => router.push('/videollamada')} activeOpacity={0.85}>
           <Ionicons name="videocam" size={22} color="#ffffff" />
@@ -244,6 +300,9 @@ const makeStyles = (c: Colors) =>
     retryTexto: { color: c.primaryText, fontSize: 13, fontWeight: '700' },
     card: { backgroundColor: c.surface, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: c.border },
     cardUnidad: { borderColor: '#3b82f6', backgroundColor: c.surface },
+    cardEspera: { borderColor: '#f59e0b', backgroundColor: c.surface },
+    esperaIcono: { width: 44, height: 44, borderRadius: 10, backgroundColor: c.surfaceAlt, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    esperaLabel: { fontSize: 12, fontWeight: '800', color: '#f59e0b', marginBottom: 2 },
     cardRow: { flexDirection: 'row', alignItems: 'center' },
     cardIcon: { marginRight: 12 },
     cardInfo: { flex: 1 },
@@ -256,7 +315,7 @@ const makeStyles = (c: Colors) =>
     etaTexto: { fontSize: 13, color: c.primary, fontWeight: '600' },
     btnAccion: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 56, backgroundColor: c.primary, borderRadius: 14, marginTop: 6, marginBottom: 6 },
     btnAccionTexto: { color: c.primaryText, fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
-    navBar: { flexDirection: 'row', backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.borderSoft, paddingVertical: 10, paddingHorizontal: 8 },
+    navBar: { flexDirection: 'row', backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.border, paddingVertical: 10, paddingHorizontal: 8 },
     navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, gap: 3 },
     navTexto: { fontSize: 10, color: c.textMuted, fontWeight: '600' },
   });
