@@ -214,10 +214,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
               this.emergencies = mapped;
 
-              // Mantener selección del caso actual si aún existe
+              // Mantener selección del caso actual si aún existe y NO está finalizada
               if (this.selectedEmergency) {
                 const stillExists = this.emergencies.find(e => e.id === this.selectedEmergency!.id);
-                if (stillExists) {
+                if (stillExists && stillExists.estado !== 'Finalizada') {
                   const prevMsgs = this.selectedEmergency.mensajes;
                   const prevTriage = this.selectedEmergency.triage;
                   const prevNotas = this.selectedEmergency.notasOperador;
@@ -228,10 +228,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
                   this.selectedEmergency.triage = prevTriage;
                   this.selectedEmergency.notasOperador = prevNotas;
                 } else {
-                  this.selectedEmergency = this.emergencies.length > 0 ? this.emergencies[0] : null;
+                  this.clearActiveEmergency();
+                  const activeEmergencies = this.getFilteredEmergencies();
+                  if (activeEmergencies.length > 0) {
+                    this.selectEmergency(activeEmergencies[0]);
+                  }
                 }
-              } else if (this.emergencies.length > 0) {
-                this.selectEmergency(this.emergencies[0]);
+              } else {
+                const activeEmergencies = this.getFilteredEmergencies();
+                if (activeEmergencies.length > 0) {
+                  this.selectEmergency(activeEmergencies[0]);
+                }
               }
 
               this.updateMapMarker();
