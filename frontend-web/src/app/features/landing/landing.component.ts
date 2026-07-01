@@ -456,10 +456,16 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedEmergency = item;
     
     // Mover el mapa
-    if (this.map && L) {
+    if (this.map && typeof L !== 'undefined') {
       const coords: [number, number] = [item.lat, item.lng];
       this.map.setView(coords, 15);
       this.updateMapMarker();
+    } else if (!this.map && typeof L !== 'undefined') {
+      setTimeout(() => {
+        if (document.getElementById('leaflet-map-element')) {
+          this.initMap();
+        }
+      }, 100);
     }
     this.fetchSelectedEmergencyDetails();
   }
