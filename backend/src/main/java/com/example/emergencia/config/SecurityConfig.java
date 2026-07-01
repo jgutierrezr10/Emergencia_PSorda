@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws-chat/**").permitAll()
                 .requestMatchers("/api/alertas/**", "/api/triage-alertas/**").permitAll()
                 .requestMatchers("/api/patrullas/**", "/api/despachos/**", "/api/chats/**").permitAll()
+                .requestMatchers("/api/uploads/**", "/uploads/**").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtUtil),
                     UsernamePasswordAuthenticationFilter.class);

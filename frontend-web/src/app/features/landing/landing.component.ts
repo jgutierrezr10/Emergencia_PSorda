@@ -77,10 +77,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Preset response GIFs (LSCh)
   presetGifs = [
-    { label: 'PATRULLA YA VA. ESPERA.', icon: 'fa-car-side' },
-    { label: 'CALMA. TÚ TRANQUILO.', icon: 'fa-heart' },
-    { label: 'SI SEGURO, TÚ ESCRIBIR.', icon: 'fa-keyboard' },
-    { label: 'TÚ ¿DÓNDE ESTÁS?', icon: 'fa-location-dot' }
+    { label: '🚓 PATRULLA YA VA. ESPERA.', icon: 'fa-car-side' },
+    { label: '❤️ CALMA. TÚ TRANQUILO.', icon: 'fa-heart' },
+    { label: '⌨️ SI SEGURO, TÚ ESCRIBIR.', icon: 'fa-keyboard' },
+    { label: '📍 TÚ ¿DÓNDE ESTÁS?', icon: 'fa-location-dot' }
   ];
 
   // Map reference
