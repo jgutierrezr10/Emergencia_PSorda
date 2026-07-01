@@ -188,12 +188,16 @@ export default function ChatScreen() {
     // SIEMPRE guardar por REST en el backend (el WebSocket no persiste, por eso
     // antes los mensajes del usuario no le llegaban a CENCO y desaparecían).
     try {
+      const token = await obtenerDato('token');
       await fetch(`${baseUrl}/api/chats`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           texto: textoVal,
-          fechaHoraEnvio: new Date().toISOString(),
+          fechaHoraEnvio: new Date().toISOString().replace('Z', ''),
           emisorId: emisor,
           tipo: tipo,
           archivoUrl: archivoUrlVal,

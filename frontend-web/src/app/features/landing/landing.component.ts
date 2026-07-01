@@ -766,7 +766,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     
     this.http.post(`${environment.apiUrl}/api/chats`, {
       texto: txt,
-      fechaHoraEnvio: new Date().toISOString(),
+      fechaHoraEnvio: new Date().toISOString().replace('Z', ''),
       emisorId: 1, // operator
       tipo: 'texto',
       alerta: { id: this.selectedEmergency.id }
@@ -781,7 +781,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     
     this.http.post(`${environment.apiUrl}/api/chats`, {
       texto: gifLabel,
-      fechaHoraEnvio: new Date().toISOString(),
+      fechaHoraEnvio: new Date().toISOString().replace('Z', ''),
       emisorId: 1, // operator
       tipo: 'texto',
       alerta: { id: this.selectedEmergency.id }
@@ -802,7 +802,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           next: (res) => {
             this.http.post(`${environment.apiUrl}/api/chats`, {
               texto: res.fileName,
-              fechaHoraEnvio: new Date().toISOString(),
+              fechaHoraEnvio: new Date().toISOString().replace('Z', ''),
               emisorId: 1, // operator
               tipo: 'archivo',
               archivoUrl: res.fileUrl,
@@ -847,7 +847,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
               next: () => {
                 this.http.post(`${environment.apiUrl}/api/chats`, {
                   texto: actionText,
-                  fechaHoraEnvio: new Date().toISOString(),
+                  fechaHoraEnvio: new Date().toISOString().replace('Z', ''),
                   emisorId: 0, // system
                   tipo: 'texto',
                   alerta: { id: this.selectedEmergency!.id }
@@ -877,7 +877,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
               next: () => {
                 this.http.post(`${environment.apiUrl}/api/chats`, {
                   texto: 'CASO CERRADO: Operación finalizada y guardada en historial.',
-                  fechaHoraEnvio: new Date().toISOString(),
+                  fechaHoraEnvio: new Date().toISOString().replace('Z', ''),
                   emisorId: 0, // system
                   tipo: 'texto',
                   alerta: { id: this.selectedEmergency!.id }
@@ -958,7 +958,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     const coordIdx = Math.floor(Math.random() * randomCoords.length);
 
     this.http.post(`${environment.apiUrl}/api/alertas`, {
-      fechaHoraInicio: new Date().toISOString(),
+      fechaHoraInicio: new Date().toISOString().replace('Z', ''),
       latitudLongitud: randomCoords[coordIdx],
       disponibleTriage: true,
       estado: 'ACTIVO',
@@ -972,7 +972,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         // Enviar primer mensaje automático del sistema
         this.http.post(`${environment.apiUrl}/api/chats`, {
           texto: 'Estoy en peligro',
-          fechaHoraEnvio: new Date().toISOString(),
+          fechaHoraEnvio: new Date().toISOString().replace('Z', ''),
           emisorId: 2, // sordo
           tipo: 'texto',
           alerta: { id: res.id }
