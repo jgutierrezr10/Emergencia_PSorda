@@ -45,6 +45,7 @@ export default function TriageScreen() {
   const [enviado, setEnviado] = useState(false);
   const [alertaId, setAlertaId] = useState<number | null>(null);
   const [errorCritico, setErrorCritico] = useState(false);
+  const [ubicacionGPS, setUbicacionGPS] = useState('SIN_GPS');
 
   useEffect(() => {
     const timeoutSeguridad = setTimeout(() => {
@@ -91,6 +92,7 @@ export default function TriageScreen() {
             latitudLongitud = 'SIN_GPS';
           }
         }
+        setUbicacionGPS(latitudLongitud);
         console.log('[ALERTA] Paso 2 OK - ubicación:', latitudLongitud);
 
         // PASO 3: Enviar alerta al backend
@@ -142,6 +144,21 @@ export default function TriageScreen() {
     crearAlerta();
 
   }, []);
+
+  const enviarSMSFallback = async () => {
+    try {
+      const isAvailable = await SMS.isAvailableAsync();
+      if (isAvailable) {
+        let texto = "EMERGENCIA. SOY PERSONA SORDA. NECESITO AYUDA.";
+        if (ubicacionGPS !== 'SIN_GPS') {
+          texto += ` ESTOY AQUÍ: https://maps.google.com/?q=${ubicacionGPS}`;
+        }
+        await SMS.sendSMSAsync(['133'], texto);
+      }
+    } catch (e) {
+      console.warn("Error SMS:", e);
+    }
+  };
 
   const responder = async (valor: boolean) => {
     const nuevas = [...respuestas, valor];
@@ -198,8 +215,12 @@ export default function TriageScreen() {
           <Ionicons name="alert-circle" size={64} color={colors.danger} />
           <Text style={[styles.avisoTitulo, { marginTop: 16 }]}>ERROR DE CONEXIÓN</Text>
           <Text style={styles.avisoTexto}>
-            No pudimos contactar a Carabineros vía internet ni por SMS. Por favor, pida ayuda a alguien cercano o intente enviar un SMS al 133 manualmente.
+            No pudimos contactar a Carabineros vía internet. Por favor, envía un mensaje de texto (SMS) de emergencia con tu ubicación.
           </Text>
+          <TouchableOpacity style={[styles.botonPrimario, { backgroundColor: '#FFD700', marginBottom: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]} onPress={enviarSMSFallback}>
+            <Ionicons name="chatbubble-ellipses" size={24} color="#000" style={{ marginRight: 8 }} />
+            <Text style={[styles.botonPrimarioTexto, { color: '#000' }]}>ENVIAR SMS A 133</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.botonPrimario, { backgroundColor: colors.danger }]} onPress={() => router.replace('/(tabs)/home')}>
             <Text style={[styles.botonPrimarioTexto, { color: '#ffffff' }]}>VOLVER A INICIO</Text>
           </TouchableOpacity>
