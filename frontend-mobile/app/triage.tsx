@@ -149,7 +149,8 @@ export default function TriageScreen() {
     try {
       const isAvailable = await SMS.isAvailableAsync();
       if (isAvailable) {
-        let texto = "EMERGENCIA. SOY PERSONA SORDA. NECESITO AYUDA.";
+        const rut = await obtenerDato('rut') || 'Desconocido';
+        let texto = `EMERGENCIA. SOY PERSONA SORDA (RUT: ${rut}). NECESITO AYUDA.`;
         if (ubicacionGPS !== 'SIN_GPS') {
           texto += ` ESTOY AQUÍ: https://maps.google.com/?q=${ubicacionGPS}`;
         }
