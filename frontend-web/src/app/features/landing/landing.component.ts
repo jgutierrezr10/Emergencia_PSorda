@@ -993,30 +993,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  // --- Videollamada simulada ---
-  startVideoCall() {
-    this.showVideoCallModal = true;
-    this.videoCallConnected = false;
-    this.videoCallSeconds = 0;
-    this.videoCallDurationText = 'Conectando...';
-
-    setTimeout(() => {
-      this.videoCallConnected = true;
-      this.videoCallTimer = setInterval(() => {
-        this.videoCallSeconds++;
-        const mins = String(Math.floor(this.videoCallSeconds / 60)).padStart(2, '0');
-        const secs = String(this.videoCallSeconds % 60).padStart(2, '0');
-        this.videoCallDurationText = `${mins}:${secs}`;
-      }, 1000);
-    }, 1500);
-  }
-
-  endVideoCall() {
-    this.showVideoCallModal = false;
-    if (this.videoCallTimer) {
-      clearInterval(this.videoCallTimer);
-    }
-  }
 
   simulateIncomingEmergency() {
     // Simula una alerta en el backend agregándola por HTTP
