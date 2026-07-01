@@ -27,6 +27,11 @@ public class DespachoController {
         return ResponseEntity.ok(despachoService.findById(id));
     }
 
+    @GetMapping("/alerta/{alertaId}")
+    public ResponseEntity<List<DespachoEntity>> getByAlertaId(@PathVariable Long alertaId) {
+        return ResponseEntity.ok(despachoService.findByAlertaId(alertaId));
+    }
+
     @PostMapping
     public ResponseEntity<DespachoEntity> create(@RequestBody DespachoEntity despacho) {
         return new ResponseEntity<>(despachoService.save(despacho), HttpStatus.CREATED);

@@ -41,7 +41,6 @@ public class ChatServiceImpl implements IChatService {
         existente.setFechaHoraEnvio(chat.getFechaHoraEnvio());
         existente.setEmisorId(chat.getEmisorId());
         existente.setAlerta(chat.getAlerta());
-        existente.setGif(chat.getGif());
         existente.setTipo(chat.getTipo());
         existente.setArchivoUrl(chat.getArchivoUrl());
         existente.setTipoArchivo(chat.getTipoArchivo());

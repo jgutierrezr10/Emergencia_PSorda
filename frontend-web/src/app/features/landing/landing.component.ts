@@ -333,26 +333,21 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       this.map.removeLayer(this.marker);
     }
 
-    let markerColorClass = 'marker-red';
+    let colorHex = '#ef4444'; // Red (Pendiente)
     if (this.selectedEmergency.estado === 'En Proceso' || this.selectedEmergency.estado === 'Despachada') {
-      markerColorClass = 'marker-yellow';
+      colorHex = '#f59e0b'; // Yellow
     } else if (this.selectedEmergency.estado === 'Finalizada') {
-      markerColorClass = 'marker-green';
+      colorHex = '#10b981'; // Green
     }
 
+    const rgbaColor = colorHex === '#ef4444' ? 'rgba(239,68,68,.5)' : colorHex === '#f59e0b' ? 'rgba(245,158,11,.5)' : 'rgba(16,185,129,.5)';
+
     const customIcon = L.divIcon({
-      className: `custom-map-pin ${markerColorClass}`,
-      html: `
-        <div class="pin-wrapper">
-          <div class="pin-drop"></div>
-          <div class="pin-center">
-            <i class="fa-solid fa-circle-exclamation"></i>
-          </div>
-        </div>
-      `,
-      iconSize: [36, 46],
-      iconAnchor: [18, 46],
-      popupAnchor: [0, -40]
+      className: '',
+      html: `<div style="width:18px;height:18px;border-radius:50%;background:${colorHex};border:3px solid #fff;box-shadow:0 0 0 4px ${rgbaColor}"></div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+      popupAnchor: [0, -12]
     });
 
     this.marker = L.marker(coords, { icon: customIcon }).addTo(this.map);
@@ -837,7 +832,18 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         longitudLatitud: `${this.selectedEmergency.lat},${this.selectedEmergency.lng}`,
         estado: 'En Camino'
       }).subscribe({
-        next: (patrulla: any) => console.log('Patrulla registrada:', patrulla),
+        next: (patrulla: any) => {
+          console.log('Patrulla registrada:', patrulla);
+          this.http.post(`${environment.apiUrl}/api/despachos`, {
+            fechaHoraInicio: new Date().toISOString().replace('Z', ''),
+            estado: 'En Camino',
+            patrulla: { id: patrulla.id },
+            alerta: { id: this.selectedEmergency!.id }
+          }).subscribe({
+            next: (despacho) => console.log('Despacho registrado:', despacho),
+            error: (err) => console.error('Error al registrar despacho:', err)
+          });
+        },
         error: (err) => console.error('Error al registrar patrulla:', err)
       });
 
@@ -894,11 +900,21 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
                   alerta: { id: this.selectedEmergency!.id }
                 }).subscribe({
                   next: () => {
-                    this.selectedEmergency = null;
-                    if (this.marker && this.map) {
-                      this.map.removeLayer(this.marker);
-                      this.marker = null;
-                    }
+                    this.http.get<any[]>(`${environment.apiUrl}/api/despachos/alerta/${this.selectedEmergency!.id}`).subscribe({
+                      next: (despachos) => {
+                        if (despachos && despachos.length > 0) {
+                          const despacho = despachos[0];
+                          despacho.estado = 'Finalizado';
+                          despacho.fechaHoraLlegada = new Date().toISOString().replace('Z', '');
+                          this.http.put(`${environment.apiUrl}/api/despachos/${despacho.id}`, despacho).subscribe({
+                            next: () => this.clearActiveEmergency()
+                          });
+                        } else {
+                          this.clearActiveEmergency();
+                        }
+                      },
+                      error: () => this.clearActiveEmergency()
+                    });
                   },
                   error: (err) => console.error('Error al cerrar chat:', err)
                 });
@@ -907,6 +923,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
             });
         }
       });
+  }
+
+  private clearActiveEmergency() {
+    this.selectedEmergency = null;
+    if (this.marker && this.map) {
+      this.map.removeLayer(this.marker);
+      this.marker = null;
+    }
   }
 
   saveDispatchNotes() {

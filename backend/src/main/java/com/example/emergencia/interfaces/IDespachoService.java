@@ -9,4 +9,5 @@ public interface IDespachoService {
     DespachoEntity save(DespachoEntity despacho);
     DespachoEntity update(DespachoEntity despacho);
     void delete(Long id);
+    List<DespachoEntity> findByAlertaId(Long alertaId);
 }

@@ -29,9 +29,6 @@ public class ChatEntity {
     @JoinColumn(name = "alerta_id", nullable = false)
     private AlertaEntity alerta;
 
-    @ManyToOne
-    @JoinColumn(name = "gif_id")
-    private CatalogoGifEntity gif;
 
     @Column(name = "tipo", length = 50)
     private String tipo;

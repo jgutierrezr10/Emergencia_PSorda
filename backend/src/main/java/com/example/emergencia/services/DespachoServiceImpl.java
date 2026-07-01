@@ -47,4 +47,9 @@ public class DespachoServiceImpl implements IDespachoService {
         DespachoEntity existente = findById(id);
         despachoRepository.delete(existente);
     }
+
+    @Override
+    public List<DespachoEntity> findByAlertaId(Long alertaId) {
+        return despachoRepository.findByAlertaId(alertaId);
+    }
 }
