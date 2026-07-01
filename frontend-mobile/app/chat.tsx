@@ -122,7 +122,12 @@ export default function ChatScreen() {
 
     const cargarMensajes = async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/chats/alerta/${alertaId}`); // Cambiado a la IP de la computadora
+        const token = await obtenerDato('token');
+        const res = await fetch(`${baseUrl}/api/chats/alerta/${alertaId}`, {
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           const mapped: Mensaje[] = data.map((m: any) => {
