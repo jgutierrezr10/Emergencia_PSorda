@@ -36,7 +36,7 @@ export default function VideollamadaScreen() {
   }
 
   // Jitsi Meet permite parámetros en la URL (ej: configuraciones iniciales)
-  const jitsiUrl = `https://meet.jit.si/Emergencia_Senadis_${rut}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
+  const jitsiUrl = `https://meet.jit.si/Emergencia_CENCO_${rut}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
 
   return (
     <SafeAreaView style={styles.container}>

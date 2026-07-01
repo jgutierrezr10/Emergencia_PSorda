@@ -316,7 +316,11 @@
         </div>
         <div class="profile-info">
           <h4>{{ selectedEmergency.nombre }}</h4>
-          <span class="profile-rut">{{ selectedEmergency.rut }}</span>
+          <span class="profile-rut">
+            {{ selectedEmergency.rut }} 
+            <span style="margin: 0 8px; color: #cbd5e1;">|</span> 
+            <i class="fa-solid fa-phone" style="font-size: 12px; margin-right: 4px;"></i>{{ selectedEmergency.telefono }}
+          </span>
         </div>
       </div>
 
@@ -333,8 +337,14 @@
       <!-- UBICACIÓN -->
       <div class="detail-section">
         <span class="section-label">UBICACIÓN</span>
-        <div class="location-coords" style="margin-top: 5px; font-size: 0.85em; color: #666;">
-          <i class="fa-solid fa-map-pin" aria-hidden="true"></i>
+        
+        <div class="location-address" style="margin-top: 8px; margin-bottom: 6px; font-weight: 600; color: #334155; font-size: 14px;">
+          <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 6px; color: #64748b;"></i>
+          <span>{{ selectedEmergency.ubicacionNombre }}</span>
+        </div>
+
+        <div class="location-coords" style="font-size: 0.85em; color: #666;">
+          <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px;"></i>
           <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #0056b3; text-decoration: none;">
             {{ selectedEmergency.lat }}, {{ selectedEmergency.lng }} (Ver en Mapa)
           </a>
@@ -527,7 +537,6 @@
               (click)="sendPresetGifMsg(preset.label)"
               [title]="'Enviar respuesta en lenguaje de señas: ' + preset.label"
             >
-              <i [class]="'fa-solid ' + preset.icon" aria-hidden="true"></i>
               <span>{{ preset.label }}</span>
             </button>
           </div>

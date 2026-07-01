@@ -40,7 +40,7 @@ export default function SobreScreen() {
             <Text style={styles.cardTitle}>APOYO INSTITUCIONAL</Text>
           </View>
           <Text style={styles.cardText}>
-            Desarrollado con el apoyo y directrices del <Text style={styles.textBold}>Servicio Nacional de la Discapacidad (SENADIS Chile)</Text> y Carabineros de Chile.
+            Desarrollado con el apoyo y directrices de la <Text style={styles.textBold}>Central de Comunicaciones (CENCO)</Text> y Carabineros de Chile.
           </Text>
         </View>
 

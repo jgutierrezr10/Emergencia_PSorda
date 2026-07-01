@@ -968,7 +968,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   startVideoCall() {
     if (!this.selectedEmergency) return;
     const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
-    const url = `https://meet.jit.si/Emergencia_Senadis_${rutLimpiado}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
+    const url = `https://meet.jit.si/Emergencia_CENCO_${rutLimpiado}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
     this.videoCallUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 

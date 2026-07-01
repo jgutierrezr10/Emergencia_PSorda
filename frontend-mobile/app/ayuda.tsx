@@ -41,7 +41,7 @@ export default function AyudaScreen() {
           <Text style={styles.cardText}>
             Si tienes problemas técnicos con la aplicación (no puedes iniciar sesión, errores al guardar contactos, etc.), puedes escribirnos a:
             {'\n\n'}
-            <Text style={styles.textBold}>soporte.app@senadis.cl</Text>
+            <Text style={styles.textBold}>soporte.app@cenco.cl</Text>
             {'\n\n'}
             O envíanos un mensaje de WhatsApp (Solo texto o video en LSCh) al número de soporte técnico (horario hábil).
           </Text>

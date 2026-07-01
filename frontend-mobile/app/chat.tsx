@@ -45,7 +45,7 @@ const GIFS = [
 // Mensajes de texto predeterminados en LSCh (reemplazan los bloques de GIF).
 // Al tocarlos se envían como un mensaje de texto normal al operador.
 const MENSAJES_RAPIDOS = [
-  '🚨 YO NECESITO AYUDA',
+  '🆘 YO NECESITO AYUDA',
   '⚠️ YO EN PELIGRO',
   '🏃 VENGAN RÁPIDO',
   '🔪 AGRESOR CERCA DE MÍ',

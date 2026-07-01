@@ -405,7 +405,7 @@ export default function PerfilScreen() {
               <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
               <View>
                 <Text style={styles.opcionTitulo}>SOBRE LA APP</Text>
-                <Text style={styles.opcionSubtexto}>VERSIÓN 1.0.0 · SENADIS CHILE</Text>
+                <Text style={styles.opcionSubtexto}>VERSIÓN 1.0.0 · CENCO CHILE</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
@@ -417,7 +417,7 @@ export default function PerfilScreen() {
         </TouchableOpacity>
 
         <Text style={styles.footer}>
-          APP EMERGENCIA GENTE SORDA v1.0.0{'\n'}CON APOYO DE SENADIS CHILE
+          APP EMERGENCIA GENTE SORDA v1.0.0{'\n'}CON APOYO DE CENCO CHILE
         </Text>
       </ScrollView>
 
