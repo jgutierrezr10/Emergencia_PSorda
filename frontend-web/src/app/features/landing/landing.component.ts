@@ -499,6 +499,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           this.initMap();
         }
       }, 100);
+    } else {
+      if (this.map) {
+        this.map.remove();
+        this.map = null;
+        this.marker = null;
+        this.patrolMarker = null;
+        this.patrolLine = null;
+      }
     }
   }
 
