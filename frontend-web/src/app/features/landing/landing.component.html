@@ -417,9 +417,12 @@
 
       <!-- ACCIONES DE DESPACHO DE EMERGENCIAS -->
       <div class="detail-section action-buttons-section">
-        <button class="btn-action dispatch-patrol" (click)="dispatchUnit('patrulla')" title="Despachar Radio Patrulla (Carabineros) de forma inmediata">
+        <button class="btn-action dispatch-patrol" 
+                [disabled]="selectedEmergency.estado === 'Despachada' || selectedEmergency.estado === 'Finalizada'"
+                (click)="dispatchUnit('patrulla')" 
+                title="Despachar Radio Patrulla (Carabineros) de forma inmediata">
           <i class="fa-solid fa-car-side" aria-hidden="true"></i>
-          <span>DESPACHAR PATRULLA</span>
+          <span>{{ (selectedEmergency.estado === 'Despachada' || selectedEmergency.estado === 'Finalizada') ? 'PATRULLA DESPACHADA' : 'DESPACHAR PATRULLA' }}</span>
         </button>
         <button class="btn-action download-report" (click)="exportCasePDF(selectedEmergency)" title="Descargar informe completo del caso en PDF (datos, triage, notas y chat)">
           <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
