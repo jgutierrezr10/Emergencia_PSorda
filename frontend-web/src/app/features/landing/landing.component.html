@@ -350,6 +350,30 @@
         </div>
       </div>
 
+      <!-- RED DE APOYO (ENTORNO Y CONTACTOS) -->
+      <div class="detail-section" *ngIf="selectedEmergency.entornos?.length || selectedEmergency.contactosEmergencia?.length">
+        <span class="section-label">RED DE APOYO (ENTORNO Y CONTACTOS)</span>
+        
+        <div *ngIf="selectedEmergency.entornos?.length" class="apoyo-group" style="margin-top: 10px;">
+          <strong style="color: #444; font-size: 0.9em;"><i class="fa-solid fa-house-user"></i> Entorno de convivencia:</strong>
+          <ul style="list-style: none; padding: 0; margin: 5px 0 0 0; font-size: 0.9em; color: #555;">
+            <li *ngFor="let ent of selectedEmergency.entornos" style="margin-bottom: 4px;">
+              - {{ ent.nombre }} ({{ ent.parentesco }}) <span *ngIf="ent.viveConUsuario" style="color: #10b981; font-weight: 500;">[Vive con el usuario]</span>
+            </li>
+          </ul>
+        </div>
+
+        <div *ngIf="selectedEmergency.contactosEmergencia?.length" class="apoyo-group" style="margin-top: 10px;">
+          <strong style="color: #444; font-size: 0.9em;"><i class="fa-solid fa-address-book"></i> Contactos de Emergencia:</strong>
+          <ul style="list-style: none; padding: 0; margin: 5px 0 0 0; font-size: 0.9em; color: #555;">
+            <li *ngFor="let cont of selectedEmergency.contactosEmergencia" style="margin-bottom: 4px;">
+              - {{ cont.nombre }} ({{ cont.relacion }}) 
+              <br><i class="fa-solid fa-phone" style="margin-left: 10px; font-size: 0.8em; color: #0056b3;"></i> <a href="tel:{{ cont.numero }}" style="color: #0056b3; text-decoration: none;">{{ cont.numero }}</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <!-- INFORMACIÓN TÁCTICA (RESPUESTAS DEL TRIAGE) -->
       <div class="detail-section tactico-section">
         <span class="section-label">INFORMACIÓN TÁCTICA (RESPUESTAS DEL USUARIO)</span>

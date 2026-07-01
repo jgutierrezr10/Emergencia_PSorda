@@ -44,6 +44,8 @@ interface EmergencyCase {
   mensajes: ChatMessage[];
   notasOperador: string;
   infoMedica: string;
+  entornos?: any[];
+  contactosEmergencia?: any[];
 }
 
 @Component({
@@ -269,6 +271,28 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: (err) => console.warn('Error fetching triage:', err)
+      });
+
+    // Obtener entornos
+    this.http.get<any[]>(`${environment.apiUrl}/api/entornos/usuario/${this.selectedEmergency.rut}`)
+      .subscribe({
+        next: (entornos) => {
+          if (!this.selectedEmergency || this.selectedEmergency.id !== alertId) return;
+          this.selectedEmergency.entornos = entornos;
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.warn('Error fetching entornos:', err)
+      });
+
+    // Obtener contactos
+    this.http.get<any[]>(`${environment.apiUrl}/api/contactos-emergencia/usuario/${this.selectedEmergency.rut}`)
+      .subscribe({
+        next: (contactos) => {
+          if (!this.selectedEmergency || this.selectedEmergency.id !== alertId) return;
+          this.selectedEmergency.contactosEmergencia = contactos;
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.warn('Error fetching contactos:', err)
       });
 
     // Obtener chats
