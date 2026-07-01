@@ -45,12 +45,12 @@ const GIFS = [
 // Mensajes de texto predeterminados en LSCh (reemplazan los bloques de GIF).
 // Al tocarlos se envían como un mensaje de texto normal al operador.
 const MENSAJES_RAPIDOS = [
-  'YO NECESITO AYUDA',
-  'YO EN PELIGRO',
-  'VENGAN RÁPIDO',
-  'AGRESOR CERCA DE MÍ',
-  'YO ESCONDIDO',
-  'NO PUEDO SALIR',
+  '🚨 YO NECESITO AYUDA',
+  '⚠️ YO EN PELIGRO',
+  '🏃 VENGAN RÁPIDO',
+  '🔪 AGRESOR CERCA DE MÍ',
+  '🫣 YO ESCONDIDO',
+  '🚪 NO PUEDO SALIR',
 ];
 
 const colorGif = (label: string) => GIFS.find((g) => g.label === label)?.color ?? '#ec4899';

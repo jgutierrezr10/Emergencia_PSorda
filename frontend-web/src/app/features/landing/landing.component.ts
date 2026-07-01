@@ -841,36 +841,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file && this.selectedEmergency) {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      this.http.post<any>(`${environment.apiUrl}/api/uploads`, formData)
-        .subscribe({
-          next: (res) => {
-            this.http.post(`${environment.apiUrl}/api/chats`, {
-              texto: res.fileName,
-              fechaHoraEnvio: new Date().toISOString().replace('Z', ''),
-              emisorId: 1, // operator
-              tipo: 'archivo',
-              archivoUrl: res.fileUrl,
-              tipoArchivo: res.fileType,
-              alerta: { id: this.selectedEmergency!.id }
-            }).subscribe({
-              next: () => this.fetchSelectedEmergencyDetails(),
-              error: (err) => console.error('Error al enviar adjunto al chat:', err)
-            });
-          },
-          error: (err) => {
-            console.error('Error subiendo archivo:', err);
-            alert('Error al subir el archivo al servidor');
-          }
-        });
-    }
-  }
-
   dispatchUnit(unitType: 'patrulla' | 'ambulancia' | 'bomberos') {
     if (!this.selectedEmergency) return;
     
