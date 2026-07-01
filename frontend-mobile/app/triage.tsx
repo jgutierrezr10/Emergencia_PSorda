@@ -153,7 +153,7 @@ export default function TriageScreen() {
         if (ubicacionGPS !== 'SIN_GPS') {
           texto += ` ESTOY AQUÍ: https://maps.google.com/?q=${ubicacionGPS}`;
         }
-        await SMS.sendSMSAsync(['133'], texto);
+        await SMS.sendSMSAsync(['933672404'], texto);
       }
     } catch (e) {
       console.warn("Error SMS:", e);
@@ -219,7 +219,7 @@ export default function TriageScreen() {
           </Text>
           <TouchableOpacity style={[styles.botonPrimario, { backgroundColor: '#FFD700', marginBottom: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]} onPress={enviarSMSFallback}>
             <Ionicons name="chatbubble-ellipses" size={24} color="#000" style={{ marginRight: 8 }} />
-            <Text style={[styles.botonPrimarioTexto, { color: '#000' }]}>ENVIAR SMS A 133</Text>
+            <Text style={[styles.botonPrimarioTexto, { color: '#000' }]}>ENVIAR SMS A 933672404</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.botonPrimario, { backgroundColor: colors.danger }]} onPress={() => router.replace('/(tabs)/home')}>
             <Text style={[styles.botonPrimarioTexto, { color: '#ffffff' }]}>VOLVER A INICIO</Text>

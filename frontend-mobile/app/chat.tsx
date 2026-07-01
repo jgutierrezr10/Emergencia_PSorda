@@ -8,6 +8,15 @@ import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
 import { Client } from '@stomp/stompjs';
 import { baseUrl } from './_config';
+import * as ImagePicker from 'expo-image-picker';
+import { useVideoPlayer, VideoView } from 'expo-video';
+
+const MensajeVideo = ({ uri, style }: { uri: string, style: any }) => {
+  const player = useVideoPlayer(uri, player => {
+    player.loop = false;
+  });
+  return <VideoView player={player} style={style} allowsFullscreen allowsPictureInPicture />;
+};
 
 const obtenerDato = async (key: string): Promise<string | null> => {
   if (Platform.OS === 'web') return localStorage.getItem(key);
@@ -215,6 +224,45 @@ export default function ChatScreen() {
     }
   };
 
+  const seleccionarArchivo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All, // Permite videos e imágenes
+      allowsEditing: false,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const uri = asset.uri;
+      const tipoArchivo = asset.type === 'video' ? 'video/mp4' : 'image/jpeg';
+      const fileName = uri.split('/').pop() || (asset.type === 'video' ? 'video.mp4' : 'image.jpg');
+      
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        name: fileName,
+        type: tipoArchivo,
+      } as any);
+
+      try {
+        const token = await obtenerDato('token');
+        const res = await fetch(`${baseUrl}/api/uploads`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          await enviarMensajeBackend('archivo', data.fileName, data.fileUrl, data.fileType);
+        }
+      } catch (e) {
+        console.warn('Error subiendo archivo', e);
+      }
+    }
+  };
+
   const enviarTexto = async () => {
     if (!texto.trim()) return;
     const txt = texto.trim();
@@ -272,12 +320,15 @@ export default function ChatScreen() {
                   ) : m.tipo === 'archivo' ? (
                     <View style={{ gap: 6, minWidth: 150 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: esYo ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)', borderRadius: 8, padding: 8 }}>
-                        <Ionicons name={m.tipoArchivo?.startsWith('image') ? 'image' : 'document-attach'} size={24} color={esYo ? '#ffffff' : colors.primary} />
+                        <Ionicons name={m.tipoArchivo?.startsWith('video') ? 'videocam' : m.tipoArchivo?.startsWith('image') ? 'image' : 'document-attach'} size={24} color={esYo ? '#ffffff' : colors.primary} />
                         <View style={{ flex: 1 }}>
                           <Text style={[{ fontSize: 13, fontWeight: '700' }, esYo ? styles.textoYo : styles.textoOp]} numberOfLines={1}>{m.texto}</Text>
                           <Text style={[{ fontSize: 10, opacity: 0.8 }, esYo ? styles.textoYo : styles.textoOp]}>Adjunto</Text>
                         </View>
                       </View>
+                      {m.tipoArchivo?.startsWith('video') && m.archivoUrl && (
+                        <MensajeVideo uri={m.archivoUrl} style={{ width: '100%', height: 180, borderRadius: 8, marginTop: 4 }} />
+                      )}
                       {m.tipoArchivo?.startsWith('image') && m.archivoUrl && (
                         <Image source={{ uri: m.archivoUrl }} style={{ width: '100%', height: 120, borderRadius: 8, marginTop: 4 }} contentFit="cover" />
                       )}
@@ -305,6 +356,9 @@ export default function ChatScreen() {
         </View>
 
         <View style={styles.inputRow}>
+          <TouchableOpacity style={styles.attachBtn} onPress={seleccionarArchivo}>
+            <Ionicons name="attach" size={26} color={colors.textSecondary} />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="ESCRIBIR MENSAJE..."
@@ -363,6 +417,7 @@ const makeStyles = (c: Colors) =>
     gifQuickIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
     gifQuickTexto: { fontSize: 10, fontWeight: '600', color: c.textSecondary, textAlign: 'center' },
     inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.border },
+    attachBtn: { padding: 4 },
     input: { flex: 1, height: 48, backgroundColor: c.surfaceAlt, borderRadius: 24, paddingHorizontal: 18, fontSize: 15, color: c.textPrimary },
     sendBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center' },
   });

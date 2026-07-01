@@ -491,9 +491,13 @@
                 <ng-container *ngIf="msg.archivoUrl; else regularText">
                   <div class="file-attachment-bubble" style="padding: 4px; border-radius: 8px;">
                     <div class="file-info-row" style="display: flex; alignItems: center; gap: 8px;">
+                      <i class="fa-solid fa-video" *ngIf="msg.tipoArchivo?.startsWith('video')" style="font-size: 18px;"></i>
                       <i class="fa-solid fa-image" *ngIf="msg.tipoArchivo?.startsWith('image')" style="font-size: 18px;"></i>
-                      <i class="fa-solid fa-file-invoice" *ngIf="!msg.tipoArchivo?.startsWith('image')" style="font-size: 18px;"></i>
+                      <i class="fa-solid fa-file-invoice" *ngIf="!msg.tipoArchivo?.startsWith('image') && !msg.tipoArchivo?.startsWith('video')" style="font-size: 18px;"></i>
                       <span class="file-name" style="font-weight: 600; font-size: 13px;">{{ msg.texto }}</span>
+                    </div>
+                    <div class="file-preview-wrap" *ngIf="msg.tipoArchivo?.startsWith('video')">
+                      <video [src]="msg.archivoUrl" controls style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; border: 1px solid rgba(0,0,0,0.1); background: #000;"></video>
                     </div>
                     <div class="file-preview-wrap" *ngIf="msg.tipoArchivo?.startsWith('image')">
                       <img [src]="msg.archivoUrl" class="chat-img-preview" alt="Adjunto" style="max-width: 100%; max-height: 150px; border-radius: 8px; margin-top: 8px; display: block; border: 1px solid rgba(0,0,0,0.1);" />
@@ -534,6 +538,7 @@
           <input 
             type="file" 
             #fileInput 
+            accept="video/*, image/*"
             (change)="onFileSelected($event)" 
             style="display: none;" 
           />
