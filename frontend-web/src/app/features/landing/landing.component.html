@@ -3,8 +3,8 @@
   <!-- BARRA LATERAL IZQUIERDA DE NAVEGACIÓN -->
   <aside class="sidebar" role="navigation" aria-label="Navegación Principal">
     <div class="sidebar-header">
-      <div class="logo-circle" aria-hidden="true">
-        <i class="fa-solid fa-shield-halved"></i>
+      <div class="logo-circle" aria-hidden="true" style="background: transparent; border: none; box-shadow: none;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Emblema_de_Carabineros_de_Chile.svg/500px-Emblema_de_Carabineros_de_Chile.svg.png" alt="Logo Carabineros" style="width: 52px; height: 52px; object-fit: contain;" />
       </div>
       <div class="brand-info">
         <h2>CENCO</h2>
@@ -442,6 +442,27 @@
           ></textarea>
           <button class="btn-save-notes" (click)="saveDispatchNotes()">
             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar Notas
+          </button>
+        </div>
+      </div>
+
+      <!-- SECCIÓN VIDEOLLAMADA (JITSI) -->
+      <div class="detail-section videocall-section" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 20px; background-color: #f8fafc;">
+        <span class="section-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span><i class="fa-solid fa-video"></i> VIDEOLLAMADA LSCh</span>
+        </span>
+        
+        <div class="videocall-container" *ngIf="videoCallUrl">
+          <iframe [src]="videoCallUrl" allow="camera; microphone; fullscreen; display-capture" style="width: 100%; height: 350px; border: 1px solid #cbd5e1; border-radius: 8px; background: #000;"></iframe>
+          <button class="btn-action" style="background-color: #dc2626; color: white; width: 100%; margin-top: 10px; height: 42px; border-radius: 6px; font-weight: bold;" (click)="endVideoCall()">
+            <i class="fa-solid fa-phone-slash"></i> FINALIZAR VIDEOLLAMADA
+          </button>
+        </div>
+        
+        <div class="videocall-controls" *ngIf="!videoCallUrl" style="text-align: center;">
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Conecta visualmente con la persona sorda para interpretar señas en tiempo real.</p>
+          <button class="btn-action" style="background-color: #2563eb; color: white; width: 100%; height: 42px; border-radius: 6px; font-weight: bold;" (click)="startVideoCall()">
+            <i class="fa-solid fa-video"></i> INICIAR VIDEOLLAMADA
           </button>
         </div>
       </div>

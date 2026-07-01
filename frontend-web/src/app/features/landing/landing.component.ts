@@ -8,6 +8,7 @@ import { WebsocketService } from '../../core/services/websocket.service';
 import { environment } from '../../../environments/environment';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 declare const L: any; // Leaflet library loaded via index.html CDN
 
@@ -111,13 +112,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private alertsInterval: any;
   private chatInterval: any;
 
+  // Video call
+  videoCallUrl: SafeResourceUrl | null = null;
+
   constructor(
     private authService: AuthService,
     private router: Router,
     private http: HttpClient,
     private websocketService: WebsocketService,
     private ngZone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit() {
@@ -955,6 +960,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       this.map.removeLayer(this.marker);
       this.marker = null;
     }
+  }
+
+  startVideoCall() {
+    if (!this.selectedEmergency) return;
+    const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
+    const url = `https://meet.jit.si/Emergencia_Senadis_${rutLimpiado}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
+    this.videoCallUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  endVideoCall() {
+    this.videoCallUrl = null;
   }
 
   saveDispatchNotes() {
