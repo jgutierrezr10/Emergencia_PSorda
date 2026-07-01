@@ -47,9 +47,7 @@ export default function TriageScreen() {
   const [errorCritico, setErrorCritico] = useState(false);
 
   useEffect(() => {
-    alert("Versión V7 cargada. Iniciando alerta (GPS Bypass)...");
     const timeoutSeguridad = setTimeout(() => {
-      alert("Error: La aplicación se congeló por más de 15 segundos.");
       setCargando(false);
       setErrorCritico(true);
     }, 15000);
@@ -125,7 +123,6 @@ export default function TriageScreen() {
         if (!response.ok) {
           const errorBody = await response.text();
           console.error('[ALERTA] Backend rechazó:', response.status, errorBody);
-          alert(`Error del servidor: ${response.status}\n${errorBody}`);
           setErrorCritico(true);
         } else {
           const data = await response.json();
@@ -135,7 +132,6 @@ export default function TriageScreen() {
         }
       } catch (err: any) {
         console.error('[ALERTA] Error fatal:', err);
-        alert(`Error creando alerta: ${err.message || err}`);
         setErrorCritico(true);
       } finally {
         clearTimeout(timeoutSeguridad);

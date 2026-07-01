@@ -119,7 +119,6 @@ export default function EstadoScreen() {
           const data = await res.json();
           setAlertaEstado(data.estado);
           if (data.estado === 'Finalizada') {
-            alert('La emergencia ha sido resuelta por el operador.');
             router.replace('/home');
           }
         }
