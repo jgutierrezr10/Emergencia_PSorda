@@ -37,7 +37,6 @@ public class PatrullaServiceImpl implements IPatrullaService {
         existente.setPatente(patrulla.getPatente());
         existente.setLongitudLatitud(patrulla.getLongitudLatitud());
         existente.setEstado(patrulla.getEstado());
-        existente.setComisaria(patrulla.getComisaria());
         return patrullaRepository.save(existente);
     }
 

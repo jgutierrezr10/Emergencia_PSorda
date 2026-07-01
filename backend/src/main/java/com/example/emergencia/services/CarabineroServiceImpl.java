@@ -37,7 +37,6 @@ public class CarabineroServiceImpl implements ICarabineroService {
         existente.setNombre(carabinero.getNombre());
         existente.setNumero(carabinero.getNumero());
         existente.setRango(carabinero.getRango());
-        existente.setComisaria(carabinero.getComisaria());
         existente.setUsuario(carabinero.getUsuario());
         return carabineroRepository.save(existente);
     }

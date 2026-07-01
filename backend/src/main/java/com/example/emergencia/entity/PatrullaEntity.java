@@ -24,7 +24,4 @@ public class PatrullaEntity {
     @Column(nullable = false, length = 50)
     private String estado;
 
-    @ManyToOne
-    @JoinColumn(name = "comisaria_id", nullable = false)
-    private ComisariaEntity comisaria;
 }

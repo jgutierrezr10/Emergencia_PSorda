@@ -24,9 +24,6 @@ public class CarabineroEntity {
     @Column(nullable = false, length = 50)
     private String rango;
 
-    @ManyToOne
-    @JoinColumn(name = "comisaria_id", nullable = false)
-    private ComisariaEntity comisaria;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)

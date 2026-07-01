@@ -830,6 +830,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     if (unitType === 'patrulla') {
       nextEstado = 'Despachada';
       actionText = 'SE DESPACHÓ: Radio Patrulla (Carabineros) al lugar del incidente.';
+      const patente = 'Z-' + Math.floor(Math.random() * 9000 + 1000); // Ficticia
+      
+      this.http.post(`${environment.apiUrl}/api/patrullas`, {
+        patente: patente,
+        longitudLatitud: `${this.selectedEmergency.lat},${this.selectedEmergency.lng}`,
+        estado: 'En Camino'
+      }).subscribe({
+        next: (patrulla: any) => console.log('Patrulla registrada:', patrulla),
+        error: (err) => console.error('Error al registrar patrulla:', err)
+      });
+
     } else if (unitType === 'ambulancia') {
       nextEstado = 'En Proceso';
       actionText = 'SE ENLAZÓ CON SAMU: Ambulancia de emergencia en camino.';
