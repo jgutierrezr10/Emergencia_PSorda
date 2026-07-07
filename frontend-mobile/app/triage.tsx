@@ -197,6 +197,33 @@ export default function TriageScreen() {
     }
   };
 
+  const handleSaltarTriage = async () => {
+    setEnviado(true);
+    try {
+      const token = await obtenerDato('token');
+      const currentId = await obtenerDato('currentAlertaId');
+      if (!currentId || currentId === '999') return;
+
+      const getResp = await fetch(`${baseUrl}/api/alertas/${currentId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (getResp.ok) {
+        const alertData = await getResp.json();
+        alertData.disponibleTriage = false;
+        await fetch(`${baseUrl}/api/alertas/${currentId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(alertData)
+        });
+      }
+    } catch (e) {
+      console.warn('Error al marcar triage como no disponible', e);
+    }
+  };
+
   if (cargando) {
     return (
       <SafeAreaView style={styles.container}>
@@ -246,7 +273,7 @@ export default function TriageScreen() {
             <TouchableOpacity style={[styles.boton, styles.botonSi]} onPress={() => setContinuar(true)} activeOpacity={0.85}>
               <Text style={styles.botonTexto}>SÍ</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.boton, styles.botonNo]} onPress={() => setEnviado(true)} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.boton, styles.botonNo]} onPress={handleSaltarTriage} activeOpacity={0.85}>
               <Text style={[styles.botonTexto, styles.botonTextoNo]}>NO</Text>
             </TouchableOpacity>
           </View>
