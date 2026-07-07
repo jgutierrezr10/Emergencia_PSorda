@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   errorMessage: string = '';
   isLoading: boolean = false;
@@ -19,7 +19,8 @@ export class LoginComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.loginForm = this.fb.group({
       rut: ['', [Validators.required]],
@@ -78,8 +79,9 @@ export class LoginComponent {
         if (err.status === 401) {
           this.errorMessage = 'RUT o clave única incorrectos.';
         } else {
-          this.errorMessage = 'Error de conexión con el servidor.';
+          this.errorMessage = 'Ocurrió un error de conexión al servidor.';
         }
+        this.cdr.detectChanges();
       }
     });
   }
