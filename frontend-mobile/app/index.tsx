@@ -38,7 +38,14 @@ export default function LoginScreen() {
       try {
         const token = await obtenerDato('token');
         const rol = await obtenerDato('rol');
-        if (token && rol === 'Sordo') router.replace('/(tabs)/home');
+        const estado = await obtenerDato('estado');
+        if (token && rol === 'Sordo') {
+          if (estado === 'Pendiente' || estado === 'Rechazado') {
+            router.replace('/pendiente');
+          } else {
+            router.replace('/(tabs)/home');
+          }
+        }
       } catch (e) {
         // SecureStore no disponible en web, se ignora
       }
@@ -112,9 +119,14 @@ export default function LoginScreen() {
           await guardarDato('rut', data.rut || cleanRut);
           await guardarDato('usuarioId', String(data.usuarioId));
           await guardarDato('personaSordaId', String(data.personaSordaId));
+          if (data.estado) await guardarDato('estado', data.estado);
         } catch (e) {}
         
-        await procesarIngresoExitoso(); // Reemplaza router.replace directo
+        if (data.estado === 'Pendiente' || data.estado === 'Rechazado') {
+          router.replace('/pendiente');
+        } else {
+          await procesarIngresoExitoso();
+        }
       } else {
         setError('Rol de usuario no válido para esta aplicación.');
       }

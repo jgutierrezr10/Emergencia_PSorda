@@ -9,4 +9,5 @@ import com.example.emergencia.entity.UsuarioEntity;
 @Repository
 public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
     Optional<UsuarioEntity> findByRut(String rut);
+    java.util.List<UsuarioEntity> findByEstado(String estado);
 }

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput, Platform, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, TextInput, Platform, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useMemo, useEffect } from 'react';
 import { router } from 'expo-router';
@@ -47,6 +47,7 @@ export default function PerfilScreen() {
   const [contactos, setContactos] = useState<Contacto[]>([]);
   const [entornos, setEntornos] = useState<Entorno[]>([]);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [currentAlertaId, setCurrentAlertaId] = useState<string | null>(null);
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -79,6 +80,12 @@ export default function PerfilScreen() {
           if (resE.ok) {
             const dataE = await resE.json();
             setEntornos(dataE);
+          }
+
+          // 4. Cargar estado de alerta actual
+          const alertaId = await (Platform.OS === 'web' ? localStorage.getItem('currentAlertaId') : SecureStore.getItemAsync('currentAlertaId'));
+          if (alertaId && alertaId !== '999') {
+            setCurrentAlertaId(alertaId);
           }
         }
       } catch (err) {
@@ -218,6 +225,43 @@ export default function PerfilScreen() {
       // Ignorar errores de borrado
     }
     router.replace('/');
+  };
+
+  const cancelarAlarmaActiva = async () => {
+    if (!currentAlertaId) return;
+    try {
+      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      const getResp = await fetch(`${baseUrl}/api/alertas/${currentAlertaId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (getResp.ok) {
+        const alertData = await getResp.json();
+        alertData.estado = 'Finalizada';
+        const putResp = await fetch(`${baseUrl}/api/alertas/${currentAlertaId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(alertData)
+        });
+        if (putResp.ok) {
+          if (Platform.OS === 'web') {
+            localStorage.setItem('currentAlertaId', '999');
+          } else {
+            await SecureStore.setItemAsync('currentAlertaId', '999');
+          }
+          setCurrentAlertaId(null);
+          if (Platform.OS !== 'web') {
+            Alert.alert('Alarma cancelada', 'La alerta ha sido cancelada exitosamente.');
+          } else {
+            alert('La alerta ha sido cancelada exitosamente.');
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Error al cancelar la alarma", e);
+    }
   };
 
   return (
@@ -416,6 +460,12 @@ export default function PerfilScreen() {
           <Text style={styles.btnCerrarSesionTexto}>CERRAR SESIÓN</Text>
         </TouchableOpacity>
 
+        {currentAlertaId && (
+          <TouchableOpacity style={styles.btnCancelarOculto} onPress={cancelarAlarmaActiva}>
+            <Text style={styles.btnCancelarOcultoTexto}>Cancelar emergencia activa (Solo en caso de error)</Text>
+          </TouchableOpacity>
+        )}
+
         <Text style={styles.footer}>
           APP EMERGENCIA GENTE SORDA v1.0.0{'\n'}CON APOYO DE CENCO CHILE
         </Text>
@@ -567,6 +617,8 @@ const makeStyles = (c: Colors) =>
     opcionSubtexto: { fontSize: 11, color: c.textMuted },
     btnCerrarSesion: { height: 52, borderWidth: 2, borderColor: c.danger, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
     btnCerrarSesionTexto: { color: c.danger, fontSize: 15, fontWeight: '900', letterSpacing: 1 },
+    btnCancelarOculto: { marginTop: -4, marginBottom: 16, alignSelf: 'center', padding: 8, opacity: 0.6 },
+    btnCancelarOcultoTexto: { color: c.textMuted, fontSize: 11, textDecorationLine: 'underline' },
     footer: { fontSize: 11, color: c.textMuted, textAlign: 'center', lineHeight: 18 },
     navBar: { flexDirection: 'row', backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.borderSoft, paddingVertical: 10, paddingHorizontal: 8 },
     navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, gap: 3 },

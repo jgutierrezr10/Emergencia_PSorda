@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { useTheme, Colors } from '@/theme/theme';
 import { baseUrl } from './_config';
 
@@ -17,6 +18,9 @@ export default function EditarPerfilScreen() {
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
   const [infoMedica, setInfoMedica] = useState('');
+  const [latitudCasa, setLatitudCasa] = useState('');
+  const [longitudCasa, setLongitudCasa] = useState('');
+  const [nombreReferenciaCasa, setNombreReferenciaCasa] = useState('');
   const [personaSordaId, setPersonaSordaId] = useState<number | null>(null);
   
   const [error, setError] = useState('');
@@ -48,6 +52,9 @@ export default function EditarPerfilScreen() {
             setPersonaSordaId(dataPS.id);
             setDireccion(dataPS.direccion || '');
             setInfoMedica(dataPS.infoMedica || '');
+            setLatitudCasa(dataPS.latitudCasa || '');
+            setLongitudCasa(dataPS.longitudCasa || '');
+            setNombreReferenciaCasa(dataPS.nombreReferenciaCasa || '');
           }
         }
       } catch (err) {
@@ -56,6 +63,21 @@ export default function EditarPerfilScreen() {
     };
     cargarDatos();
   }, []);
+
+  const obtenerUbicacionGPS = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Permiso de ubicación denegado.');
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setLatitudCasa(pos.coords.latitude.toString());
+      setLongitudCasa(pos.coords.longitude.toString());
+    } catch (e) {
+      setError('Error al obtener ubicación GPS.');
+    }
+  };
 
   const handleActualizar = async () => {
     setError('');
@@ -94,6 +116,9 @@ export default function EditarPerfilScreen() {
              id: personaSordaId,
              direccion: direccion,
              infoMedica: infoMedica,
+             latitudCasa: latitudCasa,
+             longitudCasa: longitudCasa,
+             nombreReferenciaCasa: nombreReferenciaCasa,
              usuario: usuarioCompleto
           })
         });
@@ -132,6 +157,9 @@ export default function EditarPerfilScreen() {
     { label: 'TELÉFONO', icon: 'call-outline' as const, ph: 'Ej: 987654321', val: telefono, set: setTelefono, kt: 'phone-pad' as const },
     { label: 'DIRECCIÓN', icon: 'home-outline' as const, ph: 'Ej: Calle Falsa 123', val: direccion, set: setDireccion, kt: 'default' as const },
     { label: 'INFO MÉDICA (OPCIONAL)', icon: 'medical-outline' as const, ph: 'Ej: Alergia a penicilina, diabetes...', val: infoMedica, set: setInfoMedica, kt: 'default' as const },
+    { label: 'NOMBRE REF. CASA (OPCIONAL)', icon: 'bookmark-outline' as const, ph: 'Ej: Mi Casa, Trabajo', val: nombreReferenciaCasa, set: setNombreReferenciaCasa, kt: 'default' as const },
+    { label: 'LATITUD (CASA)', icon: 'navigate-outline' as const, ph: 'Ej: -33.45', val: latitudCasa, set: setLatitudCasa, kt: 'default' as const },
+    { label: 'LONGITUD (CASA)', icon: 'navigate-outline' as const, ph: 'Ej: -70.66', val: longitudCasa, set: setLongitudCasa, kt: 'default' as const },
   ];
 
   return (
@@ -176,6 +204,11 @@ export default function EditarPerfilScreen() {
               </View>
             ))}
 
+            <TouchableOpacity style={styles.gpsButton} onPress={obtenerUbicacionGPS}>
+              <Ionicons name="location" size={20} color="#ffffff" style={styles.inputIcon} />
+              <Text style={styles.gpsButtonText}>USAR MI UBICACIÓN ACTUAL</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleActualizar} disabled={loading}>
               <Text style={styles.buttonText}>{loading ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}</Text>
             </TouchableOpacity>
@@ -204,6 +237,8 @@ const makeStyles = (c: Colors) =>
     inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.inputBg, borderWidth: 1.5, borderColor: c.border, borderRadius: 12, paddingHorizontal: 16, height: 54 },
     inputIcon: { marginRight: 12 },
     input: { flex: 1, fontSize: 16, color: c.textPrimary, height: '100%' },
+    gpsButton: { flexDirection: 'row', backgroundColor: '#3b82f6', borderRadius: 12, height: 50, justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 8 },
+    gpsButtonText: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
     button: { backgroundColor: c.primary, borderRadius: 12, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 12 },
     buttonDisabled: { opacity: 0.6 },
     buttonText: { color: c.primaryText, fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },

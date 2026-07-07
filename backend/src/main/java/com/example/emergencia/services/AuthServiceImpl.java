@@ -59,7 +59,7 @@ public class AuthServiceImpl implements IAuthService {
         // Genera Token JWT
         String token = jwtUtil.generateToken(usuario.getRut(), rol);
 
-        // Retorna la respuesta con el Token, Rut, Rol, UsuarioId y PersonaSordaId
-        return new LoginResponse(token, usuario.getRut(), nombreCompleto, rol, usuario.getId(), personaSordaId);
+        // Retorna la respuesta con el Token, Rut, Rol, UsuarioId, PersonaSordaId y Estado
+        return new LoginResponse(token, usuario.getRut(), nombreCompleto, rol, usuario.getId(), personaSordaId, usuario.getEstado());
     }
 }

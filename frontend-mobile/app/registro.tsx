@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme, Colors } from '@/theme/theme';
 import { baseUrl } from './_config';
 import { TERMINOS_VERSION } from '@/constants/terminos';
@@ -29,6 +30,18 @@ export default function RegistroScreen() {
   const [loading, setLoading] = useState(false);
   const [exito, setExito] = useState(false);
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const [documentoUri, setDocumentoUri] = useState<string | null>(null);
+
+  const pickDocument = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setDocumentoUri(result.assets[0].uri);
+    }
+  };
 
   const handleRutChange = (text: string) => {
     let clean = text.replace(/[^0-9kK]/g, '').toUpperCase();
@@ -47,6 +60,10 @@ export default function RegistroScreen() {
     }
     if (!aceptaTerminos) {
       setError('DEBES ACEPTAR LOS TÉRMINOS Y CONDICIONES.');
+      return;
+    }
+    if (!documentoUri) {
+      setError('DEBES SUBIR TU CREDENCIAL DE DISCAPACIDAD.');
       return;
     }
     if (!/^\d{8,9}$/.test(telefono)) {
@@ -80,7 +97,7 @@ export default function RegistroScreen() {
           rut: cleanRut,
           telefono,
           clave: password,
-          estado: 'ACTIVO',
+          estado: 'Pendiente',
           rol: 'Sordo'
         })
       });
@@ -91,12 +108,31 @@ export default function RegistroScreen() {
 
       const dataUsuario = await resUsuario.json();
 
+      let validacionUrl = '';
+      if (documentoUri) {
+        let formData = new FormData();
+        const filename = documentoUri.split('/').pop() || 'credencial.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : `image`;
+        
+        formData.append('file', { uri: documentoUri, name: filename, type } as any);
+        const uploadRes = await fetch(`${baseUrl}/api/uploads`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          validacionUrl = uploadData.fileUrl;
+        }
+      }
+
       const resPersonaSorda = await fetch(`${baseUrl}/api/personas-sordas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           direccion: 'No definida',
           infoMedica: '',
+          documentoValidacionUrl: validacionUrl,
           usuario: { id: dataUsuario.id }
         })
       });
@@ -121,10 +157,10 @@ export default function RegistroScreen() {
           <View style={styles.exitoCircle}>
             <Ionicons name="checkmark" size={48} color={colors.primary} />
           </View>
-          <Text style={styles.exitoTitulo}>¡CUENTA YA CREADA!</Text>
-          <Text style={styles.exitoTexto}>TU CUENTA LISTA.{'\n'}AHORA TÚ ENTRAR.</Text>
+          <Text style={styles.exitoTitulo}>¡SOLICITUD ENVIADA!</Text>
+          <Text style={styles.exitoTexto}>CENCO REVISARÁ TUS DATOS.{'\n'}TE AVISAREMOS CUANDO ESTÉ LISTO.</Text>
           <TouchableOpacity style={styles.button} onPress={() => router.replace('/')}>
-            <Text style={styles.buttonText}>IR A ENTRAR</Text>
+            <Text style={styles.buttonText}>ENTENDIDO</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -184,6 +220,14 @@ export default function RegistroScreen() {
               </View>
             ))}
 
+            <View style={styles.uploadGroup}>
+              <Text style={styles.label}>CREDENCIAL DE DISCAPACIDAD</Text>
+              <TouchableOpacity style={styles.uploadButton} onPress={pickDocument}>
+                <Ionicons name="camera-outline" size={24} color={colors.primary} />
+                <Text style={styles.uploadButtonText}>{documentoUri ? 'FOTO SELECCIONADA' : 'TOMAR O SUBIR FOTO'}</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* CHECKBOX DE TÉRMINOS Y CONDICIONES (Modificado) */}
             <View style={styles.checkboxContainer}>
               <Pressable onPress={() => setAceptaTerminos(!aceptaTerminos)} style={styles.checkbox}>
@@ -236,6 +280,10 @@ const makeStyles = (c: Colors) =>
     inputIcon: { marginRight: 12 },
     input: { flex: 1, fontSize: 16, color: c.textPrimary, height: '100%' },
     
+    uploadGroup: { marginBottom: 18 },
+    uploadButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: c.primarySoft, borderWidth: 1.5, borderColor: c.primary, borderRadius: 12, height: 54, gap: 10 },
+    uploadButtonText: { color: c.primary, fontWeight: '700', fontSize: 14 },
+
     // ESTILOS NUEVOS DEL CHECKBOX
     checkboxContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 4 },
     checkbox: { marginRight: 10 },

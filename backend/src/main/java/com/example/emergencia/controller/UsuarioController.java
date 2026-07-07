@@ -55,4 +55,19 @@ public class UsuarioController {
     public UsuarioEntity findByRut(@PathVariable String rut) {
         return usuarioService.findByRut(rut);
     }
+
+    @GetMapping("/pendientes")
+    public List<UsuarioEntity> findPendientes() {
+        return usuarioService.findByEstado("Pendiente");
+    }
+
+    @PutMapping("/{id}/estado")
+    public UsuarioEntity updateEstado(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        UsuarioEntity usuario = usuarioService.findById(id);
+        if (body.containsKey("estado")) {
+            usuario.setEstado(body.get("estado"));
+            return usuarioService.update(usuario);
+        }
+        return usuario;
+    }
 }

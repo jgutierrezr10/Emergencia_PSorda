@@ -15,5 +15,5 @@ public class LoginResponse {
     private String rol;
     private Long usuarioId;
     private Long personaSordaId;
-
+    private String estado;
 }

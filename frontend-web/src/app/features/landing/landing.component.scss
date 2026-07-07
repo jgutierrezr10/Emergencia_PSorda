@@ -1882,3 +1882,29 @@
     }
   }
 }
+
+.details-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.details-grid-1 {
+  display: flex;
+  flex-direction: column;
+}
+.section-divider {
+  border: 0;
+  height: 1px;
+  background-color: #F3F4F6;
+  margin: 12px 0;
+}
+.custom-scroll {
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 2px;
+  }
+}
+

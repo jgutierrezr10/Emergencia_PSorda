@@ -38,6 +38,7 @@ export default function EstadoScreen() {
   const [alertaId, setAlertaId] = useState<number | null>(null);
   const [patrulla, setPatrulla] = useState<LatLng | null>(null);
   const [ruta, setRuta] = useState<LatLng[] | null>(null);
+  const [nombreRef, setNombreRef] = useState<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setSegundos((s) => s + 1), 1000);
@@ -118,6 +119,9 @@ export default function EstadoScreen() {
         if (res.ok) {
           const data = await res.json();
           setAlertaEstado(data.estado);
+          if (data.personaSorda && data.personaSorda.nombreReferenciaCasa) {
+            setNombreRef(data.personaSorda.nombreReferenciaCasa);
+          }
           if (data.estado === 'Finalizada') {
             router.replace('/home');
           }
@@ -248,6 +252,7 @@ export default function EstadoScreen() {
             <View style={styles.cardInfo}>
               <Text style={styles.cardLabel}>TU UBICACIÓN</Text>
               <Text style={styles.cardTitulo}>{direccion || (gps === 'ok' ? 'UBICACIÓN LISTA' : 'BUSCANDO DIRECCIÓN…')}</Text>
+              {nombreRef && <Text style={styles.cardRefTexto}>🏠 REFERENCIA: {nombreRef}</Text>}
               <Text style={styles.cardSub}>
                 {coords ? `${coords.lat.toFixed(4)}°, ${coords.lng.toFixed(4)}° (GPS ±${coords.acc ? Math.round(coords.acc) : '—'}m)` : 'ESPERANDO GPS…'}
               </Text>
@@ -338,6 +343,7 @@ const makeStyles = (c: Colors) =>
     cardInfo: { flex: 1 },
     cardLabel: { fontSize: 12, color: c.textMuted, marginBottom: 2 },
     cardTitulo: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+    cardRefTexto: { fontSize: 13, fontWeight: 'bold', color: c.primary, marginTop: 4, marginBottom: 2 },
     cardSub: { fontSize: 12, color: c.textMuted, marginTop: 3 },
     unidadIcono: { width: 44, height: 44, borderRadius: 10, backgroundColor: '#2563eb', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
     unidadLabel: { fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 2 },

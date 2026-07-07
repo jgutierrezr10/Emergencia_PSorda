@@ -28,6 +28,14 @@
         <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
         <span>Historial de Casos</span>
       </a>
+      <a href="javascript:void(0)" 
+         class="nav-item" 
+         [class.active]="activeTab === 'validations'" 
+         (click)="switchTab('validations')">
+        <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+        <span>Validaciones</span>
+        <span class="badge" *ngIf="pendingUsers.length > 0" style="background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; margin-left: auto;">{{ pendingUsers.length }}</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -53,6 +61,7 @@
       <div class="header-title">
         <h1 *ngIf="activeTab === 'dashboard'">Panel de Operaciones</h1>
         <h1 *ngIf="activeTab === 'history'">Historial de Emergencias</h1>
+        <h1 *ngIf="activeTab === 'validations'">Validación de Usuarios Sordos</h1>
       </div>
       <div class="header-right">
         <div class="operator-profile">
@@ -297,6 +306,54 @@
       </section>
 
     </div>
+
+    <!-- ================= VISTA: VALIDACIONES ================= -->
+    <div class="history-view" *ngIf="activeTab === 'validations'">
+      
+      <section class="history-table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>ID Usuario</th>
+              <th>Ciudadano</th>
+              <th>RUT</th>
+              <th>Teléfono</th>
+              <th>Documento (Credencial/Certificado)</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of pendingUsers">
+              <td class="col-id">#{{ user.id.toString().slice(-6) }}</td>
+              <td class="col-name"><strong>{{ user.nombre }} {{ user.apellido }}</strong></td>
+              <td class="col-rut">{{ user.rut }}</td>
+              <td class="col-incident">{{ user.telefono }}</td>
+              <td class="col-notes">
+                <a *ngIf="user.documentoValidacionUrl" [href]="user.documentoValidacionUrl" target="_blank" style="color: #0284c7; text-decoration: underline; font-weight: 500;">
+                  <i class="fa-solid fa-up-right-from-square"></i> Ver Documento
+                </a>
+                <span *ngIf="!user.documentoValidacionUrl" style="color: #64748b;">No subió documento</span>
+              </td>
+              <td class="col-report" style="display: flex; gap: 8px;">
+                <button class="btn-row-pdf" style="background: #10b981; color: white;" (click)="aprobarUsuario(user)" title="Aprobar usuario">
+                  <i class="fa-solid fa-check"></i> Aprobar
+                </button>
+                <button class="btn-row-pdf" style="background: #ef4444; color: white;" (click)="rechazarUsuario(user)" title="Rechazar usuario">
+                  <i class="fa-solid fa-xmark"></i> Rechazar
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="pendingUsers.length === 0">
+              <td colspan="6" class="empty-table">
+                <i class="fa-solid fa-user-check"></i>
+                <p>No hay solicitudes de registro pendientes de validación en este momento.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </div>
   </main>
 
   <!-- COLUMNA DERECHA: DETALLE DE LA EMERGENCIA Y ACCIONES (SOLO VISIBLE EN EL DASHBOARD) -->
@@ -325,105 +382,109 @@
       </div>
 
 
-      <!-- TIPO DE INCIDENTE -->
-      <div class="detail-section">
-        <span class="section-label">TIPO DE INCIDENTE</span>
-        <div class="incident-value">
-          <i class="fa-solid fa-triangle-exclamation text-danger" aria-hidden="true"></i>
-          <span>{{ selectedEmergency.incidente }}</span>
-        </div>
-      </div>
-
-      <!-- UBICACIÓN -->
-      <div class="detail-section">
-        <span class="section-label">UBICACIÓN</span>
-        
-        <div class="location-address" style="margin-top: 8px; margin-bottom: 6px; font-weight: 600; color: #334155; font-size: 14px;">
-          <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 6px; color: #64748b;"></i>
-          <span>{{ selectedEmergency.ubicacionNombre }}</span>
-        </div>
-
-        <div class="location-coords" style="font-size: 0.85em; color: #666;">
-          <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px;"></i>
-          <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #0056b3; text-decoration: none;">
-            {{ selectedEmergency.lat }}, {{ selectedEmergency.lng }} (Ver en Mapa)
-          </a>
-        </div>
-      </div>
-
-      <!-- INFO MÉDICA -->
-      <div class="detail-section">
-        <span class="section-label">INFORMACIÓN MÉDICA</span>
-        <div class="location-value" style="color: #d9534f; font-weight: bold;">
-          <i class="fa-solid fa-notes-medical" aria-hidden="true"></i>
-          <span>{{ selectedEmergency.infoMedica }}</span>
-        </div>
-      </div>
-
-      <!-- RED DE APOYO (ENTORNO Y CONTACTOS) -->
-      <div class="detail-section" *ngIf="selectedEmergency.entornos?.length || selectedEmergency.contactosEmergencia?.length">
-        <span class="section-label">RED DE APOYO (ENTORNO Y CONTACTOS)</span>
-        
-        <div *ngIf="selectedEmergency.entornos?.length" class="apoyo-group" style="margin-top: 10px;">
-          <strong style="color: #444; font-size: 0.9em;"><i class="fa-solid fa-house-user"></i> Entorno de convivencia:</strong>
-          <ul style="list-style: none; padding: 0; margin: 5px 0 0 0; font-size: 0.9em; color: #555;">
-            <li *ngFor="let ent of selectedEmergency.entornos" style="margin-bottom: 4px;">
-              - {{ ent.nombre }} ({{ ent.parentesco }}) <span *ngIf="ent.viveConUsuario" style="color: #10b981; font-weight: 500;">[Vive con el usuario]</span>
-            </li>
-          </ul>
-        </div>
-
-        <div *ngIf="selectedEmergency.contactosEmergencia?.length" class="apoyo-group" style="margin-top: 10px;">
-          <strong style="color: #444; font-size: 0.9em;"><i class="fa-solid fa-address-book"></i> Contactos de Emergencia:</strong>
-          <ul style="list-style: none; padding: 0; margin: 5px 0 0 0; font-size: 0.9em; color: #555;">
-            <li *ngFor="let cont of selectedEmergency.contactosEmergencia" style="margin-bottom: 4px;">
-              - {{ cont.nombre }} ({{ cont.relacion }}) 
-              <br><i class="fa-solid fa-phone" style="margin-left: 10px; font-size: 0.8em; color: #0056b3;"></i> <a href="tel:{{ cont.numero }}" style="color: #0056b3; text-decoration: none;">{{ cont.numero }}</a>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- INFORMACIÓN TÁCTICA (RESPUESTAS DEL TRIAGE) -->
-      <div class="detail-section tactico-section">
-        <span class="section-label">INFORMACIÓN TÁCTICA (RESPUESTAS DEL USUARIO)</span>
-        <div class="tactico-container">
-          <div class="tactico-row">
-            <span>Víctima herida</span>
-            <span [class]="'tactico-val ' + (selectedEmergency.triage.victimaHerida === 'SI' ? 'si' : 'no')">
-              {{ selectedEmergency.triage.victimaHerida }}
-            </span>
+      <!-- SECCIÓN 1: DATOS CLAVE (TIPO, ESTADO, INGRESO) -->
+      <div class="details-grid-2">
+        <div class="detail-section" style="border: none; padding: 0;">
+          <span class="section-label">TIPO DE INCIDENTE</span>
+          <div class="incident-value">
+            <i class="fa-solid fa-triangle-exclamation text-danger" aria-hidden="true"></i>
+            <span>{{ selectedEmergency.incidente }}</span>
           </div>
-          <div class="tactico-row">
-            <span>Agresor en el lugar</span>
-            <span [class]="'tactico-val ' + (selectedEmergency.triage.agresorLugar === 'SI' ? 'si' : 'no')">
-              {{ selectedEmergency.triage.agresorLugar }}
+        </div>
+        <div class="detail-section" style="border: none; padding: 0;">
+          <span class="section-label">ESTADO E INGRESO</span>
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 2px;">
+            <span class="status-badge-inline" [class]="selectedEmergency.estado.toLowerCase()">
+              {{ selectedEmergency.estado }}
             </span>
-          </div>
-          <div class="tactico-row">
-            <span>Arma de fuego</span>
-            <span [class]="'tactico-val ' + (selectedEmergency.triage.armaFuego === 'SI' ? 'si' : 'no')">
-              {{ selectedEmergency.triage.armaFuego }}
+            <span class="time-value" style="font-size: 0.8rem; color: #64748b;">
+              <i class="fa-regular fa-clock"></i> {{ selectedEmergency.horaIngreso }}
             </span>
           </div>
         </div>
       </div>
+      <hr class="section-divider">
 
-      <!-- ESTADO E INGRESO -->
-      <div class="status-time-row">
-        <div class="status-info">
-          <span class="section-label">ESTADO</span>
-          <span class="status-badge-inline" [class]="selectedEmergency.estado.toLowerCase()">
-            {{ selectedEmergency.estado }}
-          </span>
+      <!-- SECCIÓN 2: UBICACIÓN E INFO MÉDICA -->
+      <div class="details-grid-1">
+        <div class="detail-section" style="border: none; padding: 0;">
+          <span class="section-label">UBICACIÓN</span>
+          <div class="location-address" style="margin-top: 8px; margin-bottom: 6px; font-weight: 600; color: #334155; font-size: 14px;">
+            <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 6px; color: #64748b;"></i>
+            <span>{{ selectedEmergency.ubicacionNombre }}</span>
+          </div>
+          <div class="location-ref" *ngIf="selectedEmergency.nombreReferenciaCasa" style="margin-bottom: 6px; font-weight: bold; color: #0284c7; font-size: 13px;">
+            <i class="fa-solid fa-bookmark" aria-hidden="true" style="margin-right: 6px;"></i>
+            <span>Ref: {{ selectedEmergency.nombreReferenciaCasa }}</span>
+          </div>
+          <div class="location-coords" style="font-size: 0.85em; color: #666;">
+            <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px;"></i>
+            <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #0056b3; text-decoration: none;">
+              {{ selectedEmergency.lat }}, {{ selectedEmergency.lng }} (Mapa)
+            </a>
+          </div>
         </div>
-        <div class="time-info">
-          <span class="section-label">INGRESO</span>
-          <span class="time-value">
-            <i class="fa-regular fa-clock"></i> {{ selectedEmergency.horaIngreso }}
-          </span>
+
+        <div class="detail-section" style="border: none; padding: 0; margin-top: 10px;">
+          <span class="section-label">INFORMACIÓN MÉDICA</span>
+          <div class="location-value" style="color: #d9534f; font-weight: bold;">
+            <i class="fa-solid fa-notes-medical" aria-hidden="true"></i>
+            <span>{{ selectedEmergency.infoMedica }}</span>
+          </div>
         </div>
       </div>
+      <hr class="section-divider">
+
+      <!-- SECCIÓN 3: TÁCTICA Y RED DE APOYO -->
+      <div class="details-grid-2">
+        <div class="detail-section tactico-section" style="border: none; padding: 0;">
+          <span class="section-label">TRIAGE (TÁCTICO)</span>
+          <div class="tactico-container" style="padding: 4px 8px; margin-top: 8px;">
+            <div class="tactico-row" style="padding: 4px 0;">
+              <span>Heridos</span>
+              <span [class]="'tactico-val ' + (selectedEmergency.triage.victimaHerida === 'SI' ? 'si' : 'no')">
+                {{ selectedEmergency.triage.victimaHerida }}
+              </span>
+            </div>
+            <div class="tactico-row" style="padding: 4px 0;">
+              <span>Agresor</span>
+              <span [class]="'tactico-val ' + (selectedEmergency.triage.agresorLugar === 'SI' ? 'si' : 'no')">
+                {{ selectedEmergency.triage.agresorLugar }}
+              </span>
+            </div>
+            <div class="tactico-row" style="padding: 4px 0;">
+              <span>Armas</span>
+              <span [class]="'tactico-val ' + (selectedEmergency.triage.armaFuego === 'SI' ? 'si' : 'no')">
+                {{ selectedEmergency.triage.armaFuego }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section" style="border: none; padding: 0;" *ngIf="selectedEmergency.entornos?.length || selectedEmergency.contactosEmergencia?.length">
+          <span class="section-label">RED DE APOYO</span>
+          <div style="margin-top: 8px; max-height: 120px; overflow-y: auto; padding-right: 4px;" class="custom-scroll">
+            <div *ngIf="selectedEmergency.entornos?.length">
+              <strong style="color: #444; font-size: 0.8rem;"><i class="fa-solid fa-house-user"></i> Convivencia:</strong>
+              <ul style="list-style: none; padding: 0; margin: 4px 0 8px 0; font-size: 0.8rem; color: #555;">
+                <li *ngFor="let ent of selectedEmergency.entornos" style="margin-bottom: 2px;">
+                  • {{ ent.nombre }} ({{ ent.parentesco }})
+                </li>
+              </ul>
+            </div>
+            <div *ngIf="selectedEmergency.contactosEmergencia?.length">
+              <strong style="color: #444; font-size: 0.8rem;"><i class="fa-solid fa-address-book"></i> Contactos:</strong>
+              <ul style="list-style: none; padding: 0; margin: 4px 0 0 0; font-size: 0.8rem; color: #555;">
+                <li *ngFor="let cont of selectedEmergency.contactosEmergencia" style="margin-bottom: 2px;">
+                  • {{ cont.nombre }} ({{ cont.relacion }})
+                  <br><a href="tel:{{ cont.numero }}" style="color: #0056b3; text-decoration: none;">{{ cont.numero }}</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr class="section-divider">
 
       <!-- ACCIONES DE DESPACHO DE EMERGENCIAS -->
       <div class="detail-section action-buttons-section">

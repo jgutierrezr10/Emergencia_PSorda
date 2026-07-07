@@ -21,6 +21,18 @@ public class PersonaSordaEntity {
     @Column(name = "info_medica", columnDefinition = "TEXT")
     private String infoMedica;
 
+    @Column(name = "latitud_casa", length = 50)
+    private String latitudCasa;
+
+    @Column(name = "longitud_casa", length = 50)
+    private String longitudCasa;
+
+    @Column(name = "nombre_referencia_casa", length = 100)
+    private String nombreReferenciaCasa;
+
+    @Column(name = "documento_validacion_url", length = 500)
+    private String documentoValidacionUrl;
+
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
     private UsuarioEntity usuario;

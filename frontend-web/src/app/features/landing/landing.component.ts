@@ -45,6 +45,7 @@ interface EmergencyCase {
   mensajes: ChatMessage[];
   notasOperador: string;
   infoMedica: string;
+  nombreReferenciaCasa?: string;
   entornos?: any[];
   contactosEmergencia?: any[];
 }
@@ -59,7 +60,7 @@ interface EmergencyCase {
 export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   operadorNombre = 'Operador Juan Pérez';
   operadorID = 'OP-12345';
-  activeTab: 'dashboard' | 'history' = 'dashboard';
+  activeTab: 'dashboard' | 'history' | 'validations' = 'dashboard';
   
   emergencies: EmergencyCase[] = [];
   selectedEmergency: EmergencyCase | null = null;
@@ -108,6 +109,10 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   newEmergencyToast = false;
   newEmergencyName = '';
 
+  // Validation State
+  pendingUsers: any[] = [];
+  validationPollingInterval: any;
+
   // Polling intervals
   private alertsInterval: any;
   private chatInterval: any;
@@ -140,12 +145,53 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => {
       this.initMap();
     }, 300);
+    this.startPollingValidations();
+  }
+
+  startPollingValidations() {
+    const fetchValidations = () => {
+      this.http.get<any[]>(`${environment.apiUrl}/usuarios/pendientes`)
+        .subscribe({
+          next: (usuarios) => {
+            this.ngZone.run(() => {
+              if (usuarios.length > 0) {
+                usuarios.forEach(u => {
+                  const exists = this.pendingUsers.find(p => p.id === u.id);
+                  if (!exists) {
+                    this.http.get<any>(`${environment.apiUrl}/api/personas-sordas/usuario/${u.rut}`).subscribe({
+                      next: (ps) => {
+                        u.documentoValidacionUrl = ps.documentoValidacionUrl;
+                        this.pendingUsers.push(u);
+                        this.cdr.detectChanges();
+                      },
+                      error: () => {
+                        this.pendingUsers.push(u);
+                        this.cdr.detectChanges();
+                      }
+                    });
+                  }
+                });
+                
+                // Limpiar usuarios que ya no están pendientes
+                this.pendingUsers = this.pendingUsers.filter(p => usuarios.find(u => u.id === p.id));
+              } else {
+                this.pendingUsers = [];
+              }
+              this.cdr.detectChanges();
+            });
+          },
+          error: (err) => console.warn('Error fetching pendientes:', err)
+        });
+    };
+    this.validationPollingInterval = setInterval(fetchValidations, 5000);
+    fetchValidations();
   }
 
   ngOnDestroy() {
     if (this.alertsInterval) clearInterval(this.alertsInterval);
     if (this.chatInterval) clearInterval(this.chatInterval);
     if (this.patrolInterval) clearInterval(this.patrolInterval);
+    if (this.validationPollingInterval) clearInterval(this.validationPollingInterval);
   }
 
   mapAlertaToEmergencyCase(alerta: any): EmergencyCase {
@@ -189,7 +235,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       modoCamuflaje: !!alerta.modoCamuflaje,
       mensajes: [],
       notasOperador: alerta.notasOperador || '',
-      infoMedica: alerta.personaSorda ? alerta.personaSorda.infoMedica : 'Sin información médica registrada'
+      infoMedica: alerta.personaSorda ? alerta.personaSorda.infoMedica : 'Sin información médica registrada',
+      nombreReferenciaCasa: alerta.personaSorda ? alerta.personaSorda.nombreReferenciaCasa : undefined
     };
   }
 
@@ -520,7 +567,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  switchTab(tab: 'dashboard' | 'history') {
+  switchTab(tab: 'dashboard' | 'history' | 'validations') {
     this.activeTab = tab;
     if (tab === 'dashboard') {
       setTimeout(() => {
@@ -539,6 +586,28 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         this.patrolLine = null;
       }
     }
+  }
+
+  aprobarUsuario(usuario: any) {
+    this.http.put(`${environment.apiUrl}/usuarios/${usuario.id}/estado`, { estado: 'Activo' })
+      .subscribe({
+        next: () => {
+          this.pendingUsers = this.pendingUsers.filter(u => u.id !== usuario.id);
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.error('Error aprobando usuario', err)
+      });
+  }
+
+  rechazarUsuario(usuario: any) {
+    this.http.put(`${environment.apiUrl}/usuarios/${usuario.id}/estado`, { estado: 'Rechazado' })
+      .subscribe({
+        next: () => {
+          this.pendingUsers = this.pendingUsers.filter(u => u.id !== usuario.id);
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.error('Error rechazando usuario', err)
+      });
   }
 
   getFilteredHistory(): EmergencyCase[] {

@@ -65,4 +65,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
         return usuarioRepository.findByRut(rut)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con RUT: " + rut));
     }
+
+    @Override
+    public List<UsuarioEntity> findByEstado(String estado) {
+        return usuarioRepository.findByEstado(estado);
+    }
 }

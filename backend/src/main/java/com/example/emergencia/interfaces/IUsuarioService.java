@@ -15,4 +15,5 @@ public interface IUsuarioService {
 
     void delete(Long id);
     UsuarioEntity findByRut(String rut);
+    List<UsuarioEntity> findByEstado(String estado);
 }
