@@ -417,6 +417,9 @@
               <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 6px; color: #94a3b8;"></i>
               <span>{{ selectedEmergency.ubicacionNombre }}</span>
             </div>
+            <div class="location-home-coords" *ngIf="selectedEmergency.latCasa && selectedEmergency.lngCasa" style="font-size: 0.75rem; color: #64748b; margin-top: 4px; padding-left: 20px;">
+              <span style="font-family: monospace;">{{ selectedEmergency.latCasa | number:'1.4-4' }}, {{ selectedEmergency.lngCasa | number:'1.4-4' }}</span>
+            </div>
           </div>
 
           <!-- Ubicación de la Alerta (GPS) -->

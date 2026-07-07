@@ -47,6 +47,8 @@ interface EmergencyCase {
   notasOperador: string;
   infoMedica: string;
   nombreReferenciaCasa?: string;
+  latCasa?: number;
+  lngCasa?: number;
   entornos?: any[];
   contactosEmergencia?: any[];
 }
@@ -244,7 +246,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       mensajes: [],
       notasOperador: alerta.notasOperador || '',
       infoMedica: alerta.personaSorda ? alerta.personaSorda.infoMedica : 'Sin información médica registrada',
-      nombreReferenciaCasa: alerta.personaSorda ? alerta.personaSorda.nombreReferenciaCasa : undefined
+      nombreReferenciaCasa: alerta.personaSorda ? alerta.personaSorda.nombreReferenciaCasa : undefined,
+      latCasa: alerta.personaSorda ? alerta.personaSorda.latitudCasa : undefined,
+      lngCasa: alerta.personaSorda ? alerta.personaSorda.longitudCasa : undefined
     };
   }
 
@@ -1157,6 +1161,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       modoCamuflaje: backendAlerta.modoCamuflaje || false,
       notasOperador: backendAlerta.notasOperador || '',
       infoMedica: persona.infoMedica || 'Sin información médica registrada',
+      nombreReferenciaCasa: persona.nombreReferenciaCasa,
+      latCasa: persona.latitudCasa,
+      lngCasa: persona.longitudCasa,
       mensajes: [
         { id: 1, autor: 'usuario', texto: 'Alerta disparada desde la aplicación', hora: timeStr, esGif: false }
       ]
