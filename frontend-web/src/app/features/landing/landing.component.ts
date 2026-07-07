@@ -52,6 +52,11 @@ interface EmergencyCase {
   lngCasa?: number;
   entornos?: any[];
   contactosEmergencia?: any[];
+  patrullaInfo?: {
+    patente: string;
+    estado: string;
+    eta?: string;
+  };
 }
 
 @Component({
@@ -599,6 +604,55 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       });
 
+    // Fetch Patrulla info si el estado es Despachada
+    if (item.estado === 'Despachada' || item.estado === 'En Proceso' || item.estado === 'Finalizada') {
+      this.http.get<any[]>(`${environment.apiUrl}/api/despachos/alerta/${item.id}`).subscribe({
+        next: (despachos) => {
+          if (despachos && despachos.length > 0) {
+            const despacho = despachos[0]; // Tomar el primer despacho activo
+            const patrulla = despacho.patrulla;
+            if (patrulla) {
+              this.selectedEmergency!.patrullaInfo = {
+                patente: patrulla.patente,
+                estado: patrulla.estado,
+                eta: 'Calculando...'
+              };
+              
+              // Calculate ETA based on coordinates if patrol is moving
+              if (patrulla.longitudLatitud) {
+                const parts = patrulla.longitudLatitud.split(',');
+                if (parts.length === 2) {
+                  const pLat = parseFloat(parts[0]);
+                  const pLng = parseFloat(parts[1]);
+                  
+                  // Haversine distance
+                  const R = 6371; // km
+                  const dLat = (item.lat - pLat) * Math.PI / 180;
+                  const dLon = (item.lng - pLng) * Math.PI / 180;
+                  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                            Math.cos(pLat * Math.PI / 180) * Math.cos(item.lat * Math.PI / 180) *
+                            Math.sin(dLon/2) * Math.sin(dLon/2);
+                  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                  const d = R * c; // Distance in km
+                  
+                  // Assume 50km/h average speed in city
+                  const speedKmh = 50;
+                  const timeHours = d / speedKmh;
+                  const timeMinutes = Math.max(1, Math.round(timeHours * 60));
+                  
+                  this.selectedEmergency!.patrullaInfo.eta = `~${timeMinutes} min`;
+                }
+              } else {
+                 this.selectedEmergency!.patrullaInfo.eta = `N/A`;
+              }
+              this.cdr.detectChanges();
+            }
+          }
+        },
+        error: (err) => console.error('Error fetching despachos', err)
+      });
+    }
+
     // Reverse Geocoding (Nominatim) for Home GPS
     if (item.latCasa && item.lngCasa) {
       this.selectedEmergencyHomeStreet = 'Buscando calle...';
@@ -1024,7 +1078,15 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
             patrulla: { id: patrulla.id },
             alerta: { id: this.selectedEmergency!.id }
           }).subscribe({
-            next: (despacho) => console.log('Despacho registrado:', despacho),
+            next: (despacho) => {
+              console.log('Despacho registrado:', despacho);
+              this.selectedEmergency!.patrullaInfo = {
+                patente: patrulla.patente,
+                estado: patrulla.estado,
+                eta: '~6 min'
+              };
+              this.cdr.detectChanges();
+            },
             error: (err) => console.error('Error al registrar despacho:', err)
           });
         },
