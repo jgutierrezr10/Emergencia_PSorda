@@ -153,8 +153,8 @@ export default function SobreScreen() {
           </TouchableOpacity>
         )}
 
-        <Text style={styles.footerText}>
-          © 2024 Gobierno de Chile.{'\n'}Todos los derechos reservados.
+        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+          © {new Date().getFullYear()} Gobierno de Chile.{'\n'}Todos los derechos reservados.
         </Text>
 
       </ScrollView>

@@ -608,6 +608,23 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       });
 
+    // Reverse Geocoding (Nominatim) for Home GPS
+    this.selectedEmergencyHomeStreet = 'Buscando calle...';
+    if (item.latCasa !== undefined && item.lngCasa !== undefined) {
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.latCasa}&lon=${item.lngCasa}&zoom=18&addressdetails=1`)
+        .then(res => res.json())
+        .then(data => {
+          this.selectedEmergencyHomeStreet = data?.display_name || 'Calle de domicilio no encontrada';
+          this.cdr.detectChanges();
+        })
+        .catch(() => {
+          this.selectedEmergencyHomeStreet = 'Error de conexión (GPS Casa)';
+          this.cdr.detectChanges();
+        });
+    } else {
+      this.selectedEmergencyHomeStreet = 'Coordenadas de casa no disponibles';
+    }
+
     // Fetch Patrulla info si el estado es Despachada
     if (item.estado === 'Despachada' || item.estado === 'En Proceso' || item.estado === 'Finalizada') {
       this.http.get<any[]>(`${environment.apiUrl}/api/despachos/alerta/${item.id}`).subscribe({
