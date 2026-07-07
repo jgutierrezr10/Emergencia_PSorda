@@ -1152,6 +1152,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       ubicacionNombre: persona.direccion || 'Ubicación GPS detectada',
       lat: lat,
       lng: lng,
+      disponibleTriage: backendAlerta.disponibleTriage !== undefined ? backendAlerta.disponibleTriage : true,
       tags: ['NUEVA'],
       modoCamuflaje: backendAlerta.modoCamuflaje || false,
       notasOperador: backendAlerta.notasOperador || '',
