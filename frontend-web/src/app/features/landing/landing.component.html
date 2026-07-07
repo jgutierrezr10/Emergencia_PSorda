@@ -388,35 +388,39 @@
         </div>
       </div>
 
-      <!-- 2. Información Médica -->
-      <div class="detail-section" style="border: none; padding: 0; margin-top: 12px;">
-        <span class="section-label">INFORMACIÓN MÉDICA</span>
-        <div class="location-value" style="color: #d9534f; font-weight: bold;">
-          <i class="fa-solid fa-notes-medical" aria-hidden="true"></i>
-          <span>{{ selectedEmergency.infoMedica }}</span>
-        </div>
-      </div>
-
-      <!-- 3. Red de Apoyo (Entorno y Contactos) -->
-      <div class="detail-section" style="border: none; padding: 0; margin-top: 12px;" *ngIf="selectedEmergency.entornos?.length || selectedEmergency.contactosEmergencia?.length">
-        <span class="section-label">RED DE APOYO</span>
-        <div style="margin-top: 8px; max-height: 120px; overflow-y: auto; padding-right: 4px;" class="custom-scroll">
-          <div *ngIf="selectedEmergency.entornos?.length">
-            <strong style="color: #444; font-size: 0.8rem;"><i class="fa-solid fa-house-user"></i> Convivencia:</strong>
-            <ul style="list-style: none; padding: 0; margin: 4px 0 8px 0; font-size: 0.8rem; color: #555;">
-              <li *ngFor="let ent of selectedEmergency.entornos" style="margin-bottom: 2px;">
-                • {{ ent.nombre }} ({{ ent.parentesco }})
-              </li>
-            </ul>
+      <!-- 2. Información Médica y Red de Apoyo (Lado a lado) -->
+      <div class="details-grid-2" style="margin-top: 12px;">
+        
+        <!-- Información Médica -->
+        <div class="detail-section" style="border: none; padding: 0;">
+          <span class="section-label">INFORMACIÓN MÉDICA</span>
+          <div class="location-value" style="color: #d9534f; font-weight: bold; margin-top: 4px;">
+            <i class="fa-solid fa-notes-medical" aria-hidden="true"></i>
+            <span>{{ selectedEmergency.infoMedica }}</span>
           </div>
-          <div *ngIf="selectedEmergency.contactosEmergencia?.length">
-            <strong style="color: #444; font-size: 0.8rem;"><i class="fa-solid fa-address-book"></i> Contactos:</strong>
-            <ul style="list-style: none; padding: 0; margin: 4px 0 0 0; font-size: 0.8rem; color: #555;">
-              <li *ngFor="let cont of selectedEmergency.contactosEmergencia" style="margin-bottom: 2px;">
-                • {{ cont.nombre }} ({{ cont.relacion }})
-                <br><a href="tel:{{ cont.numero }}" style="color: #0056b3; text-decoration: none;">{{ cont.numero }}</a>
-              </li>
-            </ul>
+        </div>
+
+        <!-- Red de Apoyo -->
+        <div class="detail-section" style="border: none; padding: 0;" *ngIf="selectedEmergency.entornos?.length || selectedEmergency.contactosEmergencia?.length">
+          <span class="section-label">RED DE APOYO</span>
+          <div style="margin-top: 4px; max-height: 120px; overflow-y: auto; padding-right: 4px;" class="custom-scroll">
+            <div *ngIf="selectedEmergency.entornos?.length">
+              <strong style="color: #444; font-size: 0.8rem;"><i class="fa-solid fa-house-user"></i> Convivencia:</strong>
+              <ul style="list-style: none; padding: 0; margin: 4px 0 8px 0; font-size: 0.8rem; color: #555;">
+                <li *ngFor="let ent of selectedEmergency.entornos" style="margin-bottom: 2px;">
+                  • {{ ent.nombre }} ({{ ent.parentesco }})
+                </li>
+              </ul>
+            </div>
+            <div *ngIf="selectedEmergency.contactosEmergencia?.length">
+              <strong style="color: #444; font-size: 0.8rem;"><i class="fa-solid fa-address-book"></i> Contactos:</strong>
+              <ul style="list-style: none; padding: 0; margin: 4px 0 0 0; font-size: 0.8rem; color: #555;">
+                <li *ngFor="let cont of selectedEmergency.contactosEmergencia" style="margin-bottom: 2px;">
+                  • {{ cont.nombre }} ({{ cont.relacion }})
+                  <br><a href="tel:{{ cont.numero }}" style="color: #0056b3; text-decoration: none;">{{ cont.numero }}</a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
