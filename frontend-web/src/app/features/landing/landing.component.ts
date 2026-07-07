@@ -112,6 +112,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   newEmergencyToast = false;
   newEmergencyName = '';
 
+  // Reverse geocoding for active emergency
+  selectedEmergencyStreet = '';
+
   // Validation State
   pendingUsers: any[] = [];
   validationPollingInterval: any;
@@ -544,6 +547,19 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   selectEmergency(item: EmergencyCase) {
     this.selectedEmergency = item;
+    this.selectedEmergencyStreet = 'Buscando calle...';
+
+    // Reverse Geocoding (Nominatim)
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.lat}&lon=${item.lng}&zoom=18&addressdetails=1`)
+      .then(res => res.json())
+      .then(data => {
+        this.selectedEmergencyStreet = data?.display_name || 'Calle no encontrada en el mapa';
+        this.cdr.detectChanges();
+      })
+      .catch(() => {
+        this.selectedEmergencyStreet = 'Error de conexión (GPS)';
+        this.cdr.detectChanges();
+      });
     
     // Mover el mapa
     if (this.map && typeof L !== 'undefined') {

@@ -427,7 +427,14 @@
             <div style="font-size: 0.65rem; font-weight: 700; color: #2563EB; margin-bottom: 4px; text-transform: uppercase;">Ubicación de la Alerta (GPS)</div>
             <div class="location-coords" style="font-size: 0.85rem; font-weight: 600;">
               <i class="fa-solid fa-location-crosshairs" aria-hidden="true" style="margin-right: 4px; color: #DC2626;"></i>
-              <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #1D4ED8; text-decoration: none;">
+              <span style="font-family: monospace;">{{ selectedEmergency.lat | number:'1.4-4' }}, {{ selectedEmergency.lng | number:'1.4-4' }}</span>
+            </div>
+            <div class="location-street" style="font-size: 0.75rem; color: #475569; margin-top: 6px; padding-left: 18px; line-height: 1.2;">
+              <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
+              <span>{{ selectedEmergencyStreet }}</span>
+            </div>
+            <div style="margin-top: 6px;">
+              <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #1D4ED8; text-decoration: none; font-size: 0.8rem;">
                 Ver coordenadas en Mapa <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; margin-left: 2px;"></i>
               </a>
             </div>
