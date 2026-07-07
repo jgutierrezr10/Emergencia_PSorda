@@ -409,19 +409,29 @@
       <div class="details-grid-1">
         <div class="detail-section" style="border: none; padding: 0;">
           <span class="section-label">UBICACIÓN</span>
-          <div class="location-address" style="margin-top: 8px; margin-bottom: 6px; font-weight: 600; color: #334155; font-size: 14px;">
-            <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 6px; color: #64748b;"></i>
-            <span>{{ selectedEmergency.ubicacionNombre }}</span>
+          
+          <!-- Domicilio Registrado -->
+          <div style="margin-top: 8px; margin-bottom: 12px; background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 8px; border-radius: 6px;">
+            <div style="font-size: 0.65rem; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase;">Domicilio Registrado</div>
+            <div class="location-address" style="font-weight: 600; color: #334155; font-size: 0.85rem;">
+              <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 6px; color: #94a3b8;"></i>
+              <span>{{ selectedEmergency.ubicacionNombre }}</span>
+            </div>
+            <div class="location-ref" *ngIf="selectedEmergency.nombreReferenciaCasa" style="margin-top: 4px; font-weight: 700; color: #0284c7; font-size: 0.8rem;">
+              <i class="fa-solid fa-bookmark" aria-hidden="true" style="margin-right: 6px;"></i>
+              <span>Ref: {{ selectedEmergency.nombreReferenciaCasa }}</span>
+            </div>
           </div>
-          <div class="location-ref" *ngIf="selectedEmergency.nombreReferenciaCasa" style="margin-bottom: 6px; font-weight: bold; color: #0284c7; font-size: 13px;">
-            <i class="fa-solid fa-bookmark" aria-hidden="true" style="margin-right: 6px;"></i>
-            <span>Ref: {{ selectedEmergency.nombreReferenciaCasa }}</span>
-          </div>
-          <div class="location-coords" style="font-size: 0.85em; color: #666;">
-            <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px;"></i>
-            <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #0056b3; text-decoration: none;">
-              {{ selectedEmergency.lat }}, {{ selectedEmergency.lng }} (Mapa)
-            </a>
+
+          <!-- Ubicación de la Alerta (GPS) -->
+          <div style="background-color: #EFF6FF; border: 1px solid #BFDBFE; padding: 8px; border-radius: 6px;">
+            <div style="font-size: 0.65rem; font-weight: 700; color: #2563EB; margin-bottom: 4px; text-transform: uppercase;">Ubicación de la Alerta (GPS)</div>
+            <div class="location-coords" style="font-size: 0.85rem; font-weight: 600;">
+              <i class="fa-solid fa-location-crosshairs" aria-hidden="true" style="margin-right: 4px; color: #DC2626;"></i>
+              <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #1D4ED8; text-decoration: none;">
+                Ver coordenadas en Mapa <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; margin-left: 2px;"></i>
+              </a>
+            </div>
           </div>
         </div>
 
@@ -439,7 +449,7 @@
       <div class="details-grid-2">
         <div class="detail-section tactico-section" style="border: none; padding: 0;">
           <span class="section-label">TRIAGE (TÁCTICO)</span>
-          <div class="tactico-container" style="padding: 4px 8px; margin-top: 8px;">
+          <div class="tactico-container" style="padding: 4px 8px; margin-top: 8px;" *ngIf="selectedEmergency.disponibleTriage">
             <div class="tactico-row" style="padding: 4px 0;">
               <span>Heridos</span>
               <span [class]="'tactico-val ' + (selectedEmergency.triage.victimaHerida === 'SI' ? 'si' : 'no')">
@@ -458,6 +468,9 @@
                 {{ selectedEmergency.triage.armaFuego }}
               </span>
             </div>
+          </div>
+          <div class="tactico-container" style="padding: 8px; margin-top: 8px; background-color: #FEF2F2; color: #DC2626; font-size: 0.8rem; font-weight: 600; border: 1px solid #FEE2E2; text-align: center; border-radius: 8px;" *ngIf="!selectedEmergency.disponibleTriage">
+            <i class="fa-solid fa-user-xmark" style="margin-right: 4px;"></i> La persona no pudo responder
           </div>
         </div>
 

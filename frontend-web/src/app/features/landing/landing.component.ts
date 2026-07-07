@@ -40,6 +40,7 @@ interface EmergencyCase {
   ubicacionNombre: string;
   lat: number;
   lng: number;
+  disponibleTriage: boolean;
   tags: string[];
   modoCamuflaje: boolean;
   mensajes: ChatMessage[];
@@ -200,7 +201,13 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     const lng = Number(latLng[1]) || -70.6781;
     let hourStr = '00:00';
     if (alerta.fechaHoraInicio && alerta.fechaHoraInicio.includes('T')) {
-      hourStr = alerta.fechaHoraInicio.substring(11, 16);
+      const parts = alerta.fechaHoraInicio.split('T');
+      const dateParts = parts[0].split('-');
+      if (dateParts.length === 3) {
+        hourStr = `${dateParts[2]}/${dateParts[1]} ${parts[1].substring(0, 5)}`;
+      } else {
+        hourStr = alerta.fechaHoraInicio.substring(11, 16);
+      }
     }
     
     let estado: 'Pendiente' | 'En Proceso' | 'Despachada' | 'Finalizada' = 'Pendiente';
@@ -231,6 +238,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       ubicacionNombre: alerta.personaSorda ? alerta.personaSorda.direccion : 'Ubicación Desconocida',
       lat: lat,
       lng: lng,
+      disponibleTriage: alerta.disponibleTriage !== undefined ? alerta.disponibleTriage : true,
       tags: tags,
       modoCamuflaje: !!alerta.modoCamuflaje,
       mensajes: [],
@@ -246,7 +254,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         .subscribe({
           next: (alertas) => {
             this.ngZone.run(() => {
-              const mapped = alertas.map(a => this.mapAlertaToEmergencyCase(a));
+              const mapped = alertas.map(a => this.mapAlertaToEmergencyCase(a)).reverse();
               
               // Buscar si hay alertas nuevas pendientes
               const currentIds = this.emergencies.map(e => e.id);

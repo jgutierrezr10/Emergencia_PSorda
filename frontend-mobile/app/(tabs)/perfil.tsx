@@ -229,11 +229,27 @@ export default function PerfilScreen() {
 
   const cancelarAlarmaActiva = async () => {
     if (!currentAlertaId) return;
+    const clearLocal = async () => {
+      if (Platform.OS === 'web') {
+        localStorage.removeItem('currentAlertaId');
+      } else {
+        await SecureStore.deleteItemAsync('currentAlertaId');
+      }
+      setCurrentAlertaId(null);
+    };
+
     try {
       const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
+      
+      if (currentAlertaId === '999') {
+        await clearLocal();
+        return;
+      }
+
       const getResp = await fetch(`${baseUrl}/api/alertas/${currentAlertaId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
       if (getResp.ok) {
         const alertData = await getResp.json();
         alertData.estado = 'Finalizada';
@@ -245,22 +261,23 @@ export default function PerfilScreen() {
           },
           body: JSON.stringify(alertData)
         });
+        
         if (putResp.ok) {
-          if (Platform.OS === 'web') {
-            localStorage.setItem('currentAlertaId', '999');
-          } else {
-            await SecureStore.setItemAsync('currentAlertaId', '999');
-          }
-          setCurrentAlertaId(null);
+          await clearLocal();
           if (Platform.OS !== 'web') {
             Alert.alert('Alarma cancelada', 'La alerta ha sido cancelada exitosamente.');
           } else {
             alert('La alerta ha sido cancelada exitosamente.');
           }
+        } else {
+          await clearLocal(); // Forzamos limpieza si el PUT falla (ej. ya finalizada o borrada)
         }
+      } else {
+        await clearLocal(); // Forzamos limpieza si el GET falla (ej. borrada en DB)
       }
     } catch (e) {
       console.warn("Error al cancelar la alarma", e);
+      await clearLocal(); // Limpiar en caso de error para no quedar bloqueado
     }
   };
 
