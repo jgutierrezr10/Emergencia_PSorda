@@ -5,9 +5,11 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import * as SecureStore from 'expo-secure-store';
+import { Camera } from 'expo-camera';
 
 export default function VideollamadaScreen() {
   const [rut, setRut] = useState<string | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
     const getRut = async () => {
@@ -24,13 +26,33 @@ export default function VideollamadaScreen() {
       }
     };
     getRut();
+
+    (async () => {
+      const cameraStatus = await Camera.requestCameraPermissionsAsync();
+      const audioStatus = await Camera.requestMicrophonePermissionsAsync();
+      setHasPermission(cameraStatus.status === 'granted' && audioStatus.status === 'granted');
+    })();
   }, []);
 
-  if (!rut) {
+  if (!rut || hasPermission === null) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#10b981" />
         <Text style={styles.loadingText}>Conectando videollamada...</Text>
+      </View>
+    );
+  }
+
+  if (hasPermission === false) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="camera-outline" size={48} color="#ef4444" />
+        <Text style={[styles.loadingText, { color: '#ef4444', marginTop: 10, textAlign: 'center' }]}>
+          Se necesitan permisos de cámara y micrófono para la videollamada.
+        </Text>
+        <TouchableOpacity style={{ marginTop: 20, padding: 10, backgroundColor: '#10b981', borderRadius: 8 }} onPress={() => router.back()}>
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>Volver</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -47,6 +69,8 @@ export default function VideollamadaScreen() {
         domStorageEnabled={true}
         allowsInlineMediaPlayback={true}
         mediaPlaybackRequiresUserAction={false}
+        // Configs for WebRTC inside Android WebView
+        mediaCapturePermissionGrantType="grant"
       />
       
       <TouchableOpacity style={styles.btnVolver} onPress={() => router.back()}>

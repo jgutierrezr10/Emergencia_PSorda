@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, StyleSheet, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
@@ -32,7 +32,28 @@ export default function RegistroScreen() {
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [documentoUri, setDocumentoUri] = useState<string | null>(null);
 
-  const pickDocument = async () => {
+  const abrirCamara = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso denegado', 'Necesitamos acceso a la cámara para tomar fotos.');
+      return;
+    }
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setDocumentoUri(result.assets[0].uri);
+    }
+  };
+
+  const abrirGaleria = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso denegado', 'Necesitamos acceso a tu galería para elegir fotos.');
+      return;
+    }
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -222,10 +243,21 @@ export default function RegistroScreen() {
 
             <View style={styles.uploadGroup}>
               <Text style={styles.label}>CREDENCIAL DE DISCAPACIDAD</Text>
-              <TouchableOpacity style={styles.uploadButton} onPress={pickDocument}>
-                <Ionicons name="camera-outline" size={24} color={colors.primary} />
-                <Text style={styles.uploadButtonText}>{documentoUri ? 'FOTO SELECCIONADA' : 'TOMAR O SUBIR FOTO'}</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity style={[styles.uploadButton, { flex: 1, paddingHorizontal: 5 }]} onPress={abrirCamara}>
+                  <Ionicons name="camera" size={24} color={colors.primary} />
+                  <Text style={[styles.uploadButtonText, { fontSize: 11 }]} numberOfLines={1}>CÁMARA</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.uploadButton, { flex: 1, paddingHorizontal: 5 }]} onPress={abrirGaleria}>
+                  <Ionicons name="image" size={24} color={colors.primary} />
+                  <Text style={[styles.uploadButtonText, { fontSize: 11 }]} numberOfLines={1}>GALERÍA</Text>
+                </TouchableOpacity>
+              </View>
+              {documentoUri && (
+                <Text style={{ textAlign: 'center', color: colors.primary, marginTop: 8, fontSize: 12, fontWeight: 'bold' }}>
+                  FOTO SELECCIONADA ✓
+                </Text>
+              )}
             </View>
 
             {/* CHECKBOX DE TÉRMINOS Y CONDICIONES (Modificado) */}

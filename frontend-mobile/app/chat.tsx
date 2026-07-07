@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
@@ -224,13 +224,35 @@ export default function ChatScreen() {
     }
   };
 
-  const seleccionarArchivo = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All, // Permite videos e imágenes
+  const abrirCamara = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso denegado', 'Se necesita acceso a la cámara.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: false,
       quality: 0.8,
     });
+    procesarAsset(result);
+  };
 
+  const abrirGaleria = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso denegado', 'Se necesita acceso a la galería.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: false,
+      quality: 0.8,
+    });
+    procesarAsset(result);
+  };
+
+  const procesarAsset = async (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
       const uri = asset.uri;
@@ -356,7 +378,10 @@ export default function ChatScreen() {
         </View>
 
         <View style={styles.inputRow}>
-          <TouchableOpacity style={styles.attachBtn} onPress={seleccionarArchivo}>
+          <TouchableOpacity style={[styles.attachBtn, { marginRight: 4 }]} onPress={abrirCamara}>
+            <Ionicons name="camera" size={26} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.attachBtn} onPress={abrirGaleria}>
             <Ionicons name="attach" size={26} color={colors.textSecondary} />
           </TouchableOpacity>
           <TextInput

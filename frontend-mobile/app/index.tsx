@@ -41,7 +41,7 @@ export default function LoginScreen() {
         const estado = await obtenerDato('estado');
         if (token && rol === 'Sordo') {
           if (estado === 'Pendiente' || estado === 'Rechazado') {
-            router.replace('/pendiente');
+            router.replace('/pendiente' as any);
           } else {
             router.replace('/(tabs)/home');
           }
