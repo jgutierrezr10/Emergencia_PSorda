@@ -122,6 +122,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   // Reverse geocoding for active emergency
   selectedEmergencyStreet = '';
   selectedEmergencyHomeStreet = '';
+  showFullAlertAddress = false;
+  showFullHomeAddress = false;
 
   // Validation State
   pendingUsers: any[] = [];
@@ -591,6 +593,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   selectEmergency(item: EmergencyCase) {
     this.selectedEmergency = item;
     this.selectedEmergencyStreet = 'Buscando calle...';
+    this.showFullAlertAddress = false;
+    this.showFullHomeAddress = false;
 
     // Reverse Geocoding (Nominatim) for Alert GPS
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.lat}&lon=${item.lng}&zoom=18&addressdetails=1`)

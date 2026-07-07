@@ -370,35 +370,35 @@
       <!-- ========================================== -->
       <!-- GRUPO: DATOS DEL CIUDADANO                 -->
       <!-- ========================================== -->
-      <span class="section-label" style="display: block; margin-bottom: 8px;">DATOS DEL CIUDADANO</span>
+      <div style="background-color: #1E293B; color: #FFFFFF; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-address-card"></i> DATOS DEL CIUDADANO
+      </div>
       
-      <!-- 1. Perfil Principal -->
-      <div class="citizen-profile-header">
-        <div class="avatar-circle" aria-hidden="true">
-          <i class="fa-solid fa-user-injured" *ngIf="selectedEmergency.triage.victimaHerida === 'SI'"></i>
-          <i class="fa-solid fa-user" *ngIf="selectedEmergency.triage.victimaHerida !== 'SI'"></i>
+      <!-- 1. Perfil Principal e Info Médica -->
+      <div class="citizen-profile-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="avatar-circle" aria-hidden="true">
+            <i class="fa-solid fa-user-injured" *ngIf="selectedEmergency.triage.victimaHerida === 'SI'"></i>
+            <i class="fa-solid fa-user" *ngIf="selectedEmergency.triage.victimaHerida !== 'SI'"></i>
+          </div>
+          <div class="profile-info">
+            <h4>{{ selectedEmergency.nombre }}</h4>
+            <span class="profile-rut">
+              {{ selectedEmergency.rut }} 
+              <span style="margin: 0 8px; color: #cbd5e1;">|</span> 
+              <i class="fa-solid fa-phone" style="font-size: 12px; margin-right: 4px;"></i>{{ selectedEmergency.telefono }}
+            </span>
+          </div>
         </div>
-        <div class="profile-info">
-          <h4>{{ selectedEmergency.nombre }}</h4>
-          <span class="profile-rut">
-            {{ selectedEmergency.rut }} 
-            <span style="margin: 0 8px; color: #cbd5e1;">|</span> 
-            <i class="fa-solid fa-phone" style="font-size: 12px; margin-right: 4px;"></i>{{ selectedEmergency.telefono }}
-          </span>
+        <div class="medical-info-badge" style="background-color: #FEF2F2; color: #DC2626; padding: 4px 8px; border-radius: 4px; border: 1px solid #FEE2E2; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 4px; max-width: 130px;">
+          <i class="fa-solid fa-notes-medical" aria-hidden="true"></i>
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="selectedEmergency.infoMedica">{{ selectedEmergency.infoMedica }}</span>
         </div>
       </div>
 
-      <!-- 2. Información Médica, Domicilio Registrado y Red de Apoyo (Apilados) -->
-      <div class="details-grid-3" style="margin-top: 12px;">
+      <!-- 2. Domicilio Registrado y Red de Apoyo (Apilados) -->
+      <div class="details-grid-2" style="margin-top: 10px;">
         
-        <!-- Información Médica -->
-        <div class="detail-section" style="border: none; padding: 0;">
-          <span class="section-label">INFORMACIÓN MÉDICA</span>
-          <div class="location-value" style="color: #d9534f; font-weight: bold; margin-top: 4px;">
-            <i class="fa-solid fa-notes-medical" aria-hidden="true"></i>
-            <span>{{ selectedEmergency.infoMedica }}</span>
-          </div>
-        </div>
 
         <!-- Domicilio Registrado -->
         <div class="detail-section" style="border: none; padding: 0;">
@@ -413,7 +413,11 @@
             </div>
             <div class="location-home-street" *ngIf="selectedEmergencyHomeStreet" style="font-size: 0.7rem; color: #475569; margin-top: 2px; padding-left: 18px; line-height: 1.1;">
               <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
-              <span>{{ selectedEmergencyHomeStreet }}</span>
+              <span *ngIf="!showFullHomeAddress" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ selectedEmergencyHomeStreet }}</span>
+              <span *ngIf="showFullHomeAddress">{{ selectedEmergencyHomeStreet }}</span>
+              <button (click)="showFullHomeAddress = !showFullHomeAddress" style="background: none; border: none; color: #2563EB; font-size: 0.65rem; padding: 0; cursor: pointer; text-decoration: underline; margin-top: 2px;">
+                {{ showFullHomeAddress ? 'Ver menos' : 'Ver más' }}
+              </button>
             </div>
             <div *ngIf="selectedEmergency.latCasa && selectedEmergency.lngCasa" style="margin-top: 4px; padding-left: 18px;">
               <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.latCasa }},{{ selectedEmergency.lngCasa }}" target="_blank" style="color: #1D4ED8; text-decoration: none; font-size: 0.75rem;">
@@ -453,7 +457,9 @@
       <!-- ========================================== -->
       <!-- GRUPO: DATOS DE LA ALERTA                  -->
       <!-- ========================================== -->
-      <span class="section-label" style="display: block; margin-bottom: 12px; margin-top: 4px;">DATOS DE LA ALERTA</span>
+      <div style="background-color: #1E293B; color: #FFFFFF; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-bell"></i> DATOS DE LA ALERTA
+      </div>
       
       <!-- 1. Tipo, GPS, y Triage (Apilados) -->
       <div class="details-grid-3">
@@ -484,7 +490,11 @@
             </div>
             <div class="location-street" style="font-size: 0.7rem; color: #475569; margin-top: 4px; padding-left: 14px; line-height: 1.1;">
               <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
-              <span>{{ selectedEmergencyStreet }}</span>
+              <span *ngIf="!showFullAlertAddress" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ selectedEmergencyStreet }}</span>
+              <span *ngIf="showFullAlertAddress">{{ selectedEmergencyStreet }}</span>
+              <button (click)="showFullAlertAddress = !showFullAlertAddress" style="background: none; border: none; color: #2563EB; font-size: 0.65rem; padding: 0; cursor: pointer; text-decoration: underline; margin-top: 2px;">
+                {{ showFullAlertAddress ? 'Ver menos' : 'Ver más' }}
+              </button>
             </div>
             <div style="margin-top: 4px; padding-left: 14px;">
               <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #1D4ED8; text-decoration: none; font-size: 0.75rem;">
