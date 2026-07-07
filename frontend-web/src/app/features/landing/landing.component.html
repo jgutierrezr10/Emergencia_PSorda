@@ -388,8 +388,8 @@
         </div>
       </div>
 
-      <!-- 2. Información Médica y Red de Apoyo (Lado a lado) -->
-      <div class="details-grid-2" style="margin-top: 12px;">
+      <!-- 2. Información Médica, Domicilio Registrado y Red de Apoyo (Apilados) -->
+      <div class="details-grid-3" style="margin-top: 12px;">
         
         <!-- Información Médica -->
         <div class="detail-section" style="border: none; padding: 0;">
@@ -400,13 +400,36 @@
           </div>
         </div>
 
+        <!-- Domicilio Registrado -->
+        <div class="detail-section" style="border: none; padding: 0;">
+          <span class="section-label">DOMICILIO REGISTRADO</span>
+          <div style="margin-top: 4px; background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 6px; border-radius: 6px;">
+            <div class="location-address" style="font-weight: 600; color: #334155; font-size: 0.8rem;">
+              <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
+              <span>{{ selectedEmergency.ubicacionNombre }}</span>
+            </div>
+            <div class="location-home-coords" *ngIf="selectedEmergency.latCasa && selectedEmergency.lngCasa" style="font-size: 0.7rem; color: #64748b; margin-top: 2px; padding-left: 18px;">
+              <span style="font-family: monospace;">{{ selectedEmergency.latCasa | number:'1.4-4' }}, {{ selectedEmergency.lngCasa | number:'1.4-4' }}</span>
+            </div>
+            <div class="location-home-street" *ngIf="selectedEmergencyHomeStreet" style="font-size: 0.7rem; color: #475569; margin-top: 2px; padding-left: 18px; line-height: 1.1;">
+              <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
+              <span>{{ selectedEmergencyHomeStreet }}</span>
+            </div>
+            <div *ngIf="selectedEmergency.latCasa && selectedEmergency.lngCasa" style="margin-top: 4px; padding-left: 18px;">
+              <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.latCasa }},{{ selectedEmergency.lngCasa }}" target="_blank" style="color: #1D4ED8; text-decoration: none; font-size: 0.75rem;">
+                Ver en Mapa <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem;"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
         <!-- Red de Apoyo -->
         <div class="detail-section" style="border: none; padding: 0;" *ngIf="selectedEmergency.entornos?.length || selectedEmergency.contactosEmergencia?.length">
           <span class="section-label">RED DE APOYO</span>
           <div style="margin-top: 4px; max-height: 120px; overflow-y: auto; padding-right: 4px;" class="custom-scroll">
             <div *ngIf="selectedEmergency.entornos?.length">
               <strong style="color: #444; font-size: 0.8rem;"><i class="fa-solid fa-house-user"></i> Convivencia:</strong>
-              <ul style="list-style: none; padding: 0; margin: 4px 0 8px 0; font-size: 0.8rem; color: #555;">
+              <ul style="list-style: none; padding: 0; margin: 2px 0 6px 0; font-size: 0.75rem; color: #555;">
                 <li *ngFor="let ent of selectedEmergency.entornos" style="margin-bottom: 2px;">
                   • {{ ent.nombre }} ({{ ent.parentesco }})
                 </li>
@@ -414,37 +437,13 @@
             </div>
             <div *ngIf="selectedEmergency.contactosEmergencia?.length">
               <strong style="color: #444; font-size: 0.8rem;"><i class="fa-solid fa-address-book"></i> Contactos:</strong>
-              <ul style="list-style: none; padding: 0; margin: 4px 0 0 0; font-size: 0.8rem; color: #555;">
+              <ul style="list-style: none; padding: 0; margin: 2px 0 0 0; font-size: 0.75rem; color: #555;">
                 <li *ngFor="let cont of selectedEmergency.contactosEmergencia" style="margin-bottom: 2px;">
                   • {{ cont.nombre }} ({{ cont.relacion }})
                   <br><a href="tel:{{ cont.numero }}" style="color: #0056b3; text-decoration: none;">{{ cont.numero }}</a>
                 </li>
               </ul>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Domicilio Registrado -->
-      <div class="detail-section" style="border: none; padding: 0; margin-top: 12px;">
-        <span class="section-label">UBICACIÓN REGISTRADA</span>
-        <div style="margin-top: 8px; background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 8px; border-radius: 6px;">
-          <div style="font-size: 0.65rem; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase;">Domicilio del Ciudadano</div>
-          <div class="location-address" style="font-weight: 600; color: #334155; font-size: 0.85rem;">
-            <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 6px; color: #94a3b8;"></i>
-            <span>{{ selectedEmergency.ubicacionNombre }}</span>
-          </div>
-          <div class="location-home-coords" *ngIf="selectedEmergency.latCasa && selectedEmergency.lngCasa" style="font-size: 0.75rem; color: #64748b; margin-top: 4px; padding-left: 20px;">
-            <span style="font-family: monospace;">{{ selectedEmergency.latCasa | number:'1.4-4' }}, {{ selectedEmergency.lngCasa | number:'1.4-4' }}</span>
-          </div>
-          <div class="location-home-street" *ngIf="selectedEmergencyHomeStreet" style="font-size: 0.75rem; color: #475569; margin-top: 4px; padding-left: 20px; line-height: 1.2;">
-            <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
-            <span>{{ selectedEmergencyHomeStreet }}</span>
-          </div>
-          <div *ngIf="selectedEmergency.latCasa && selectedEmergency.lngCasa" style="margin-top: 6px; padding-left: 20px;">
-            <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.latCasa }},{{ selectedEmergency.lngCasa }}" target="_blank" style="color: #1D4ED8; text-decoration: none; font-size: 0.8rem;">
-              Ver casa en Mapa <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; margin-left: 2px;"></i>
-            </a>
           </div>
         </div>
       </div>
@@ -456,77 +455,71 @@
       <!-- ========================================== -->
       <span class="section-label" style="display: block; margin-bottom: 12px; margin-top: 4px;">DATOS DE LA ALERTA</span>
       
-      <!-- 1. Tipo y Estado -->
-      <div class="details-grid-2">
+      <!-- 1. Tipo, GPS, y Triage (Apilados) -->
+      <div class="details-grid-3">
+        <!-- Tipo y Estado -->
         <div class="detail-section" style="border: none; padding: 0;">
-          <span class="section-label">TIPO DE INCIDENTE</span>
-          <div class="incident-value">
+          <span class="section-label">TIPO / ESTADO</span>
+          <div class="incident-value" style="margin-top: 4px;">
             <i class="fa-solid fa-triangle-exclamation text-danger" aria-hidden="true"></i>
-            <span>{{ selectedEmergency.incidente }}</span>
+            <span style="font-size: 0.85rem;">{{ selectedEmergency.incidente }}</span>
           </div>
-        </div>
-        <div class="detail-section" style="border: none; padding: 0;">
-          <span class="section-label">ESTADO E INGRESO</span>
-          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 2px;">
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
             <span class="status-badge-inline" [ngClass]="selectedEmergency.estado.toLowerCase().replace(' ', '-')">
               {{ selectedEmergency.estado }}
             </span>
-            <span class="time-value" style="font-size: 0.8rem; color: #64748b; margin-right: 12px;">
+            <span class="time-value" style="font-size: 0.75rem; color: #64748b;">
               <i class="fa-regular fa-clock"></i> {{ selectedEmergency.horaIngreso }}
             </span>
-            <span class="time-value" *ngIf="selectedEmergency.horaFin" style="font-size: 0.8rem; color: #64748b;">
-              <i class="fa-solid fa-flag-checkered"></i> Fin: {{ selectedEmergency.horaFin }}
-            </span>
           </div>
         </div>
-      </div>
 
-      <!-- 2. Ubicación GPS de la Alerta -->
-      <div class="detail-section" style="border: none; padding: 0; margin-top: 12px;">
-        <span class="section-label">UBICACIÓN DEL SUCESO</span>
-        <div style="background-color: #EFF6FF; border: 1px solid #BFDBFE; padding: 8px; border-radius: 6px; margin-top: 8px;">
-          <div style="font-size: 0.65rem; font-weight: 700; color: #2563EB; margin-bottom: 4px; text-transform: uppercase;">Ubicación de la Alerta (GPS)</div>
-          <div class="location-coords" style="font-size: 0.85rem; font-weight: 600;">
-            <i class="fa-solid fa-location-crosshairs" aria-hidden="true" style="margin-right: 4px; color: #DC2626;"></i>
-            <span style="font-family: monospace;">{{ selectedEmergency.lat | number:'1.4-4' }}, {{ selectedEmergency.lng | number:'1.4-4' }}</span>
-          </div>
-          <div class="location-street" style="font-size: 0.75rem; color: #475569; margin-top: 6px; padding-left: 18px; line-height: 1.2;">
-            <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
-            <span>{{ selectedEmergencyStreet }}</span>
-          </div>
-          <div style="margin-top: 6px;">
-            <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #1D4ED8; text-decoration: none; font-size: 0.8rem;">
-              Ver coordenadas en Mapa <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; margin-left: 2px;"></i>
-            </a>
+        <!-- Ubicación GPS de la Alerta -->
+        <div class="detail-section" style="border: none; padding: 0;">
+          <span class="section-label">UBICACIÓN GPS</span>
+          <div style="background-color: #EFF6FF; border: 1px solid #BFDBFE; padding: 6px; border-radius: 6px; margin-top: 4px;">
+            <div class="location-coords" style="font-size: 0.8rem; font-weight: 600;">
+              <i class="fa-solid fa-location-crosshairs" aria-hidden="true" style="margin-right: 4px; color: #DC2626;"></i>
+              <span style="font-family: monospace;">{{ selectedEmergency.lat | number:'1.4-4' }}, {{ selectedEmergency.lng | number:'1.4-4' }}</span>
+            </div>
+            <div class="location-street" style="font-size: 0.7rem; color: #475569; margin-top: 4px; padding-left: 14px; line-height: 1.1;">
+              <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
+              <span>{{ selectedEmergencyStreet }}</span>
+            </div>
+            <div style="margin-top: 4px; padding-left: 14px;">
+              <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.lat }},{{ selectedEmergency.lng }}" target="_blank" style="color: #1D4ED8; text-decoration: none; font-size: 0.75rem;">
+                Ver en Mapa <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem;"></i>
+              </a>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 3. Triage Táctico -->
-      <div class="detail-section tactico-section" style="border: none; padding: 0; margin-top: 12px;">
-        <span class="section-label">TRIAGE (TÁCTICO)</span>
-        <div class="tactico-container" style="padding: 4px 8px; margin-top: 8px;" *ngIf="selectedEmergency.disponibleTriage">
-          <div class="tactico-row" style="padding: 4px 0;">
-            <span>Heridos</span>
-            <span [class]="'tactico-val ' + (selectedEmergency.triage.victimaHerida === 'SI' ? 'si' : 'no')">
-              {{ selectedEmergency.triage.victimaHerida }}
-            </span>
+        <!-- Triage Táctico -->
+        <div class="detail-section tactico-section" style="border: none; padding: 0;">
+          <span class="section-label">TRIAGE (TÁCTICO)</span>
+          <div class="tactico-container" style="padding: 4px; margin-top: 4px;" *ngIf="selectedEmergency.disponibleTriage">
+            <div class="tactico-row" style="padding: 2px 0;">
+              <span style="font-size: 0.75rem;">Heridos</span>
+              <span [class]="'tactico-val ' + (selectedEmergency.triage.victimaHerida === 'SI' ? 'si' : 'no')">
+                {{ selectedEmergency.triage.victimaHerida }}
+              </span>
+            </div>
+            <div class="tactico-row" style="padding: 2px 0;">
+              <span style="font-size: 0.75rem;">Agresor</span>
+              <span [class]="'tactico-val ' + (selectedEmergency.triage.agresorLugar === 'SI' ? 'si' : 'no')">
+                {{ selectedEmergency.triage.agresorLugar }}
+              </span>
+            </div>
+            <div class="tactico-row" style="padding: 2px 0;">
+              <span style="font-size: 0.75rem;">Armas</span>
+              <span [class]="'tactico-val ' + (selectedEmergency.triage.armaFuego === 'SI' ? 'si' : 'no')">
+                {{ selectedEmergency.triage.armaFuego }}
+              </span>
+            </div>
           </div>
-          <div class="tactico-row" style="padding: 4px 0;">
-            <span>Agresor en el Lugar</span>
-            <span [class]="'tactico-val ' + (selectedEmergency.triage.agresorLugar === 'SI' ? 'si' : 'no')">
-              {{ selectedEmergency.triage.agresorLugar }}
-            </span>
+          <div class="tactico-container" style="padding: 6px; margin-top: 4px; background-color: #FEF2F2; color: #DC2626; font-size: 0.75rem; font-weight: 600; border: 1px solid #FEE2E2; text-align: center; border-radius: 6px;" *ngIf="!selectedEmergency.disponibleTriage">
+            <i class="fa-solid fa-user-xmark" style="margin-right: 2px;"></i> No respondió
           </div>
-          <div class="tactico-row" style="padding: 4px 0;">
-            <span>Presencia de Armas</span>
-            <span [class]="'tactico-val ' + (selectedEmergency.triage.armaFuego === 'SI' ? 'si' : 'no')">
-              {{ selectedEmergency.triage.armaFuego }}
-            </span>
-          </div>
-        </div>
-        <div class="tactico-container" style="padding: 8px; margin-top: 8px; background-color: #FEF2F2; color: #DC2626; font-size: 0.8rem; font-weight: 600; border: 1px solid #FEE2E2; text-align: center; border-radius: 8px;" *ngIf="!selectedEmergency.disponibleTriage">
-          <i class="fa-solid fa-user-xmark" style="margin-right: 4px;"></i> La persona no pudo responder
         </div>
       </div>
       <hr class="section-divider">
