@@ -35,6 +35,9 @@ function RootNav() {
         <Stack.Screen name="snake" options={{ headerShown: false }} />
         {/* NUEVA PANTALLA DE TÉRMINOS */}
         <Stack.Screen name="terminos" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="privacidad" options={{ headerShown: false }} />
+        <Stack.Screen name="ayuda" options={{ headerShown: false }} />
+        <Stack.Screen name="sobre" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <BotonSnake />

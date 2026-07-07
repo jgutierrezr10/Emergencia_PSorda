@@ -226,61 +226,6 @@ export default function PerfilScreen() {
     }
     router.replace('/');
   };
-
-  const cancelarAlarmaActiva = async () => {
-    if (!currentAlertaId) return;
-    const clearLocal = async () => {
-      if (Platform.OS === 'web') {
-        localStorage.removeItem('currentAlertaId');
-      } else {
-        await SecureStore.deleteItemAsync('currentAlertaId');
-      }
-      setCurrentAlertaId(null);
-    };
-
-    try {
-      const token = await (Platform.OS === 'web' ? localStorage.getItem('token') : SecureStore.getItemAsync('token'));
-      
-      if (currentAlertaId === '999') {
-        await clearLocal();
-        return;
-      }
-
-      const getResp = await fetch(`${baseUrl}/api/alertas/${currentAlertaId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (getResp.ok) {
-        const alertData = await getResp.json();
-        alertData.estado = 'Finalizada';
-        const putResp = await fetch(`${baseUrl}/api/alertas/${currentAlertaId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(alertData)
-        });
-        
-        if (putResp.ok) {
-          await clearLocal();
-          if (Platform.OS !== 'web') {
-            Alert.alert('Alarma cancelada', 'La alerta ha sido cancelada exitosamente.');
-          } else {
-            alert('La alerta ha sido cancelada exitosamente.');
-          }
-        } else {
-          await clearLocal(); // Forzamos limpieza si el PUT falla (ej. ya finalizada o borrada)
-        }
-      } else {
-        await clearLocal(); // Forzamos limpieza si el GET falla (ej. borrada en DB)
-      }
-    } catch (e) {
-      console.warn("Error al cancelar la alarma", e);
-      await clearLocal(); // Limpiar en caso de error para no quedar bloqueado
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -477,11 +422,7 @@ export default function PerfilScreen() {
           <Text style={styles.btnCerrarSesionTexto}>CERRAR SESIÓN</Text>
         </TouchableOpacity>
 
-        {currentAlertaId && (
-          <TouchableOpacity style={styles.btnCancelarOculto} onPress={cancelarAlarmaActiva}>
-            <Text style={styles.btnCancelarOcultoTexto}>Cancelar emergencia activa (Solo en caso de error)</Text>
-          </TouchableOpacity>
-        )}
+
 
         <Text style={styles.footer}>
           APP EMERGENCIA GENTE SORDA v1.0.0{'\n'}CON APOYO DE CENCO CHILE

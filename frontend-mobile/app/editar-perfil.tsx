@@ -22,6 +22,7 @@ export default function EditarPerfilScreen() {
   const [longitudCasa, setLongitudCasa] = useState('');
   const [nombreReferenciaCasa, setNombreReferenciaCasa] = useState('');
   const [personaSordaId, setPersonaSordaId] = useState<number | null>(null);
+  const [alertaActiva, setAlertaActiva] = useState(false);
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,6 +56,16 @@ export default function EditarPerfilScreen() {
             setLatitudCasa(dataPS.latitudCasa || '');
             setLongitudCasa(dataPS.longitudCasa || '');
             setNombreReferenciaCasa(dataPS.nombreReferenciaCasa || '');
+          }
+          
+          const resActivas = await fetch(`${baseUrl}/api/alertas/activas/${rut}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resActivas.ok) {
+            const dataActivas = await resActivas.json();
+            if (dataActivas && dataActivas.length > 0) {
+              setAlertaActiva(true);
+            }
           }
         }
       } catch (err) {
@@ -160,6 +171,26 @@ export default function EditarPerfilScreen() {
     { label: 'LATITUD (CASA)', icon: 'navigate-outline' as const, ph: 'Ej: -33.45', val: latitudCasa, set: setLatitudCasa, kt: 'default' as const },
     { label: 'LONGITUD (CASA)', icon: 'navigate-outline' as const, ph: 'Ej: -70.66', val: longitudCasa, set: setLongitudCasa, kt: 'default' as const },
   ];
+
+  if (alertaActiva) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backLink} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={colors.primaryText} />
+          </TouchableOpacity>
+          <Text style={styles.title}>PERFIL</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <Ionicons name="warning-outline" size={64} color={colors.danger} style={{ marginBottom: 16 }} />
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.textPrimary, textAlign: 'center', marginBottom: 8 }}>ALERTA ACTIVA</Text>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 }}>
+            No puedes modificar tus datos personales mientras tengas una emergencia en curso. Finaliza la alerta para poder editar tu perfil.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
