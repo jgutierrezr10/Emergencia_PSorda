@@ -370,7 +370,7 @@
       <!-- ========================================== -->
       <!-- GRUPO: DATOS DEL CIUDADANO                 -->
       <!-- ========================================== -->
-      <div style="background-color: #1E293B; color: #FFFFFF; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+      <div style="background-color: #1b3b2c; color: #FFFFFF; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
         <i class="fa-solid fa-address-card"></i> DATOS DEL CIUDADANO
       </div>
       
@@ -454,30 +454,13 @@
       <!-- ========================================== -->
       <!-- GRUPO: DATOS DE LA ALERTA                  -->
       <!-- ========================================== -->
-      <div style="background-color: #1E293B; color: #FFFFFF; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 12px; display: flex; align-items: center; gap: 6px;">
+      <div style="background-color: #1b3b2c; color: #FFFFFF; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 12px; display: flex; align-items: center; gap: 6px;">
         <i class="fa-solid fa-bell"></i> DATOS DE LA ALERTA
       </div>
       
-      <!-- 1. Tipo, GPS, y Triage (Apilados) -->
+      <!-- 1. GPS, Tipo, y Triage (Apilados) -->
       <div class="details-grid-3">
-        <!-- Tipo y Estado -->
-        <div class="detail-section" style="border: none; padding: 0;">
-          <span class="section-label">TIPO / ESTADO</span>
-          <div class="incident-value" style="margin-top: 4px;">
-            <i class="fa-solid fa-triangle-exclamation text-danger" aria-hidden="true"></i>
-            <span style="font-size: 0.85rem;">{{ selectedEmergency.incidente }}</span>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
-            <span class="status-badge-inline" [ngClass]="selectedEmergency.estado.toLowerCase().replace(' ', '-')">
-              {{ selectedEmergency.estado }}
-            </span>
-            <span class="time-value" style="font-size: 0.75rem; color: #64748b;">
-              <i class="fa-regular fa-clock"></i> {{ selectedEmergency.horaIngreso }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Ubicación GPS de la Alerta -->
+        <!-- Ubicación GPS de la Alerta (A la izquierda) -->
         <div class="detail-section" style="border: none; padding: 0;">
           <span class="section-label">UBICACIÓN GPS</span>
           <div style="background-color: #EFF6FF; border: 1px solid #BFDBFE; padding: 6px; border-radius: 6px; margin-top: 4px;">
@@ -498,6 +481,23 @@
                 Ver en Mapa <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem;"></i>
               </a>
             </div>
+          </div>
+        </div>
+
+        <!-- Tipo y Estado (Al medio) -->
+        <div class="detail-section" style="border: none; padding: 0;">
+          <span class="section-label">TIPO / ESTADO</span>
+          <div class="incident-value" style="margin-top: 4px;">
+            <i class="fa-solid fa-triangle-exclamation text-danger" aria-hidden="true"></i>
+            <span style="font-size: 0.85rem;">{{ selectedEmergency.incidente }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+            <span class="status-badge-inline" [ngClass]="selectedEmergency.estado.toLowerCase().replace(' ', '-')">
+              {{ selectedEmergency.estado }}
+            </span>
+            <span class="time-value" style="font-size: 0.75rem; color: #64748b;">
+              <i class="fa-regular fa-clock"></i> {{ selectedEmergency.horaIngreso }}
+            </span>
           </div>
         </div>
 
@@ -552,10 +552,8 @@
           </div>
         </div>
       </div>
-      <hr class="section-divider" *ngIf="selectedEmergency.patrullaInfo">
-
       <!-- ACCIONES DE DESPACHO DE EMERGENCIAS -->
-      <div class="detail-section action-buttons-section">
+      <div class="detail-section action-buttons-section" style="margin-top: 12px; border: none; padding: 0;">
         <button class="btn-action dispatch-patrol" 
                 [disabled]="selectedEmergency.estado === 'Despachada' || selectedEmergency.estado === 'Finalizada'"
                 (click)="dispatchUnit('patrulla')" 
