@@ -38,6 +38,9 @@ public class PersonaSordaServiceImpl implements IPersonaSordaService {
         existente.setInfoMedica(personaSorda.getInfoMedica());
         existente.setUsuario(personaSorda.getUsuario());
         existente.setDocumentoValidacionUrl(personaSorda.getDocumentoValidacionUrl());
+        existente.setLatitudCasa(personaSorda.getLatitudCasa());
+        existente.setLongitudCasa(personaSorda.getLongitudCasa());
+        existente.setNombreReferenciaCasa(personaSorda.getNombreReferenciaCasa());
         return personaSordaRepository.save(existente);
     }
 
