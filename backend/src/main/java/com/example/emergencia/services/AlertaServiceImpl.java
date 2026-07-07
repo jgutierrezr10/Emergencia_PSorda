@@ -41,6 +41,9 @@ public class AlertaServiceImpl implements IAlertaService {
         existente.setLatitudLongitud(alerta.getLatitudLongitud());
         existente.setDisponibleTriage(alerta.getDisponibleTriage());
         existente.setEstado(alerta.getEstado());
+        if ("Finalizada".equals(alerta.getEstado()) && existente.getFechaHoraFin() == null) {
+            existente.setFechaHoraFin(java.time.LocalDateTime.now());
+        }
         existente.setPersonaSorda(alerta.getPersonaSorda());
         existente.setNotasOperador(alerta.getNotasOperador());
         return alertaRepository.save(existente);

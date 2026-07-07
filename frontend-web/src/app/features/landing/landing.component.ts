@@ -35,6 +35,7 @@ interface EmergencyCase {
   telefono: string;
   incidente: string;
   horaIngreso: string;
+  horaFin?: string;
   estado: 'Pendiente' | 'En Proceso' | 'Despachada' | 'Finalizada';
   triage: TriageInfo;
   ubicacionNombre: string;
@@ -90,6 +91,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   // Map reference
   private map: any;
   private marker: any;
+  private homeMarker: any;
   private patrolMarker: any;
   private patrolLine: any;
   private patrolInterval: any;
@@ -215,6 +217,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         hourStr = alerta.fechaHoraInicio.substring(11, 16);
       }
     }
+
+    let hourFinStr: string | undefined = undefined;
+    if (alerta.fechaHoraFin && alerta.fechaHoraFin.includes('T')) {
+      const parts = alerta.fechaHoraFin.split('T');
+      const dateParts = parts[0].split('-');
+      if (dateParts.length === 3) {
+        hourFinStr = `${dateParts[2]}/${dateParts[1]} ${parts[1].substring(0, 5)}`;
+      } else {
+        hourFinStr = alerta.fechaHoraFin.substring(11, 16);
+      }
+    }
     
     let estado: 'Pendiente' | 'En Proceso' | 'Despachada' | 'Finalizada' = 'Pendiente';
     if (alerta.estado === 'Despachada') estado = 'Despachada';
@@ -235,6 +248,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       telefono: alerta.personaSorda && alerta.personaSorda.usuario ? alerta.personaSorda.usuario.telefono : '—',
       incidente: alerta.incidente || 'Alerta de Pánico',
       horaIngreso: hourStr,
+      horaFin: hourFinStr,
       estado: estado,
       triage: {
         victimaHerida: 'NO',
@@ -451,6 +465,29 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.marker = L.marker(coords, { icon: customIcon }).addTo(this.map);
     this.marker.bindPopup(`<b>${this.selectedEmergency.nombre}</b><br>${this.selectedEmergency.incidente}`).openPopup();
+
+    // Home Marker
+    if (this.homeMarker) {
+      this.map.removeLayer(this.homeMarker);
+    }
+    if (this.selectedEmergency.latCasa && this.selectedEmergency.lngCasa) {
+      const homeCoords: [number, number] = [this.selectedEmergency.latCasa, this.selectedEmergency.lngCasa];
+      const homeIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:20px;height:20px;border-radius:6px;background:#3b82f6;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-house" style="color:white;font-size:10px;"></i></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -12]
+      });
+      this.homeMarker = L.marker(homeCoords, { icon: homeIcon }).addTo(this.map);
+      this.homeMarker.bindPopup(`<b>Domicilio Registrado</b><br>${this.selectedEmergency.ubicacionNombre}`);
+      
+      // Ajustar vista para incluir ambos marcadores si no están exactamente en el mismo punto
+      const bounds = L.latLngBounds([coords, homeCoords]);
+      if (bounds.getNorthEast().distanceTo(bounds.getSouthWest()) > 10) { // Si hay más de 10 metros de diferencia
+         this.map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
   }
 
   // === SIMULACIÓN DE LA PATRULLA EN EL MAPA (estilo Uber) ===

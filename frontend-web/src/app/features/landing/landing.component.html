@@ -257,6 +257,7 @@
               <th>RUT</th>
               <th>Tipo de Incidente</th>
               <th>Hora Ingreso</th>
+              <th>Hora Fin</th>
               <th>Estado</th>
               <th>Notas de Despacho</th>
               <th>Informe</th>
@@ -273,6 +274,7 @@
                 {{ case.incidente }}
               </td>
               <td class="col-time">{{ case.horaIngreso }}</td>
+              <td class="col-time">{{ case.horaFin || '—' }}</td>
               <td class="col-status">
                 <span class="status-badge" [class]="case.estado.toLowerCase()">
                   {{ case.estado }}
@@ -397,8 +399,11 @@
             <span class="status-badge-inline" [class]="selectedEmergency.estado.toLowerCase()">
               {{ selectedEmergency.estado }}
             </span>
-            <span class="time-value" style="font-size: 0.8rem; color: #64748b;">
+            <span class="time-value" style="font-size: 0.8rem; color: #64748b; margin-right: 12px;">
               <i class="fa-regular fa-clock"></i> {{ selectedEmergency.horaIngreso }}
+            </span>
+            <span class="time-value" *ngIf="selectedEmergency.horaFin" style="font-size: 0.8rem; color: #64748b;">
+              <i class="fa-solid fa-flag-checkered"></i> Fin: {{ selectedEmergency.horaFin }}
             </span>
           </div>
         </div>

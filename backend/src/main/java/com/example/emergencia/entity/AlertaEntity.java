@@ -19,6 +19,9 @@ public class AlertaEntity {
     @Column(name = "fecha_hora_inicio", nullable = false)
     private LocalDateTime fechaHoraInicio;
 
+    @Column(name = "fecha_hora_fin")
+    private LocalDateTime fechaHoraFin;
+
     @Column(name = "latitud_longitud", length = 100)
     private String latitudLongitud;
 
