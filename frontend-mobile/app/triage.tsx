@@ -112,7 +112,7 @@ export default function TriageScreen() {
             latitudLongitud: latitudLongitud,
             disponibleTriage: true,
             estado: 'ACTIVO',
-            incidente: 'Alerta de Pánico (Sordo)',
+            incidente: 'Alerta de Pánico',
             modoCamuflaje: true,
             personaSorda: { id: personaSordaId }
           }),

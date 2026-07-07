@@ -118,7 +118,7 @@ export default function EditarPerfilScreen() {
              infoMedica: infoMedica,
              latitudCasa: latitudCasa,
              longitudCasa: longitudCasa,
-             nombreReferenciaCasa: nombreReferenciaCasa,
+             nombreReferenciaCasa: direccion,
              usuario: usuarioCompleto
           })
         });
@@ -157,7 +157,6 @@ export default function EditarPerfilScreen() {
     { label: 'TELÉFONO', icon: 'call-outline' as const, ph: 'Ej: 987654321', val: telefono, set: setTelefono, kt: 'phone-pad' as const },
     { label: 'DIRECCIÓN', icon: 'home-outline' as const, ph: 'Ej: Calle Falsa 123', val: direccion, set: setDireccion, kt: 'default' as const },
     { label: 'INFO MÉDICA (OPCIONAL)', icon: 'medical-outline' as const, ph: 'Ej: Alergia a penicilina, diabetes...', val: infoMedica, set: setInfoMedica, kt: 'default' as const },
-    { label: 'NOMBRE REF. CASA (OPCIONAL)', icon: 'bookmark-outline' as const, ph: 'Ej: Mi Casa, Trabajo', val: nombreReferenciaCasa, set: setNombreReferenciaCasa, kt: 'default' as const },
     { label: 'LATITUD (CASA)', icon: 'navigate-outline' as const, ph: 'Ej: -33.45', val: latitudCasa, set: setLatitudCasa, kt: 'default' as const },
     { label: 'LONGITUD (CASA)', icon: 'navigate-outline' as const, ph: 'Ej: -70.66', val: longitudCasa, set: setLongitudCasa, kt: 'default' as const },
   ];

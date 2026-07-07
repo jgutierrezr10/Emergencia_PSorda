@@ -1141,7 +1141,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       nombre: nombre,
       rut: usuario.rut || 'Desconocido',
       telefono: usuario.telefono || 'Sin teléfono',
-      incidente: backendAlerta.incidente || 'Alerta de Pánico (Sordo)',
+      incidente: backendAlerta.incidente || 'Alerta de Pánico',
       horaIngreso: timeStr,
       estado: 'Pendiente',
       triage: {
