@@ -19,9 +19,10 @@ public class JwtUtil {
     private static final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET_STRING.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     private static final long EXPIRATION_TIME = 86400000; // 24 horas
 
-    public String generateToken(String rut, String rol) {
+    public String generateToken(String rut, String rol, Long tokenVersion) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("rol", rol);
+        claims.put("tokenVersion", tokenVersion);
 
         return Jwts.builder()
                 .setClaims(claims)
@@ -38,6 +39,14 @@ public class JwtUtil {
 
     public String extractRut(String token) {
         return extractAllClaims(token).getSubject();
+    }
+
+    public Long extractTokenVersion(String token) {
+        Object version = extractAllClaims(token).get("tokenVersion");
+        if (version instanceof Number) {
+            return ((Number) version).longValue();
+        }
+        return 0L;
     }
 
     public boolean isTokenExpired(String token) {

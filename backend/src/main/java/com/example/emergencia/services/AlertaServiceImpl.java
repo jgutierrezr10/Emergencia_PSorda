@@ -63,6 +63,17 @@ public class AlertaServiceImpl implements IAlertaService {
         com.example.emergencia.entity.PersonaSordaEntity persona = personaSordaRepository.findByUsuarioRut(rut)
                 .orElseThrow(() -> new ResourceNotFoundException("Persona sorda no encontrada para el RUT: " + rut));
 
+        // Anti-Spam: Verificar si ya tiene una alerta activa (que no sea Finalizada)
+        List<AlertaEntity> alertas = alertaRepository.findAll();
+        for (AlertaEntity a : alertas) {
+            if (a.getPersonaSorda() != null 
+                && a.getPersonaSorda().getId().equals(persona.getId())
+                && !"Finalizada".equalsIgnoreCase(a.getEstado())) {
+                // Ya existe una alerta activa, en lugar de crear otra, retornamos la existente
+                return a;
+            }
+        }
+
         AlertaEntity alerta = new AlertaEntity();
         alerta.setFechaHoraInicio(java.time.LocalDateTime.now());
         alerta.setLatitudLongitud(latitudLongitud);

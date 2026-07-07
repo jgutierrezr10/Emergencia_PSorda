@@ -56,8 +56,13 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
+        // Incrementar la versión del token para invalidar sesiones previas
+        Long currentVersion = usuario.getTokenVersion() == null ? 0L : usuario.getTokenVersion();
+        usuario.setTokenVersion(currentVersion + 1);
+        usuarioRepository.save(usuario);
+
         // Genera Token JWT
-        String token = jwtUtil.generateToken(usuario.getRut(), rol);
+        String token = jwtUtil.generateToken(usuario.getRut(), rol, usuario.getTokenVersion());
 
         // Retorna la respuesta con el Token, Rut, Rol, UsuarioId, PersonaSordaId y Estado
         return new LoginResponse(token, usuario.getRut(), nombreCompleto, rol, usuario.getId(), personaSordaId, usuario.getEstado());

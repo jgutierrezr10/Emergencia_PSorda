@@ -368,6 +368,7 @@
     <div class="panel-content-scroll" *ngIf="selectedEmergency; else noSelection">
       
       <!-- IDENTIFICACIÓN DEL PACIENTE / CIUDADANO -->
+      <span class="section-label" style="display: block; margin-bottom: 8px;">DATOS DEL CIUDADANO</span>
       <div class="citizen-profile-header">
         <div class="avatar-circle" aria-hidden="true">
           <i class="fa-solid fa-user-injured" *ngIf="selectedEmergency.triage.victimaHerida === 'SI'"></i>
@@ -382,9 +383,11 @@
           </span>
         </div>
       </div>
+      <hr class="section-divider">
 
 
       <!-- SECCIÓN 1: DATOS CLAVE (TIPO, ESTADO, INGRESO) -->
+      <span class="section-label" style="display: block; margin-bottom: 12px; margin-top: 4px;">DATOS DE LA ALERTA</span>
       <div class="details-grid-2">
         <div class="detail-section" style="border: none; padding: 0;">
           <span class="section-label">TIPO DE INCIDENTE</span>
@@ -396,7 +399,7 @@
         <div class="detail-section" style="border: none; padding: 0;">
           <span class="section-label">ESTADO E INGRESO</span>
           <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 2px;">
-            <span class="status-badge-inline" [class]="selectedEmergency.estado.toLowerCase()">
+            <span class="status-badge-inline" [ngClass]="selectedEmergency.estado.toLowerCase().replace(' ', '-')">
               {{ selectedEmergency.estado }}
             </span>
             <span class="time-value" style="font-size: 0.8rem; color: #64748b; margin-right: 12px;">

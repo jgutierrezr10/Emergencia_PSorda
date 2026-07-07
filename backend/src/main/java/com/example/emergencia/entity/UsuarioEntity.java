@@ -53,4 +53,6 @@ public class UsuarioEntity {
     @Column(length = 50, nullable = false)
     private String rol;
 
+    @Column(name = "token_version", nullable = false)
+    private Long tokenVersion = 0L;
 }

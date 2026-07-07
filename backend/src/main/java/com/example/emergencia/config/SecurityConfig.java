@@ -9,14 +9,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.http.HttpMethod;
+import com.example.emergencia.repository.UsuarioRepository;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
+    private final UsuarioRepository usuarioRepository;
 
-    public SecurityConfig(JwtUtil jwtUtil) {
+    public SecurityConfig(JwtUtil jwtUtil, UsuarioRepository usuarioRepository) {
         this.jwtUtil = jwtUtil;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Bean
@@ -39,7 +43,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/patrullas/**", "/api/despachos/**", "/api/chats/**").permitAll()
                 .requestMatchers("/api/uploads/**", "/uploads/**").permitAll()
                 .anyRequest().authenticated())
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil),
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, usuarioRepository),
                     UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

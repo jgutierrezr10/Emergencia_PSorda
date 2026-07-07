@@ -4,7 +4,7 @@ if (typeof window !== 'undefined' && typeof window.global === 'undefined') {
 }
 
 import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import 'react-native-reanimated';
@@ -12,6 +12,29 @@ import 'react-native-reanimated';
 import BotonSnake from '@/components/BotonSnake';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 import { FUENTES } from '@/theme/fonts';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
+// Wrapper global de fetch para atrapar 401 (Sesión Caducada / Single Session)
+const originalFetch = global.fetch;
+global.fetch = async (...args) => {
+  const response = await originalFetch(...args);
+  if (response.status === 401) {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('rut');
+      localStorage.removeItem('rol');
+      localStorage.removeItem('currentAlertaId');
+    } else {
+      await SecureStore.deleteItemAsync('token');
+      await SecureStore.deleteItemAsync('rut');
+      await SecureStore.deleteItemAsync('rol');
+      await SecureStore.deleteItemAsync('currentAlertaId');
+    }
+    router.replace('/');
+  }
+  return response;
+};
 
 export const unstable_settings = {
   anchor: '(tabs)',

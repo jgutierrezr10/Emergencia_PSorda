@@ -15,14 +15,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import com.example.emergencia.entity.UsuarioEntity;
+import com.example.emergencia.repository.UsuarioRepository;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UsuarioRepository usuarioRepository;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UsuarioRepository usuarioRepository) {
         this.jwtUtil = jwtUtil;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
@@ -44,6 +49,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             rut = jwtUtil.extractRut(jwt);
             if (rut != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtUtil.validateToken(jwt, rut)) {
+                    // Single Session validation
+                    Optional<UsuarioEntity> optUser = usuarioRepository.findByRut(rut);
+                    if (optUser.isPresent()) {
+                        UsuarioEntity user = optUser.get();
+                        Long dbVersion = user.getTokenVersion() == null ? 0L : user.getTokenVersion();
+                        Long jwtVersion = jwtUtil.extractTokenVersion(jwt);
+                        if (!dbVersion.equals(jwtVersion)) {
+                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Session expired or logged in from another device");
+                            return;
+                        }
+                    }
+
                     Claims claims = jwtUtil.extractAllClaims(jwt);
                     String rol = claims.get("rol", String.class);
                     

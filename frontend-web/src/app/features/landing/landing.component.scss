@@ -922,19 +922,6 @@
     margin-bottom: 4px;
   }
 
-  .status-badge-inline {
-    display: inline-block;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-
-    &.pendiente { background-color: #FEE2E2; color: #DC2626; }
-    &.en-proceso, &.despachada { background-color: #FEF3C7; color: #D97706; }
-    &.finalizada { background-color: #D1FAE5; color: #1B4332; }
-  }
-
   .time-value {
     font-size: 0.85rem;
     font-weight: 700;
@@ -947,6 +934,21 @@
 }
 
 /* BOTONES DE ACCIÓN DE DESPACHO */
+
+.status-badge-inline {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  width: max-content;
+
+  &.pendiente, &.creada { background-color: #FEE2E2; color: #DC2626; }
+  &.en-proceso, &.despachada { background-color: #FEF3C7; color: #D97706; }
+  &.finalizada { background-color: #D1FAE5; color: #1B4332; }
+}
+
 .action-buttons-section {
   display: flex;
   flex-direction: column;

@@ -4,10 +4,9 @@ import { useMemo, useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, Colors } from '@/theme/theme';
-import { useState, useEffect } from 'react';
 import { Platform, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { baseUrl } from '@/_config';
+import { baseUrl } from './_config';
 
 export default function SobreScreen() {
   const { colors } = useTheme();
