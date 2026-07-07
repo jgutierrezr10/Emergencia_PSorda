@@ -420,6 +420,15 @@
             <div class="location-home-coords" *ngIf="selectedEmergency.latCasa && selectedEmergency.lngCasa" style="font-size: 0.75rem; color: #64748b; margin-top: 4px; padding-left: 20px;">
               <span style="font-family: monospace;">{{ selectedEmergency.latCasa | number:'1.4-4' }}, {{ selectedEmergency.lngCasa | number:'1.4-4' }}</span>
             </div>
+            <div class="location-home-street" *ngIf="selectedEmergencyHomeStreet" style="font-size: 0.75rem; color: #475569; margin-top: 4px; padding-left: 20px; line-height: 1.2;">
+              <i class="fa-solid fa-map-pin" aria-hidden="true" style="margin-right: 4px; color: #94a3b8;"></i>
+              <span>{{ selectedEmergencyHomeStreet }}</span>
+            </div>
+            <div *ngIf="selectedEmergency.latCasa && selectedEmergency.lngCasa" style="margin-top: 6px; padding-left: 20px;">
+              <a href="https://www.google.com/maps/search/?api=1&query={{ selectedEmergency.latCasa }},{{ selectedEmergency.lngCasa }}" target="_blank" style="color: #1D4ED8; text-decoration: none; font-size: 0.8rem;">
+                Ver casa en Mapa <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; margin-left: 2px;"></i>
+              </a>
+            </div>
           </div>
 
           <!-- Ubicación de la Alerta (GPS) -->

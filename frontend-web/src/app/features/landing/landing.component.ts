@@ -114,6 +114,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Reverse geocoding for active emergency
   selectedEmergencyStreet = '';
+  selectedEmergencyHomeStreet = '';
 
   // Validation State
   pendingUsers: any[] = [];
@@ -549,7 +550,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedEmergency = item;
     this.selectedEmergencyStreet = 'Buscando calle...';
 
-    // Reverse Geocoding (Nominatim)
+    // Reverse Geocoding (Nominatim) for Alert GPS
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.lat}&lon=${item.lng}&zoom=18&addressdetails=1`)
       .then(res => res.json())
       .then(data => {
@@ -560,6 +561,23 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         this.selectedEmergencyStreet = 'Error de conexión (GPS)';
         this.cdr.detectChanges();
       });
+
+    // Reverse Geocoding (Nominatim) for Home GPS
+    if (item.latCasa && item.lngCasa) {
+      this.selectedEmergencyHomeStreet = 'Buscando calle...';
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.latCasa}&lon=${item.lngCasa}&zoom=18&addressdetails=1`)
+        .then(res => res.json())
+        .then(data => {
+          this.selectedEmergencyHomeStreet = data?.display_name || 'Calle no encontrada en el mapa';
+          this.cdr.detectChanges();
+        })
+        .catch(() => {
+          this.selectedEmergencyHomeStreet = 'Error de conexión (GPS)';
+          this.cdr.detectChanges();
+        });
+    } else {
+      this.selectedEmergencyHomeStreet = '';
+    }
     
     // Mover el mapa
     if (this.map && typeof L !== 'undefined') {
