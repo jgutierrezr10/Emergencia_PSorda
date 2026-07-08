@@ -31,11 +31,26 @@ export class AuthService {
     localStorage.setItem('jwt_token', token);
   }
 
+  saveUserData(nombre: string, rut: string): void {
+    localStorage.setItem('op_name', nombre);
+    localStorage.setItem('op_rut', rut);
+  }
+
   getToken(): string | null {
     return localStorage.getItem('jwt_token');
   }
 
+  getUserName(): string {
+    return localStorage.getItem('op_name') || 'Operador Juan Pérez';
+  }
+
+  getUserRut(): string {
+    return localStorage.getItem('op_rut') || 'OP-12345';
+  }
+
   logout(): void {
     localStorage.removeItem('jwt_token');
+    localStorage.removeItem('op_name');
+    localStorage.removeItem('op_rut');
   }
 }

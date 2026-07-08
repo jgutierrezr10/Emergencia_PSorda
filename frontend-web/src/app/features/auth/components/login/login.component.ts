@@ -70,6 +70,7 @@ export class LoginComponent implements OnInit {
         }
 
         this.authService.saveToken(response.token);
+        this.authService.saveUserData(response.nombreCompleto, response.rut);
         
         // Redirigir al Landing Page
         this.router.navigate(['/landing']);

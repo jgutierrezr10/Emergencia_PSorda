@@ -68,8 +68,8 @@ interface EmergencyCase {
   styleUrls: ['./landing.component.scss']
 })
 export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
-  operadorNombre = 'Operador Juan Pérez';
-  operadorID = 'OP-12345';
+  operadorNombre = '';
+  operadorID = '';
   activeTab: 'dashboard' | 'history' | 'validations' = 'dashboard';
   
   emergencies: EmergencyCase[] = [];
@@ -155,6 +155,9 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.operadorNombre = 'Operador ' + this.authService.getUserName();
+    this.operadorID = this.authService.getUserRut();
+    
     this.startPollingAlertas();
     this.patrolInterval = setInterval(() => this.updatePatrolMarker(), 1000);
     
