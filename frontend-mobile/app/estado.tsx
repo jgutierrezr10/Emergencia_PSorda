@@ -51,7 +51,7 @@ export default function EstadoScreen() {
       const rut = await obtenerDato('rut');
       if (!rut) return;
       const cleanRut = rut.replace(/[^0-9Kk]/g, '');
-      const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat';
+      const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat/websocket';
 
       const client = new Client({
         brokerURL: wsUrl,
