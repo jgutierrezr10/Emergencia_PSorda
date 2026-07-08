@@ -137,6 +137,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   // Video call
   videoCallUrl: SafeResourceUrl | null = null;
   isVideoCallActive = false;
+  isCalling = false;
+  isReceivingCall = false;
   private peerConnection: RTCPeerConnection | null = null;
   private webrtcStompClient: Client | null = null;
   private localStream: MediaStream | null = null;
@@ -602,10 +604,101 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectEmergency(item: EmergencyCase) {
+    // Desconectar cliente previo si existe
+    if (this.webrtcStompClient) {
+      this.webrtcStompClient.deactivate();
+      this.webrtcStompClient = null;
+    }
+    this.endVideoCall();
+
     this.selectedEmergency = item;
     this.selectedEmergencyStreet = 'Buscando calle...';
     this.showFullAlertAddress = false;
     this.showFullHomeAddress = false;
+
+    // Inicializar STOMP para WebRTC y escuchar llamadas entrantes
+    const rutLimpiado = item.rut.replace(/[^0-9Kk]/g, '');
+    const wsUrl = environment.apiUrl.replace('http', 'ws') + '/ws-chat';
+    this.webrtcStompClient = new Client({
+      brokerURL: wsUrl,
+      reconnectDelay: 5000,
+      onConnect: () => {
+        this.webrtcStompClient?.subscribe(`/topic/webrtc/${rutLimpiado}`, async (message) => {
+          const data = JSON.parse(message.body);
+          if (data.type === 'call_request' && data.from === 'ciudadano') {
+            this.ngZone.run(() => {
+              this.isReceivingCall = true;
+              this.playAlarmSound();
+              this.cdr.detectChanges();
+            });
+          } else if (data.type === 'call_rejected' || data.type === 'call_ended') {
+            this.ngZone.run(() => {
+              this.isCalling = false;
+              this.isReceivingCall = false;
+              this.endVideoCall();
+              this.cdr.detectChanges();
+            });
+          } else if (data.type === 'call_accepted' && this.isCalling) {
+            this.ngZone.run(async () => {
+              this.isCalling = false;
+              this.isVideoCallActive = true;
+              this.cdr.detectChanges(); // Render video elements
+              await this.initMedia();
+              
+              // Web initiated the call, Mobile accepted and is ready. Web creates the offer.
+              if (!this.peerConnection) return;
+              const offer = await this.peerConnection.createOffer();
+              await this.peerConnection.setLocalDescription(offer);
+              this.webrtcStompClient?.publish({ 
+                destination: `/app/webrtc/${rutLimpiado}`, 
+                body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription }) 
+              });
+            });
+          } else if (data.type === 'offer' && this.isVideoCallActive) {
+            await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            const answer = await this.peerConnection?.createAnswer();
+            await this.peerConnection?.setLocalDescription(answer!);
+            this.webrtcStompClient?.publish({
+              destination: `/app/webrtc/${rutLimpiado}`,
+              body: JSON.stringify({ type: 'answer', sdp: this.peerConnection?.localDescription })
+            });
+            if (this.peerConnection && (this.peerConnection as any).pendingCandidates) {
+              for (const c of (this.peerConnection as any).pendingCandidates) {
+                await this.peerConnection.addIceCandidate(new RTCIceCandidate(c));
+              }
+              (this.peerConnection as any).pendingCandidates = [];
+            }
+          } else if (data.type === 'answer' && this.isVideoCallActive) {
+            await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            if (this.peerConnection && (this.peerConnection as any).pendingCandidates) {
+              for (const c of (this.peerConnection as any).pendingCandidates) {
+                await this.peerConnection.addIceCandidate(new RTCIceCandidate(c));
+              }
+              (this.peerConnection as any).pendingCandidates = [];
+            }
+          } else if (data.type === 'candidate' && this.isVideoCallActive) {
+            if (this.peerConnection?.remoteDescription) {
+              await this.peerConnection?.addIceCandidate(new RTCIceCandidate(data.candidate));
+            } else {
+              if (this.peerConnection) {
+                if (!(this.peerConnection as any).pendingCandidates) (this.peerConnection as any).pendingCandidates = [];
+                (this.peerConnection as any).pendingCandidates.push(data.candidate);
+              }
+            }
+          } else if (data.type === 'ready' && this.isVideoCallActive) {
+            // Mobile initiated the call, Web accepted, and now Mobile is ready. Web creates the offer.
+            if (!this.peerConnection) return;
+            const offer = await this.peerConnection.createOffer();
+            await this.peerConnection.setLocalDescription(offer);
+            this.webrtcStompClient?.publish({
+              destination: `/app/webrtc/${rutLimpiado}`,
+              body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription })
+            });
+          }
+        });
+      }
+    });
+    this.webrtcStompClient.activate();
 
     // Reverse Geocoding (Nominatim) for Alert GPS
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.lat}&lon=${item.lng}&zoom=18&addressdetails=1`)
@@ -1211,20 +1304,23 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  async startVideoCall() {
-    if (!this.selectedEmergency) return;
-    const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
-    this.isVideoCallActive = true;
-    this.cdr.detectChanges(); // Ensure video elements exist
-
+  async initMedia() {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       if (this.localVideoRef) {
         this.localVideoRef.nativeElement.srcObject = this.localStream;
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error accessing camera', e);
-      alert('No se pudo acceder a la cámara o micrófono.');
+      if (e.name === 'NotAllowedError') {
+        alert('Permiso denegado. Por favor, habilita el acceso a la cámara y micrófono en el candado de la barra de direcciones de tu navegador.');
+      } else if (e.name === 'NotFoundError') {
+        alert('No se encontró ninguna cámara o micrófono conectado a tu equipo.');
+      } else {
+        alert('No se pudo acceder a la cámara o micrófono. Por favor verifica tu configuración.');
+      }
+      this.isCalling = false;
+      this.isReceivingCall = false;
       this.isVideoCallActive = false;
       return;
     }
@@ -1241,55 +1337,56 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     };
 
-    // Initialize STOMP for WebRTC
-    const wsUrl = environment.apiUrl.replace('http', 'ws') + '/ws-chat';
-    this.webrtcStompClient = new Client({
-      brokerURL: wsUrl,
-      reconnectDelay: 5000,
-      onConnect: () => {
-        this.webrtcStompClient?.subscribe(`/topic/webrtc/${rutLimpiado}`, async (message) => {
-          const data = JSON.parse(message.body);
-          if (data.type === 'offer') {
-            await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            const answer = await this.peerConnection?.createAnswer();
-            await this.peerConnection?.setLocalDescription(answer!);
-            this.webrtcStompClient?.publish({
-              destination: `/app/webrtc/${rutLimpiado}`,
-              body: JSON.stringify({ type: 'answer', sdp: this.peerConnection?.localDescription })
-            });
-          } else if (data.type === 'answer') {
-            await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(data.sdp));
-          } else if (data.type === 'candidate') {
-            await this.peerConnection?.addIceCandidate(new RTCIceCandidate(data.candidate));
-          } else if (data.type === 'ready') {
-            const offer = await this.peerConnection?.createOffer();
-            await this.peerConnection?.setLocalDescription(offer!);
-            this.webrtcStompClient?.publish({
-              destination: `/app/webrtc/${rutLimpiado}`,
-              body: JSON.stringify({ type: 'offer', sdp: this.peerConnection?.localDescription })
-            });
-          }
-        });
-        
-        // Operador anuncia que está listo para iniciar la llamada
-        this.webrtcStompClient?.publish({ destination: `/app/webrtc/${rutLimpiado}`, body: JSON.stringify({ type: 'ready' }) });
-      }
-    });
-
     this.peerConnection.onicecandidate = (event) => {
-      if (event.candidate && this.webrtcStompClient?.connected) {
+      if (event.candidate && this.webrtcStompClient?.connected && this.selectedEmergency) {
+        const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
         this.webrtcStompClient.publish({
           destination: `/app/webrtc/${rutLimpiado}`,
           body: JSON.stringify({ type: 'candidate', candidate: event.candidate })
         });
       }
     };
+  }
 
-    this.webrtcStompClient.activate();
+  startVideoCall() {
+    if (!this.selectedEmergency || !this.webrtcStompClient?.connected) return;
+    const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
+    this.isCalling = true;
+    this.webrtcStompClient.publish({
+      destination: `/app/webrtc/${rutLimpiado}`,
+      body: JSON.stringify({ type: 'call_request', from: 'operador' })
+    });
+  }
+
+  async acceptCall() {
+    if (!this.selectedEmergency || !this.webrtcStompClient?.connected) return;
+    const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
+    this.isReceivingCall = false;
+    this.isVideoCallActive = true;
+    this.cdr.detectChanges(); // Renderiza elementos de video
+    await this.initMedia();
+    this.webrtcStompClient.publish({
+      destination: `/app/webrtc/${rutLimpiado}`,
+      body: JSON.stringify({ type: 'call_accepted' })
+    });
+  }
+
+  rejectCall() {
+    if (!this.selectedEmergency || !this.webrtcStompClient?.connected) return;
+    const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
+    this.isReceivingCall = false;
+    this.isCalling = false;
+    this.webrtcStompClient.publish({
+      destination: `/app/webrtc/${rutLimpiado}`,
+      body: JSON.stringify({ type: 'call_rejected' })
+    });
   }
 
   endVideoCall() {
     this.isVideoCallActive = false;
+    this.isCalling = false;
+    this.isReceivingCall = false;
+
     if (this.localStream) {
       this.localStream.getTracks().forEach(t => t.stop());
       this.localStream = null;
@@ -1298,10 +1395,18 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       this.peerConnection.close();
       this.peerConnection = null;
     }
-    if (this.webrtcStompClient) {
-      this.webrtcStompClient.deactivate();
-      this.webrtcStompClient = null;
+    
+    // Si cerramos y sigue activo, notificar a la otra parte
+    if (this.webrtcStompClient?.connected && this.selectedEmergency) {
+      const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
+      this.webrtcStompClient.publish({
+        destination: `/app/webrtc/${rutLimpiado}`,
+        body: JSON.stringify({ type: 'call_ended' })
+      });
     }
+
+    // Nota: no desactivamos webrtcStompClient aquí, porque necesitamos
+    // seguir escuchando llamadas entrantes mientras la emergencia esté seleccionada.
   }
 
   saveDispatchNotes() {

@@ -1,6 +1,6 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Platform, Modal, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -8,6 +8,7 @@ import MapaUbicacion from '@/components/MapaUbicacion';
 import { inicioPatrulla, posicionPatrulla, obtenerRutaCalles, puntoEnRuta, LatLng } from '@/components/patrulla-sim';
 import { useTheme, Colors } from '@/theme/theme';
 import * as SecureStore from 'expo-secure-store';
+import { Client } from '@stomp/stompjs';
 import { baseUrl } from './_config';
 
 const obtenerDato = async (key: string): Promise<string | null> => {
@@ -18,10 +19,6 @@ const obtenerDato = async (key: string): Promise<string | null> => {
 type EstadoGps = 'cargando' | 'ok' | 'denegado' | 'error';
 
 // === SIMULACIÓN DEL DESPACHO ===
-// El ETA es simulado: una cuenta regresiva fija que arranca cuando CENCO despacha la patrulla.
-// PARA LA VERSIÓN REAL: reemplazar ETA_TOTAL_SEG por el tiempo estimado que entregue el backend
-// (p. ej. un campo despacho.segundosEstimados, o calcular desde la hora estimada de llegada).
-// El disparo del despacho YA es real: se basa en alerta.estado === 'Despachada'.
 const ETA_TOTAL_SEG = 360; // 6 minutos simulados
 
 export default function EstadoScreen() {
@@ -40,10 +37,59 @@ export default function EstadoScreen() {
   const [ruta, setRuta] = useState<LatLng[] | null>(null);
   const [nombreRef, setNombreRef] = useState<string | null>(null);
 
+  const [llamadaEntrante, setLlamadaEntrante] = useState(false);
+  const stompClient = useRef<Client | null>(null);
+
   useEffect(() => {
     const id = setInterval(() => setSegundos((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // WebRTC STOMP para llamadas entrantes
+  useEffect(() => {
+    const setupWebrtcStomp = async () => {
+      const rut = await obtenerDato('rut');
+      if (!rut) return;
+      const cleanRut = rut.replace(/[^0-9Kk]/g, '');
+      const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat';
+
+      const client = new Client({
+        brokerURL: wsUrl,
+        reconnectDelay: 5000,
+        onConnect: () => {
+          client.subscribe(`/topic/webrtc/${cleanRut}`, (msg) => {
+            const data = JSON.parse(msg.body);
+            if (data.type === 'call_request') {
+              setLlamadaEntrante(true);
+            } else if (data.type === 'call_rejected' || data.type === 'call_ended') {
+              setLlamadaEntrante(false);
+            }
+          });
+        }
+      });
+      client.activate();
+      stompClient.current = client;
+    };
+    setupWebrtcStomp();
+
+    return () => {
+      if (stompClient.current) stompClient.current.deactivate();
+    };
+  }, []);
+
+  const rechazarLlamada = async () => {
+    setLlamadaEntrante(false);
+    const rut = await obtenerDato('rut');
+    if (rut && stompClient.current?.connected) {
+      const cleanRut = rut.replace(/[^0-9Kk]/g, '');
+      stompClient.current.publish({ destination: `/app/webrtc/${cleanRut}`, body: JSON.stringify({ type: 'call_rejected' }) });
+    }
+  };
+
+  const aceptarLlamada = () => {
+    setLlamadaEntrante(false);
+    router.push('/videollamada?incoming=true');
+  };
 
   const cargarUbicacion = useCallback(async () => {
     setGps('cargando');
@@ -314,6 +360,30 @@ export default function EstadoScreen() {
           <Text style={styles.navTexto}>PERFIL</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal de Llamada Entrante */}
+      <Modal visible={llamadaEntrante} transparent animationType="slide">
+        <View style={styles.modalLlamadaOverlay}>
+          <View style={styles.modalLlamadaCard}>
+            <View style={styles.modalLlamadaIcono}>
+              <Ionicons name="videocam" size={40} color="#fff" />
+            </View>
+            <Text style={styles.modalLlamadaTitulo}>Videollamada Entrante</Text>
+            <Text style={styles.modalLlamadaSub}>El operador de CENCO te está llamando</Text>
+            <View style={styles.modalLlamadaBotones}>
+              <TouchableOpacity style={[styles.modalLlamadaBtn, { backgroundColor: '#dc2626' }]} onPress={rechazarLlamada}>
+                <Ionicons name="close" size={24} color="#fff" />
+                <Text style={styles.modalLlamadaBtnTexto}>Rechazar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalLlamadaBtn, { backgroundColor: '#10b981' }]} onPress={aceptarLlamada}>
+                <Ionicons name="call" size={24} color="#fff" />
+                <Text style={styles.modalLlamadaBtnTexto}>Contestar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -354,4 +424,12 @@ const makeStyles = (c: Colors) =>
     navBar: { flexDirection: 'row', backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.border, paddingVertical: 10, paddingHorizontal: 8 },
     navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, gap: 3 },
     navTexto: { fontSize: 10, color: c.textMuted, fontWeight: '600' },
+    modalLlamadaOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+    modalLlamadaCard: { backgroundColor: c.surface, borderRadius: 24, padding: 30, width: '100%', maxWidth: 360, alignItems: 'center', borderWidth: 1, borderColor: c.border },
+    modalLlamadaIcono: { width: 80, height: 80, borderRadius: 40, backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 20, elevation: 10, shadowColor: c.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8 },
+    modalLlamadaTitulo: { fontSize: 22, fontWeight: '900', color: c.textPrimary, marginBottom: 8, textAlign: 'center' },
+    modalLlamadaSub: { fontSize: 15, color: c.textSecondary, textAlign: 'center', marginBottom: 32 },
+    modalLlamadaBotones: { flexDirection: 'row', gap: 16, width: '100%' },
+    modalLlamadaBtn: { flex: 1, height: 56, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
+    modalLlamadaBtnTexto: { color: '#ffffff', fontSize: 15, fontWeight: '800' }
   });

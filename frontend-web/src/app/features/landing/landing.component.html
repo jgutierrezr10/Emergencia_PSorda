@@ -597,7 +597,30 @@
           </button>
         </div>
         
-        <div class="videocall-controls" *ngIf="!isVideoCallActive" style="text-align: center;">
+        <div class="videocall-calling" *ngIf="isCalling && !isVideoCallActive" style="text-align: center; padding: 20px;">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: #3b82f6; margin-bottom: 10px;"></i>
+          <p style="font-weight: bold; color: #1e293b; font-size: 15px;">Llamando al ciudadano...</p>
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Esperando a que conteste la videollamada</p>
+          <button class="btn-action" style="background-color: #dc2626; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer;" (click)="endVideoCall()">
+            <i class="fa-solid fa-phone-slash"></i> CANCELAR
+          </button>
+        </div>
+
+        <div class="videocall-incoming" *ngIf="isReceivingCall" style="text-align: center; padding: 20px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+          <i class="fa-solid fa-phone-volume fa-shake" style="font-size: 32px; color: #16a34a; margin-bottom: 10px;"></i>
+          <p style="font-weight: bold; color: #166534; font-size: 16px;">¡Videollamada Entrante!</p>
+          <p style="font-size: 13px; color: #15803d; margin-bottom: 15px;">El ciudadano está solicitando videollamada</p>
+          <div style="display: flex; gap: 10px; justify-content: center;">
+            <button style="background-color: #dc2626; color: white; padding: 10px 15px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;" (click)="rejectCall()">
+              <i class="fa-solid fa-xmark"></i> Rechazar
+            </button>
+            <button style="background-color: #16a34a; color: white; padding: 10px 15px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;" (click)="acceptCall()">
+              <i class="fa-solid fa-video"></i> Contestar
+            </button>
+          </div>
+        </div>
+
+        <div class="videocall-controls" *ngIf="!isVideoCallActive && !isCalling && !isReceivingCall" style="text-align: center;">
           <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Conecta visualmente con la persona sorda para interpretar señas en tiempo real.</p>
           <button class="btn-action" style="background-color: #2563eb; color: white; width: 100%; height: 42px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer;" (click)="startVideoCall()">
             <i class="fa-solid fa-video"></i> INICIAR VIDEOLLAMADA
