@@ -32,6 +32,12 @@ public class ChatController {
         messagingTemplate.convertAndSend("/topic/chat/" + alertaId, chatDto);
     }
 
+    // Señalización WebRTC (Offer, Answer, ICE Candidates)
+    @MessageMapping("/webrtc/{id}")
+    public void handleWebRTCSignal(@DestinationVariable String id, String signal) {
+        messagingTemplate.convertAndSend("/topic/webrtc/" + id, signal);
+    }
+
     @GetMapping
     public ResponseEntity<List<ChatEntity>> getAll() {
         return ResponseEntity.ok(chatService.findAll());

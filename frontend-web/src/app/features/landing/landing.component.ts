@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnInit, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Component, AfterViewInit, OnInit, OnDestroy, NgZone, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth/services/auth.service';
@@ -11,6 +11,7 @@ import autoTable from 'jspdf-autotable';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 declare const L: any; // Leaflet library loaded via index.html CDN
+import { Client } from '@stomp/stompjs';
 
 interface TriageInfo {
   victimaHerida: 'SI' | 'NO';
@@ -135,6 +136,13 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Video call
   videoCallUrl: SafeResourceUrl | null = null;
+  isVideoCallActive = false;
+  private peerConnection: RTCPeerConnection | null = null;
+  private webrtcStompClient: Client | null = null;
+  private localStream: MediaStream | null = null;
+
+  @ViewChild('localVideo') localVideoRef!: ElementRef<HTMLVideoElement>;
+  @ViewChild('remoteVideo') remoteVideoRef!: ElementRef<HTMLVideoElement>;
 
   constructor(
     private authService: AuthService,
@@ -1200,15 +1208,97 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  startVideoCall() {
+  async startVideoCall() {
     if (!this.selectedEmergency) return;
     const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
-    const url = `https://meet.jit.si/Emergencia_CENCO_${rutLimpiado}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
-    this.videoCallUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    this.isVideoCallActive = true;
+    this.cdr.detectChanges(); // Ensure video elements exist
+
+    try {
+      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      if (this.localVideoRef) {
+        this.localVideoRef.nativeElement.srcObject = this.localStream;
+      }
+    } catch (e) {
+      console.error('Error accessing camera', e);
+      alert('No se pudo acceder a la cámara o micrófono.');
+      this.isVideoCallActive = false;
+      return;
+    }
+
+    this.peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    
+    this.localStream.getTracks().forEach(track => {
+      this.peerConnection?.addTrack(track, this.localStream!);
+    });
+
+    this.peerConnection.ontrack = (event) => {
+      if (this.remoteVideoRef && event.streams[0]) {
+        this.remoteVideoRef.nativeElement.srcObject = event.streams[0];
+      }
+    };
+
+    // Initialize STOMP for WebRTC
+    const wsUrl = environment.apiUrl.replace('http', 'ws') + '/ws-chat';
+    this.webrtcStompClient = new Client({
+      brokerURL: wsUrl,
+      reconnectDelay: 5000,
+      onConnect: () => {
+        this.webrtcStompClient?.subscribe(`/topic/webrtc/${rutLimpiado}`, async (message) => {
+          const data = JSON.parse(message.body);
+          if (data.type === 'offer') {
+            await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            const answer = await this.peerConnection?.createAnswer();
+            await this.peerConnection?.setLocalDescription(answer!);
+            this.webrtcStompClient?.publish({
+              destination: `/app/webrtc/${rutLimpiado}`,
+              body: JSON.stringify({ type: 'answer', sdp: this.peerConnection?.localDescription })
+            });
+          } else if (data.type === 'answer') {
+            await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(data.sdp));
+          } else if (data.type === 'candidate') {
+            await this.peerConnection?.addIceCandidate(new RTCIceCandidate(data.candidate));
+          } else if (data.type === 'ready') {
+            const offer = await this.peerConnection?.createOffer();
+            await this.peerConnection?.setLocalDescription(offer!);
+            this.webrtcStompClient?.publish({
+              destination: `/app/webrtc/${rutLimpiado}`,
+              body: JSON.stringify({ type: 'offer', sdp: this.peerConnection?.localDescription })
+            });
+          }
+        });
+        
+        // Operador anuncia que está listo para iniciar la llamada
+        this.webrtcStompClient?.publish({ destination: `/app/webrtc/${rutLimpiado}`, body: JSON.stringify({ type: 'ready' }) });
+      }
+    });
+
+    this.peerConnection.onicecandidate = (event) => {
+      if (event.candidate && this.webrtcStompClient?.connected) {
+        this.webrtcStompClient.publish({
+          destination: `/app/webrtc/${rutLimpiado}`,
+          body: JSON.stringify({ type: 'candidate', candidate: event.candidate })
+        });
+      }
+    };
+
+    this.webrtcStompClient.activate();
   }
 
   endVideoCall() {
-    this.videoCallUrl = null;
+    this.isVideoCallActive = false;
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(t => t.stop());
+      this.localStream = null;
+    }
+    if (this.peerConnection) {
+      this.peerConnection.close();
+      this.peerConnection = null;
+    }
+    if (this.webrtcStompClient) {
+      this.webrtcStompClient.deactivate();
+      this.webrtcStompClient = null;
+    }
   }
 
   saveDispatchNotes() {
