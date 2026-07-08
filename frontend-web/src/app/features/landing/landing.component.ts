@@ -618,13 +618,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Inicializar STOMP para WebRTC y escuchar llamadas entrantes
     const rutLimpiado = item.rut.replace(/[^0-9Kk]/g, '');
-    const wsUrl = environment.apiUrl.replace('http', 'ws') + '/ws-chat';
+    const wsUrl = environment.apiUrl.replace('http', 'ws') + '/ws-chat/websocket';
     this.webrtcStompClient = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 5000,
       onConnect: () => {
         this.webrtcStompClient?.subscribe(`/topic/webrtc/${rutLimpiado}`, async (message) => {
           const data = JSON.parse(message.body);
+          if (data.sender === 'web') return; // Ignorar nuestros propios mensajes
           if (data.type === 'call_request' && data.from === 'ciudadano') {
             this.ngZone.run(() => {
               this.isReceivingCall = true;
@@ -651,7 +652,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
               await this.peerConnection.setLocalDescription(offer);
               this.webrtcStompClient?.publish({ 
                 destination: `/app/webrtc/${rutLimpiado}`, 
-                body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription }) 
+                body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription, sender: 'web' }) 
               });
             });
           } else if (data.type === 'offer' && this.isVideoCallActive) {
@@ -660,7 +661,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
             await this.peerConnection?.setLocalDescription(answer!);
             this.webrtcStompClient?.publish({
               destination: `/app/webrtc/${rutLimpiado}`,
-              body: JSON.stringify({ type: 'answer', sdp: this.peerConnection?.localDescription })
+              body: JSON.stringify({ type: 'answer', sdp: this.peerConnection?.localDescription, sender: 'web' })
             });
             if (this.peerConnection && (this.peerConnection as any).pendingCandidates) {
               for (const c of (this.peerConnection as any).pendingCandidates) {
@@ -692,7 +693,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
             await this.peerConnection.setLocalDescription(offer);
             this.webrtcStompClient?.publish({
               destination: `/app/webrtc/${rutLimpiado}`,
-              body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription })
+              body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription, sender: 'web' })
             });
           }
         });

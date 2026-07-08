@@ -73,7 +73,7 @@ export default function VideollamadaScreen() {
     );
   }
 
-  const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat';
+  const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat/websocket';
 
   // Script WebRTC modificado para el flujo Ring & Answer
   const webrtcHtml = `
@@ -144,7 +144,7 @@ export default function VideollamadaScreen() {
 
       pc.onicecandidate = (ev) => {
         if (ev.candidate && stompClient && stompClient.connected) {
-          stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'candidate', candidate: ev.candidate }) });
+          stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'candidate', candidate: ev.candidate, sender: 'mobile' }) });
         }
       };
     }
@@ -158,11 +158,12 @@ export default function VideollamadaScreen() {
         onConnect: () => {
           stompClient.subscribe('/topic/webrtc/' + RUT, async (msg) => {
             const data = JSON.parse(msg.body);
+            if (data.sender === 'mobile') return;
             try {
               if (data.type === 'call_accepted' && !IS_INCOMING) {
                 statusEl.innerHTML = '<div class="spinner"></div>Conectando videollamada...';
                 await initMedia();
-                stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'ready' }) });
+                stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'ready', sender: 'mobile' }) });
               } else if (data.type === 'call_rejected') {
                 statusEl.innerHTML = 'La llamada fue rechazada o finalizada.';
                 setTimeout(() => window.ReactNativeWebView.postMessage('call_rejected'), 2000);
@@ -170,7 +171,7 @@ export default function VideollamadaScreen() {
                 await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
-                stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'answer', sdp: pc.localDescription }) });
+                stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'answer', sdp: pc.localDescription, sender: 'mobile' }) });
                 if (pc && pc.pendingCandidates) {
                   for (const c of pc.pendingCandidates) {
                     await pc.addIceCandidate(new RTCIceCandidate(c));
@@ -198,7 +199,7 @@ export default function VideollamadaScreen() {
                 if (IS_INCOMING || pc.signalingState !== 'stable') {
                   const offer = await pc.createOffer();
                   await pc.setLocalDescription(offer);
-                  stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'offer', sdp: pc.localDescription }) });
+                  stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'offer', sdp: pc.localDescription, sender: 'mobile' }) });
                 }
               }
             } catch(err) { console.error('Signal error:', err); }
