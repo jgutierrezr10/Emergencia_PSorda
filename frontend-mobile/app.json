@@ -73,7 +73,7 @@
         }
       ],
       [
-        "react-native-webrtc",
+        "@config-plugins/react-native-webrtc",
         {
           "cameraPermission": "La aplicación necesita usar tu cámara para videollamadas nativas.",
           "microphonePermission": "La aplicación necesita usar tu micrófono para videollamadas nativas."
