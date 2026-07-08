@@ -56,4 +56,17 @@ public class AlertaController {
         messagingTemplate.convertAndSend("/topic/alertas", saved);
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
+    @GetMapping("/activa/rut/{rut}")
+    public ResponseEntity<AlertaEntity> getActivaByRut(@PathVariable String rut) {
+        List<AlertaEntity> alertas = alertaService.findAll();
+        for (AlertaEntity a : alertas) {
+            if (a.getPersonaSorda() != null 
+                && a.getPersonaSorda().getUsuario() != null
+                && a.getPersonaSorda().getUsuario().getRut().equals(rut)
+                && !"Finalizada".equalsIgnoreCase(a.getEstado())) {
+                return ResponseEntity.ok(a);
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

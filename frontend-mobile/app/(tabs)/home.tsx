@@ -27,32 +27,44 @@ export default function HomeScreen() {
       const verificarEstado = async () => {
         try {
           const currentId = await obtenerDato('currentAlertaId');
+          const token = await obtenerDato('token');
+          let alertaSigueActiva = false;
+
           if (currentId && currentId !== '999') {
-            const token = await obtenerDato('token');
             const res = await fetch(`${baseUrl}/api/alertas/${currentId}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
               const data = await res.json();
               if (data.estado !== 'Finalizada') {
-                if (isMounted) setAlertaActiva(true);
+                alertaSigueActiva = true;
               } else {
-                // Alerta finalizada, limpiamos
                 await (Platform.OS === 'web' ? localStorage.removeItem('currentAlertaId') : SecureStore.deleteItemAsync('currentAlertaId'));
-                if (isMounted) setAlertaActiva(false);
               }
-            } else {
-              if (isMounted) setAlertaActiva(false);
             }
           } else if (currentId === '999') {
-            // Caso de SMS
-            if (isMounted) setAlertaActiva(true);
-          } else {
-            if (isMounted) setAlertaActiva(false);
+            alertaSigueActiva = true;
           }
+
+          // Si no hay alerta activa conocida, consultar al backend por RUT
+          if (!alertaSigueActiva) {
+            const rut = await obtenerDato('rut');
+            if (rut) {
+              const resActiva = await fetch(`${baseUrl}/api/alertas/activa/rut/${rut}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (resActiva.ok) {
+                const activaData = await resActiva.json();
+                await (Platform.OS === 'web' ? localStorage.setItem('currentAlertaId', activaData.id.toString()) : SecureStore.setItemAsync('currentAlertaId', activaData.id.toString()));
+                alertaSigueActiva = true;
+              }
+            }
+          }
+
+          if (isMounted) setAlertaActiva(alertaSigueActiva);
         } catch (e) {
           console.warn('Error verificando estado de alerta:', e);
-          if (isMounted) setAlertaActiva(false); // Default a mostrar botón si hay error
+          if (isMounted) setAlertaActiva(false);
         } finally {
           if (isMounted) setVerificando(false);
         }
