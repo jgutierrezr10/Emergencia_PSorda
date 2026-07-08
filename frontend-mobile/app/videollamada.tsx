@@ -1,198 +1,160 @@
-import { StyleSheet, View, Text, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import { Camera } from 'expo-camera';
-import { RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, RTCView, mediaDevices, MediaStream } from 'react-native-webrtc';
-import { Client } from '@stomp/stompjs';
+import { WebView } from 'react-native-webview';
 import { baseUrl } from './_config';
-
-const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
 export default function VideollamadaScreen() {
   const [rut, setRut] = useState<string | null>(null);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const stompClientRef = useRef<Client | null>(null);
 
   useEffect(() => {
-    let currentStream: MediaStream | null = null;
-    let currentPc: RTCPeerConnection | null = null;
-
-    const init = async () => {
-      // 1. Obtener RUT
-      let currentRut = 'Desconocido';
+    const getRut = async () => {
       try {
-        const storedRut = await (Platform.OS === 'web' ? localStorage.getItem('rut') : SecureStore.getItemAsync('rut'));
-        if (storedRut) currentRut = storedRut.replace(/[^0-9Kk]/g, '');
-        setRut(currentRut);
-      } catch (e) {}
-
-      // 2. Permisos
-      const cameraStatus = await Camera.requestCameraPermissionsAsync();
-      const audioStatus = await Camera.requestMicrophonePermissionsAsync();
-      const granted = cameraStatus.status === 'granted' && audioStatus.status === 'granted';
-      setHasPermission(granted);
-
-      if (!granted) return;
-
-      // 3. Capturar Cámara
-      try {
-        currentStream = await mediaDevices.getUserMedia({
-          audio: true,
-          video: { width: 640, height: 480, frameRate: 30, facingMode: 'user' }
-        });
-        setLocalStream(currentStream);
+        const storedRut = await (Platform.OS === 'web'
+          ? localStorage.getItem('rut')
+          : SecureStore.getItemAsync('rut'));
+        if (storedRut) setRut(storedRut.replace(/[^0-9Kk]/g, ''));
+        else setRut('Desconocido');
       } catch (e) {
-        console.warn('Error accediendo a la cámara', e);
+        setRut('Desconocido');
+      }
+    };
+    getRut();
+  }, []);
+
+  if (!rut) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Cargando...</Text>
+      </View>
+    );
+  }
+
+  const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat';
+
+  // Página HTML mínima que ejecuta WebRTC usando las APIs nativas del navegador Chrome (WebView)
+  const webrtcHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: sans-serif; width: 100vw; height: 100vh; }
+    #remoteVideo { width: 100vw; height: 100vh; object-fit: cover; }
+    #localVideo {
+      position: absolute; bottom: 100px; right: 16px;
+      width: 110px; height: 150px; object-fit: cover;
+      border-radius: 12px; border: 2px solid white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      z-index: 10;
+    }
+    #status {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: white; font-size: 16px; text-align: center; z-index: 5;
+    }
+    .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3);
+      border-top: 4px solid #10b981; border-radius: 50%;
+      animation: spin 1s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="localVideo" autoplay playsinline muted></video>
+  <div id="status"><div class="spinner"></div>Conectando videollamada...</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+  <script>
+    const RUT = '${rut}';
+    const WS_URL = '${wsUrl}';
+    const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    let pc = null;
+    let localStream = null;
+    let stompClient = null;
+
+    async function start() {
+      const statusEl = document.getElementById('status');
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user', width: 640, height: 480 } });
+        document.getElementById('localVideo').srcObject = localStream;
+      } catch(e) {
+        statusEl.textContent = 'Error: no se pudo acceder a la cámara.';
         return;
       }
 
-      // 4. Iniciar WebRTC
-      const pc = new RTCPeerConnection(configuration);
-      pcRef.current = pc;
-      currentPc = pc;
+      pc = new RTCPeerConnection(ICE);
+      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
-      // Añadir tracks locales
-      currentStream.getTracks().forEach((track) => {
-        pc.addTrack(track, currentStream as MediaStream);
-      });
-
-      // Recibir tracks remotos
-      pc.addEventListener('track', (event: any) => {
-        if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0]);
-          setIsConnected(true);
+      pc.ontrack = (ev) => {
+        if (ev.streams && ev.streams[0]) {
+          document.getElementById('remoteVideo').srcObject = ev.streams[0];
+          statusEl.style.display = 'none';
         }
-      });
+      };
 
-      // 5. Iniciar STOMP
-      const stompClient = new Client({
-        brokerURL: baseUrl.replace('http', 'ws') + '/ws-chat',
+      stompClient = new StompJs.Client({
+        brokerURL: WS_URL,
         reconnectDelay: 5000,
         onConnect: () => {
-          // Suscribirse al canal WebRTC de este RUT
-          stompClient.subscribe(`/topic/webrtc/${currentRut}`, async (message) => {
-            const data = JSON.parse(message.body);
-            
-            // Lógica de Señalización
-            if (data.type === 'offer') {
-              await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-              const answer = await pc.createAnswer();
-              await pc.setLocalDescription(answer);
-              stompClient.publish({
-                destination: `/app/webrtc/${currentRut}`,
-                body: JSON.stringify({ type: 'answer', sdp: pc.localDescription })
-              });
-            } else if (data.type === 'answer') {
-              await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            } else if (data.type === 'candidate') {
-              await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-            } else if (data.type === 'ready') {
-              // Si el operador dice 'ready', enviamos oferta
-              const offer = await pc.createOffer({});
-              await pc.setLocalDescription(offer);
-              stompClient.publish({
-                destination: `/app/webrtc/${currentRut}`,
-                body: JSON.stringify({ type: 'offer', sdp: pc.localDescription })
-              });
-            }
+          statusEl.innerHTML = '<div class="spinner"></div>Esperando al operador...';
+          stompClient.subscribe('/topic/webrtc/' + RUT, async (msg) => {
+            const data = JSON.parse(msg.body);
+            try {
+              if (data.type === 'offer') {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'answer', sdp: pc.localDescription }) });
+              } else if (data.type === 'answer') {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+              } else if (data.type === 'candidate') {
+                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+              } else if (data.type === 'ready') {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'offer', sdp: pc.localDescription }) });
+              }
+            } catch(err) { console.error('Signal error:', err); }
           });
-
-          // Avisar que estamos listos
-          stompClient.publish({ destination: `/app/webrtc/${currentRut}`, body: JSON.stringify({ type: 'ready' }) });
+          stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'ready' }) });
         },
-        onStompError: (frame) => console.error('Broker error: ' + frame.headers['message'])
+        onStompError: (f) => { statusEl.textContent = 'Error de conexión al servidor.'; }
       });
 
-      // Manejar ICE candidates generados localmente
-      pc.addEventListener('icecandidate', (event: any) => {
-        if (event.candidate && stompClient.connected) {
-          stompClient.publish({
-            destination: `/app/webrtc/${currentRut}`,
-            body: JSON.stringify({ type: 'candidate', candidate: event.candidate })
-          });
+      pc.onicecandidate = (ev) => {
+        if (ev.candidate && stompClient && stompClient.connected) {
+          stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'candidate', candidate: ev.candidate }) });
         }
-      });
+      };
 
       stompClient.activate();
-      stompClientRef.current = stompClient;
-    };
+    }
 
-    init();
-
-    return () => {
-      // Limpiar al desmontar
-      if (currentStream) {
-        currentStream.getTracks().forEach(t => t.stop());
-      }
-      if (currentPc) {
-        currentPc.close();
-      }
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate();
-      }
-    };
-  }, []);
-
-  if (!rut || hasPermission === null || !localStream) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
-        <Text style={styles.loadingText}>Conectando WebRTC nativo...</Text>
-      </View>
-    );
-  }
-
-  if (hasPermission === false) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Ionicons name="camera-outline" size={48} color="#ef4444" />
-        <Text style={[styles.loadingText, { color: '#ef4444', marginTop: 10, textAlign: 'center' }]}>
-          Se necesitan permisos de cámara y micrófono para la videollamada.
-        </Text>
-        <TouchableOpacity style={{ marginTop: 20, padding: 10, backgroundColor: '#10b981', borderRadius: 8 }} onPress={() => router.back()}>
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Volver</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+    start();
+  </script>
+</body>
+</html>
+  `;
 
   return (
     <SafeAreaView style={styles.container}>
-      
-      {/* Video Remoto (Operador CENCO) ocupando el fondo */}
-      {remoteStream ? (
-        <RTCView 
-          streamURL={remoteStream.toURL()} 
-          style={styles.remoteVideo} 
-          objectFit="cover" 
-        />
-      ) : (
-        <View style={styles.remotePlaceholder}>
-          <ActivityIndicator size="large" color="#ffffff" />
-          <Text style={{ color: 'white', marginTop: 10 }}>Esperando a Operador...</Text>
-        </View>
-      )}
-
-      {/* Video Local (Ciudadano Sordo) en ventana flotante pequeña */}
-      <View style={styles.localVideoContainer}>
-        <RTCView 
-          streamURL={localStream.toURL()} 
-          style={styles.localVideo} 
-          objectFit="cover" 
-          mirror={true} 
-        />
-      </View>
-
-      {/* Botón Salir */}
+      <WebView
+        source={{ html: webrtcHtml }}
+        style={{ flex: 1 }}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        mediaPlaybackRequiresUserAction={false}
+        allowsInlineMediaPlayback={true}
+        mediaCapturePermissionGrantType="grant"
+        originWhitelist={['*']}
+      />
+      {/* Botón Colgar flotante */}
       <TouchableOpacity style={styles.btnVolver} onPress={() => router.back()}>
         <Ionicons name="call" size={24} color="#ffffff" />
         <Text style={styles.btnVolverTexto}>COLGAR</Text>
@@ -217,37 +179,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  remoteVideo: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  remotePlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  localVideoContainer: {
-    position: 'absolute',
-    bottom: 40,
-    right: 20,
-    width: 120,
-    height: 160,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#ffffff',
-    backgroundColor: '#333333',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
-  },
-  localVideo: {
-    width: '100%',
-    height: '100%',
   },
   btnVolver: {
     position: 'absolute',

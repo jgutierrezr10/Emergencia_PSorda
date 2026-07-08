@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -69,13 +69,6 @@
         {
           "cameraPermission": "La aplicación necesita usar tu cámara para tomar fotos de tu carnet de discapacidad y para enviar imágenes o realizar videollamadas con Carabineros.",
           "microphonePermission": "La aplicación necesita usar tu micrófono para que Carabineros te escuchen durante la videollamada."
-        }
-      ],
-      [
-        "@config-plugins/react-native-webrtc",
-        {
-          "cameraPermission": "La aplicación necesita usar tu cámara para videollamadas nativas.",
-          "microphonePermission": "La aplicación necesita usar tu micrófono para videollamadas nativas."
         }
       ]
     ],
