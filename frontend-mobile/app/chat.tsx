@@ -90,7 +90,7 @@ export default function ChatScreen() {
 
       if (aid && aid !== '999') {
         // 1. Transformamos la baseUrl (http://...) a formato WebSocket (ws://...) y le sumamos tu ruta
-        const wsUrl = baseUrl.replace('http://', 'ws://') + '/ws-chat';
+        const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat/websocket';
 
         // 2. Creamos el cliente usando la URL dinámica
         const client = new Client({

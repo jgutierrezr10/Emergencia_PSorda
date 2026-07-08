@@ -81,6 +81,7 @@ export default function SobreScreen() {
       if (getResp.ok) {
         const alertData = await getResp.json();
         alertData.estado = 'Finalizada';
+        delete alertData.notasOperador; // no pisar las notas del operador (las conserva el backend)
         const putResp = await fetch(`${baseUrl}/api/alertas/${currentAlertaId}`, {
           method: 'PUT',
           headers: {

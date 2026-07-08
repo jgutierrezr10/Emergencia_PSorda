@@ -618,13 +618,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Inicializar STOMP para WebRTC y escuchar llamadas entrantes
     const rutLimpiado = item.rut.replace(/[^0-9Kk]/g, '');
-    const wsUrl = environment.apiUrl.replace('http', 'ws') + '/ws-chat';
+    const wsUrl = environment.apiUrl.replace('http', 'ws') + '/ws-chat/websocket';
     this.webrtcStompClient = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 5000,
       onConnect: () => {
         this.webrtcStompClient?.subscribe(`/topic/webrtc/${rutLimpiado}`, async (message) => {
           const data = JSON.parse(message.body);
+          // Ignorar el eco de nuestros propios mensajes: el broker STOMP reenvia al
+          // topic completo, incluida esta misma pestana. Sin este filtro, CENCO procesa
+          // su propia 'offer'/'candidate' y rompe la negociacion WebRTC.
+          if (data.sender === 'web') return;
           if (data.type === 'call_request' && data.from === 'ciudadano') {
             this.ngZone.run(() => {
               this.isReceivingCall = true;
@@ -651,7 +655,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
               await this.peerConnection.setLocalDescription(offer);
               this.webrtcStompClient?.publish({ 
                 destination: `/app/webrtc/${rutLimpiado}`, 
-                body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription }) 
+                body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription, sender: 'web' }) 
               });
             });
           } else if (data.type === 'offer' && this.isVideoCallActive) {
@@ -660,7 +664,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
             await this.peerConnection?.setLocalDescription(answer!);
             this.webrtcStompClient?.publish({
               destination: `/app/webrtc/${rutLimpiado}`,
-              body: JSON.stringify({ type: 'answer', sdp: this.peerConnection?.localDescription })
+              body: JSON.stringify({ type: 'answer', sdp: this.peerConnection?.localDescription, sender: 'web' })
             });
             if (this.peerConnection && (this.peerConnection as any).pendingCandidates) {
               for (const c of (this.peerConnection as any).pendingCandidates) {
@@ -692,7 +696,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
             await this.peerConnection.setLocalDescription(offer);
             this.webrtcStompClient?.publish({
               destination: `/app/webrtc/${rutLimpiado}`,
-              body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription })
+              body: JSON.stringify({ type: 'offer', sdp: this.peerConnection.localDescription, sender: 'web' })
             });
           }
         });
@@ -1325,7 +1329,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    // STUN + TURN: sin TURN la llamada falla cuando el movil (4G) y CENCO (wifi)
+    // estan en redes distintas con NAT estricto. Debe coincidir con la config del movil.
+    this.peerConnection = new RTCPeerConnection({ iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ] });
     
     this.localStream.getTracks().forEach(track => {
       this.peerConnection?.addTrack(track, this.localStream!);
@@ -1342,7 +1353,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
         this.webrtcStompClient.publish({
           destination: `/app/webrtc/${rutLimpiado}`,
-          body: JSON.stringify({ type: 'candidate', candidate: event.candidate })
+          body: JSON.stringify({ type: 'candidate', candidate: event.candidate, sender: 'web' })
         });
       }
     };
@@ -1354,7 +1365,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isCalling = true;
     this.webrtcStompClient.publish({
       destination: `/app/webrtc/${rutLimpiado}`,
-      body: JSON.stringify({ type: 'call_request', from: 'operador' })
+      body: JSON.stringify({ type: 'call_request', from: 'operador', sender: 'web' })
     });
   }
 
@@ -1365,9 +1376,11 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isVideoCallActive = true;
     this.cdr.detectChanges(); // Renderiza elementos de video
     await this.initMedia();
+    // Si la camara fallo, initMedia ya reseteo los flags: no avisar al ciudadano.
+    if (!this.peerConnection) return;
     this.webrtcStompClient.publish({
       destination: `/app/webrtc/${rutLimpiado}`,
-      body: JSON.stringify({ type: 'call_accepted' })
+      body: JSON.stringify({ type: 'call_accepted', sender: 'web' })
     });
   }
 
@@ -1378,7 +1391,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isCalling = false;
     this.webrtcStompClient.publish({
       destination: `/app/webrtc/${rutLimpiado}`,
-      body: JSON.stringify({ type: 'call_rejected' })
+      body: JSON.stringify({ type: 'call_rejected', sender: 'web' })
     });
   }
 
@@ -1401,7 +1414,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       const rutLimpiado = this.selectedEmergency.rut.replace(/[^0-9Kk]/g, '');
       this.webrtcStompClient.publish({
         destination: `/app/webrtc/${rutLimpiado}`,
-        body: JSON.stringify({ type: 'call_ended' })
+        body: JSON.stringify({ type: 'call_ended', sender: 'web' })
       });
     }
 

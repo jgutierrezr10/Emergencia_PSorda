@@ -45,7 +45,12 @@ public class AlertaServiceImpl implements IAlertaService {
             existente.setFechaHoraFin(java.time.LocalDateTime.now());
         }
         existente.setPersonaSorda(alerta.getPersonaSorda());
-        existente.setNotasOperador(alerta.getNotasOperador());
+        // Solo pisar las notas si el request las trae: la app movil y otros flujos
+        // hacen PUT de la alerta completa (estado, GPS, triage) sin conocer las notas
+        // del operador, y al venir null las borraban de la base.
+        if (alerta.getNotasOperador() != null) {
+            existente.setNotasOperador(alerta.getNotasOperador());
+        }
         return alertaRepository.save(existente);
     }
 

@@ -210,6 +210,7 @@ export default function TriageScreen() {
       if (getResp.ok) {
         const alertData = await getResp.json();
         alertData.disponibleTriage = false;
+        delete alertData.notasOperador; // no pisar las notas del operador (las conserva el backend)
         await fetch(`${baseUrl}/api/alertas/${currentId}`, {
           method: 'PUT',
           headers: {

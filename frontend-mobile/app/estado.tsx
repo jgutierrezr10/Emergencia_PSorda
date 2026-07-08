@@ -51,7 +51,7 @@ export default function EstadoScreen() {
       const rut = await obtenerDato('rut');
       if (!rut) return;
       const cleanRut = rut.replace(/[^0-9Kk]/g, '');
-      const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat';
+      const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat/websocket';
 
       const client = new Client({
         brokerURL: wsUrl,
@@ -59,7 +59,9 @@ export default function EstadoScreen() {
         onConnect: () => {
           client.subscribe(`/topic/webrtc/${cleanRut}`, (msg) => {
             const data = JSON.parse(msg.body);
-            if (data.type === 'call_request') {
+            // Solo mostrar "llamada entrante" si llama el OPERADOR: el topic tambien
+            // nos devuelve el call_request que publica esta misma app al llamar.
+            if (data.type === 'call_request' && data.from === 'operador') {
               setLlamadaEntrante(true);
             } else if (data.type === 'call_rejected' || data.type === 'call_ended') {
               setLlamadaEntrante(false);
@@ -116,6 +118,10 @@ export default function EstadoScreen() {
           if (getResp.ok) {
             const alertData = await getResp.json();
             alertData.latitudLongitud = `${lat},${lng}`;
+            // No enviar notas del operador: podrian estar desactualizadas (carrera con
+            // el polling) y pisarian lo que CENCO escribio. El backend conserva las
+            // existentes cuando llegan null.
+            delete alertData.notasOperador;
             await fetch(`${baseUrl}/api/alertas/${currentId}`, {
               method: 'PUT',
               headers: {

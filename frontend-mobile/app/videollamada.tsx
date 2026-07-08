@@ -1,6 +1,6 @@
 import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -13,7 +13,8 @@ export default function VideollamadaScreen() {
   const isIncoming = params.incoming === 'true';
 
   const [rut, setRut] = useState<string | null>(null);
-  
+  const webviewRef = useRef<WebView>(null);
+
   // Permisos nativos
   const [camStatus, requestCam] = useCameraPermissions();
   const [micStatus, requestMic] = useMicrophonePermissions();
@@ -73,7 +74,7 @@ export default function VideollamadaScreen() {
     );
   }
 
-  const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat';
+  const wsUrl = baseUrl.replace('http', 'ws') + '/ws-chat/websocket';
 
   // Script WebRTC modificado para el flujo Ring & Answer
   const webrtcHtml = `
@@ -114,7 +115,30 @@ export default function VideollamadaScreen() {
     const RUT = '${rut}';
     const WS_URL = '${wsUrl}';
     const IS_INCOMING = ${isIncoming};
-    const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    // 'movil' identifica los mensajes propios: el broker STOMP reenvia a TODOS los
+    // suscriptores del topic (incluido quien publica), asi que hay que ignorar el eco.
+    const SENDER = 'mobile';
+    // STUN + TURN: sin TURN la llamada falla cuando el telefono (4G) y CENCO (wifi)
+    // estan en redes distintas con NAT estricto.
+    const ICE = { iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ] };
+
+    function enviar(payload) {
+      if (stompClient && stompClient.connected) {
+        stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify(Object.assign({}, payload, { sender: SENDER })) });
+      }
+    }
+
+    // Colgar desde el boton nativo (injectJavaScript)
+    window.colgar = function() {
+      try { enviar({ type: 'call_ended' }); } catch(e) {}
+      try { if (localStream) localStream.getTracks().forEach(function(t){ t.stop(); }); } catch(e) {}
+      try { if (pc) pc.close(); } catch(e) {}
+    };
 
     let pc = null;
     let localStream = null;
@@ -122,6 +146,11 @@ export default function VideollamadaScreen() {
 
     async function initMedia() {
       const statusEl = document.getElementById('status');
+      // Sin contexto seguro (https), Android no expone navigator.mediaDevices.
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusEl.textContent = 'Error: la camara no esta disponible (contexto no seguro).';
+        throw new Error('mediaDevices no disponible');
+      }
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user', width: 640, height: 480 } });
         const localVideo = document.getElementById('localVideo');
@@ -143,8 +172,8 @@ export default function VideollamadaScreen() {
       };
 
       pc.onicecandidate = (ev) => {
-        if (ev.candidate && stompClient && stompClient.connected) {
-          stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'candidate', candidate: ev.candidate }) });
+        if (ev.candidate) {
+          enviar({ type: 'candidate', candidate: ev.candidate });
         }
       };
     }
@@ -158,19 +187,23 @@ export default function VideollamadaScreen() {
         onConnect: () => {
           stompClient.subscribe('/topic/webrtc/' + RUT, async (msg) => {
             const data = JSON.parse(msg.body);
+            // Ignorar el eco de nuestros propios mensajes (el topic nos los devuelve).
+            if (data.sender === SENDER) return;
             try {
               if (data.type === 'call_accepted' && !IS_INCOMING) {
                 statusEl.innerHTML = '<div class="spinner"></div>Conectando videollamada...';
                 await initMedia();
-                stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'ready' }) });
-              } else if (data.type === 'call_rejected') {
+                enviar({ type: 'ready' });
+              } else if (data.type === 'call_rejected' || data.type === 'call_ended') {
                 statusEl.innerHTML = 'La llamada fue rechazada o finalizada.';
+                try { if (localStream) localStream.getTracks().forEach(function(t){ t.stop(); }); } catch(e) {}
+                try { if (pc) pc.close(); } catch(e) {}
                 setTimeout(() => window.ReactNativeWebView.postMessage('call_rejected'), 2000);
               } else if (data.type === 'offer') {
                 await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
-                stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'answer', sdp: pc.localDescription }) });
+                enviar({ type: 'answer', sdp: pc.localDescription });
                 if (pc && pc.pendingCandidates) {
                   for (const c of pc.pendingCandidates) {
                     await pc.addIceCandidate(new RTCIceCandidate(c));
@@ -198,7 +231,7 @@ export default function VideollamadaScreen() {
                 if (IS_INCOMING || pc.signalingState !== 'stable') {
                   const offer = await pc.createOffer();
                   await pc.setLocalDescription(offer);
-                  stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'offer', sdp: pc.localDescription }) });
+                  enviar({ type: 'offer', sdp: pc.localDescription });
                 }
               }
             } catch(err) { console.error('Signal error:', err); }
@@ -208,11 +241,11 @@ export default function VideollamadaScreen() {
           if (IS_INCOMING) {
             statusEl.innerHTML = '<div class="spinner"></div>Conectando cámara...';
             initMedia().then(() => {
-              stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'call_accepted' }) });
+              enviar({ type: 'call_accepted' });
             });
           } else {
             statusEl.innerHTML = '<div class="spinner"></div>Llamando al operador...';
-            stompClient.publish({ destination: '/app/webrtc/' + RUT, body: JSON.stringify({ type: 'call_request', from: 'ciudadano' }) });
+            enviar({ type: 'call_request', from: 'ciudadano' });
           }
         },
         onStompError: (f) => { statusEl.textContent = 'Error de conexión al servidor.'; }
@@ -230,7 +263,10 @@ export default function VideollamadaScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <WebView
-        source={{ html: webrtcHtml }}
+        ref={webviewRef}
+        // baseUrl https: sin esto, el HTML inline corre en origen inseguro y Android
+        // NO expone navigator.mediaDevices (la camara falla aunque haya permisos).
+        source={{ html: webrtcHtml, baseUrl: baseUrl }}
         style={{ flex: 1 }}
         javaScriptEnabled={true}
         domStorageEnabled={true}
@@ -246,8 +282,9 @@ export default function VideollamadaScreen() {
       />
       {/* Botón Colgar flotante */}
       <TouchableOpacity style={styles.btnVolver} onPress={() => {
-        // Enviar evento de rechazo/colgar y salir
-        router.back();
+        // Avisar al otro lado (call_ended), liberar camara y salir
+        webviewRef.current?.injectJavaScript('window.colgar && window.colgar(); true;');
+        setTimeout(() => router.back(), 300);
       }}>
         <Ionicons name="call" size={24} color="#ffffff" />
         <Text style={styles.btnVolverTexto}>COLGAR</Text>

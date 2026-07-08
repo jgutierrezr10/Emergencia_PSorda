@@ -20,6 +20,27 @@ const obtenerDato = async (key: string): Promise<string | null> => {
   return await SecureStore.getItemAsync(key);
 };
 
+// fetch con timeout + 1 reintento: el backend en Railway puede estar "dormido"
+// (cold start) y el PRIMER request falla o demora; el segundo ya funciona.
+const fetchConReintento = async (url: string, options: RequestInit, timeoutMs = 12000): Promise<Response> => {
+  const intento = async (): Promise<Response> => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: ctrl.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  try {
+    return await intento();
+  } catch (e) {
+    // Solo reintentar errores de red/timeout (no respuestas HTTP)
+    await new Promise((r) => setTimeout(r, 1200));
+    return await intento();
+  }
+};
+
 export default function LoginScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -32,6 +53,12 @@ export default function LoginScreen() {
   
   // NUEVO: Estado para el modal de T&C
   const [mostrarTerminos, setMostrarTerminos] = useState(false);
+
+  // Warm-up: despierta el backend (Railway) apenas se abre la pantalla,
+  // para que el login del usuario no choque con el cold start.
+  useEffect(() => {
+    fetch(baseUrl).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const verificarSesion = async () => {
@@ -94,7 +121,7 @@ export default function LoginScreen() {
     try {
       const cleanRut = rut.replace(/\./g, '');
       
-      const response = await fetch(`${baseUrl}/auth/login`, {
+      const response = await fetchConReintento(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rut: cleanRut, clave: password }),
