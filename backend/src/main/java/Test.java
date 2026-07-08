@@ -1,1 +1,0 @@
-public class Test { public static void main(String[] args) { org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder enc = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(); System.out.println(enc.matches(\" "123456\, \/OvewLclsUErB6YyO\)); System.out.println(enc.matches(\1234\, \/OvewLclsUErB6YyO\)); } } 
