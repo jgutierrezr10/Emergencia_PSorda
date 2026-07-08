@@ -4,15 +4,15 @@ INSERT INTO usuarios (nombre, apellido, telefono, rut, clave, estado, rol) VALUE
 ('Pedro', 'Rodriguez', '999888777', '22222222-2', '$2a$10$RR6E18EqG38seiGsJQPqeOTpRIaPNb0Vs40n/OvewLclsUErB6YyO', 'Activo', 'Carabinero')
 ON CONFLICT (rut) DO UPDATE SET rol = EXCLUDED.rol;
 
-INSERT INTO carabineros (nombre, numero, rango, comisaria_id, usuario_id)
-SELECT 'Juan Perez', 133, 'Cabo', 1, id FROM usuarios WHERE rut = '12345678-9'
+INSERT INTO carabineros (nombre, numero, rango, usuario_id)
+SELECT 'Juan Perez', 133, 'Cabo', id FROM usuarios WHERE rut = '12345678-9'
 AND NOT EXISTS (
     SELECT 1 FROM carabineros 
     WHERE usuario_id = (SELECT id FROM usuarios WHERE rut = '12345678-9')
 );
 
-INSERT INTO carabineros (nombre, numero, rango, comisaria_id, usuario_id)
-SELECT 'Pedro Rodriguez', 133, 'Sargento', 1, id FROM usuarios WHERE rut = '22222222-2'
+INSERT INTO carabineros (nombre, numero, rango, usuario_id)
+SELECT 'Pedro Rodriguez', 133, 'Sargento', id FROM usuarios WHERE rut = '22222222-2'
 AND NOT EXISTS (
     SELECT 1 FROM carabineros 
     WHERE usuario_id = (SELECT id FROM usuarios WHERE rut = '22222222-2')
